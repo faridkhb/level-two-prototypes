@@ -240,6 +240,21 @@ export function BgGraph({
       Math.max(0, h - interventionReduction[i] - sglt2Reduction[i])
     );
 
+    // Distribute burns across foods top-down (for per-food cube status)
+    const perFoodEffective: number[][] = Array.from(
+      { length: perFoodDecayed.length },
+      () => new Array(TOTAL_COLUMNS).fill(0)
+    );
+    for (let col = 0; col < TOTAL_COLUMNS; col++) {
+      let burnLeft = Math.max(0, pancreasCaps[col] - columnCaps[col]);
+      for (let fi = perFoodDecayed.length - 1; fi >= 0; fi--) {
+        const alive = perFoodDecayed[fi][col];
+        const burned = Math.min(alive, burnLeft);
+        perFoodEffective[fi][col] = alive - burned;
+        burnLeft -= burned;
+      }
+    }
+
     // Pre-compute cumulative decayed heights for individual skylines.
     // Each food's skyline traces the cumulative decay up to and including that food:
     //   food 0: skyline = food0_decay (its own contour from row 0)
@@ -262,16 +277,22 @@ export function BgGraph({
 
       for (const c of food.columns) {
         let topNormalRow = c.baseRow; // default: no normal cubes visible
-        const skylineRow = Math.min(cumDecayed[c.col], TOTAL_ROWS);
+        const skylineRow = Math.min(cumDecayed[c.col], TOTAL_ROWS); // stays global for skylines
+
+        // Per-food boundaries for cube status (coloring)
+        const foodAlive = Math.min(c.count, perFoodDecayed[foodIndex][c.col]);
+        const foodEffective = Math.min(foodAlive, perFoodEffective[foodIndex][c.col]);
+        const aliveTop = c.baseRow + foodAlive;
+        const effectiveTop = c.baseRow + foodEffective;
 
         for (let cubeIdx = 0; cubeIdx < c.count; cubeIdx++) {
           const row = c.baseRow + cubeIdx;
           if (row >= TOTAL_ROWS) break;
 
           let status: CubeStatus;
-          if (row >= pancreasCaps[c.col]) {
+          if (row >= aliveTop) {
             status = 'pancreas';
-          } else if (row >= columnCaps[c.col]) {
+          } else if (row >= effectiveTop) {
             status = 'burned';
           } else {
             status = 'normal';
