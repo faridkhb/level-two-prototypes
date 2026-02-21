@@ -211,7 +211,6 @@ export function BgGraph({
     for (let i = 0; i < rawFoods.length; i++) {
       rawFoods[i].color = getFoodColor(i);
     }
-
     // Phase 2: PancreasCaps (with actual decayRate) + per-food decayed heights
     const pancreasCaps = new Array(TOTAL_COLUMNS).fill(0);
     const perFoodDecayed: number[][] = []; // per-food decayed cubeCount at each column
@@ -231,7 +230,8 @@ export function BgGraph({
       perFoodDecayed.push(foodDecayed);
     }
 
-    // Phase 3: ColumnCaps (pancreas − interventions − SGLT2)
+    // Phase 3: Per-food effective alive counts
+    // Global reductions (interventions + SGLT2)
     const sglt2 = medicationModifiers.sglt2;
     const sglt2Reduction = sglt2
       ? calculateSglt2Reduction(pancreasCaps, sglt2.depth, sglt2.floorRow)
@@ -240,38 +240,45 @@ export function BgGraph({
       Math.max(0, h - interventionReduction[i] - sglt2Reduction[i])
     );
 
-    // Pre-compute cumulative decayed heights for individual skylines.
-    // Each food's skyline traces the cumulative decay up to and including that food:
-    //   food 0: skyline = food0_decay (its own contour from row 0)
-    //   food 1: skyline = food0_decay + food1_decay (= pancreasCaps when 2 foods)
-    // This ensures the top food's skyline coincides with the main skyline (hidden under it),
-    // while lower foods' skylines show their own contribution boundary.
-    const cumulativeDecayed: number[][] = [];
-    for (let fi = 0; fi < perFoodDecayed.length; fi++) {
-      const prev = fi > 0 ? cumulativeDecayed[fi - 1] : new Array(TOTAL_COLUMNS).fill(0);
-      cumulativeDecayed.push(perFoodDecayed[fi].map((v, col) => prev[col] + v));
+    // Distribute burns across foods top-down: topmost food loses alive cubes first
+    const perFoodEffective: number[][] = Array.from(
+      { length: perFoodDecayed.length },
+      () => new Array(TOTAL_COLUMNS).fill(0)
+    );
+    for (let col = 0; col < TOTAL_COLUMNS; col++) {
+      let burnLeft = Math.max(0, pancreasCaps[col] - columnCaps[col]);
+      for (let fi = perFoodDecayed.length - 1; fi >= 0; fi--) {
+        const alive = perFoodDecayed[fi][col];
+        const burned = Math.min(alive, burnLeft);
+        perFoodEffective[fi][col] = alive - burned;
+        burnLeft -= burned;
+      }
     }
 
-    // Phase 4: Per-food layers — stamp cubes, compute markers and skylines
+    // Phase 4: Per-food layers — stamp cubes using per-food alive/effective boundaries
     const hasMultipleFoods = rawFoods.length >= 2;
     const bottomY = PAD_TOP + GRAPH_H;
     const layers: FoodRenderLayer[] = rawFoods.map((food, foodIndex) => {
-      const cumDecayed = cumulativeDecayed[foodIndex];
       const cubes: FoodRenderCube[] = [];
       const colSummary: FoodColumnSummary[] = [];
 
       for (const c of food.columns) {
-        let topNormalRow = c.baseRow; // default: no normal cubes visible
-        const skylineRow = Math.min(cumDecayed[c.col], TOTAL_ROWS);
+        // Per-food boundaries: alive = own decay, effective = alive minus burns
+        const foodAlive = Math.min(c.count, perFoodDecayed[foodIndex][c.col]);
+        const foodEffective = Math.min(foodAlive, perFoodEffective[foodIndex][c.col]);
+        const aliveTop = c.baseRow + foodAlive;
+        const effectiveTop = c.baseRow + foodEffective;
+        const skylineRow = Math.min(aliveTop, TOTAL_ROWS);
+        let topNormalRow = c.baseRow;
 
         for (let cubeIdx = 0; cubeIdx < c.count; cubeIdx++) {
           const row = c.baseRow + cubeIdx;
           if (row >= TOTAL_ROWS) break;
 
           let status: CubeStatus;
-          if (row >= pancreasCaps[c.col]) {
+          if (row >= aliveTop) {
             status = 'pancreas';
-          } else if (row >= columnCaps[c.col]) {
+          } else if (row >= effectiveTop) {
             status = 'burned';
           } else {
             status = 'normal';
@@ -289,8 +296,7 @@ export function BgGraph({
         });
       }
 
-      // Marker: centered over columns where cumulative skylineRow is at its peak
-      // This visually centers the marker on the highest point of the food stack
+      // Marker: centered over columns where this food's skylineRow is at its peak
       let maxSkyline = 0;
       for (const cs of colSummary) {
         if (cs.skylineRow > maxSkyline) maxSkyline = cs.skylineRow;
@@ -309,14 +315,14 @@ export function BgGraph({
         marker = { peakCenterX, tailRow: maxSkyline };
       }
 
-      // Skyline path: trace cumulative decay contour with bottom-closing segments
+      // Skyline path: trace per-food alive boundary with bottom-closing segments
       let skylinePath: string | null = null;
       if (hasMultipleFoods) {
         const parts: string[] = [];
         let inSeg = false;
         let prevCol = -2;
         for (const cs of colSummary) {
-          if (cs.skylineRow <= 0) {
+          if (cs.skylineRow <= cs.baseRow) {
             if (inSeg) { parts.push(`V ${bottomY}`); inSeg = false; }
             prevCol = cs.col;
             continue;
@@ -353,11 +359,23 @@ export function BgGraph({
       };
     });
 
-    // Phase 5: Main skyline path from columnCaps
+    // Phase 5: Main skyline from per-food effective boundaries
+    // Find the highest effective row at each column across all foods
+    const mainSkylineRows = new Array(TOTAL_COLUMNS).fill(0);
+    for (let fi = 0; fi < rawFoods.length; fi++) {
+      for (const c of rawFoods[fi].columns) {
+        const effective = Math.min(c.count, perFoodEffective[fi][c.col]);
+        const effectiveTop = c.baseRow + effective;
+        if (effectiveTop > mainSkylineRows[c.col]) {
+          mainSkylineRows[c.col] = effectiveTop;
+        }
+      }
+    }
+
     const mainParts: string[] = [];
     let inSegment = false;
     for (let col = 0; col < TOTAL_COLUMNS; col++) {
-      const h = columnCaps[col];
+      const h = mainSkylineRows[col];
       if (h <= 0) {
         if (inSegment) { mainParts.push(`V ${bottomY}`); inSegment = false; }
         continue;
@@ -368,7 +386,7 @@ export function BgGraph({
         mainParts.push(`V ${y}`);
         inSegment = true;
       } else {
-        const prevH = columnCaps[col - 1];
+        const prevH = mainSkylineRows[col - 1];
         if (prevH !== h) {
           mainParts.push(`V ${y}`);
         }
