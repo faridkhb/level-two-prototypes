@@ -252,7 +252,6 @@ export function BgGraph({
     const hasMultipleFoods = rawFoods.length >= 2;
     const bottomY = PAD_TOP + GRAPH_H;
     const layers: FoodRenderLayer[] = rawFoods.map((food, foodIndex) => {
-      const foodDecayed = perFoodDecayed[foodIndex];
       const cumDecayed = cumulativeDecayed[foodIndex];
       const cubes: FoodRenderCube[] = [];
       const colSummary: FoodColumnSummary[] = [];
@@ -286,18 +285,16 @@ export function BgGraph({
         });
       }
 
-      // Marker: centered over food's OWN peak contribution, tailRow from cumulative skyline
-      let maxOwnDecay = 0;
+      // Marker: centered over columns where cumulative skylineRow is at its peak
+      // This visually centers the marker on the highest point of the food stack
+      let maxSkyline = 0;
       for (const cs of colSummary) {
-        const ownDecay = foodDecayed[cs.col];
-        if (ownDecay > maxOwnDecay) maxOwnDecay = ownDecay;
+        if (cs.skylineRow > maxSkyline) maxSkyline = cs.skylineRow;
       }
       const peakCols: number[] = [];
-      let peakTailRow = 0;
       for (const cs of colSummary) {
-        if (foodDecayed[cs.col] === maxOwnDecay && maxOwnDecay > 0) {
+        if (cs.skylineRow === maxSkyline && maxSkyline > 0) {
           peakCols.push(cs.col);
-          if (cs.skylineRow > peakTailRow) peakTailRow = cs.skylineRow;
         }
       }
 
@@ -305,7 +302,7 @@ export function BgGraph({
       if (peakCols.length > 0) {
         const peakCenterX = PAD_LEFT +
           ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
-        marker = { peakCenterX, tailRow: peakTailRow };
+        marker = { peakCenterX, tailRow: maxSkyline };
       }
 
       // Skyline path: trace cumulative decay contour with bottom-closing segments
@@ -639,10 +636,9 @@ export function BgGraph({
           />
         )}
 
-        {/* Per-food layers: last placed rendered first (bottom), first placed last (top) */}
+        {/* Per-food cube layers: last placed rendered first (bottom), first placed last (top) */}
         {[...graphRenderData.layers].reverse().map(layer => (
           <g key={`food-layer-${layer.placementId}`} className="bg-graph__food-group">
-            {/* Cubes — pre-stamped with status */}
             {layer.cubes.map(cube => {
               const waveDelay = (cube.col - layer.dropColumn) * 20;
               const cubeClass = cube.status === 'pancreas'
@@ -677,29 +673,32 @@ export function BgGraph({
                 />
               );
             })}
-            {/* Individual skyline (inside same layer, on top of this food's cubes) */}
-            {layer.skylinePath && (
-              <g pointerEvents="none">
-                <path
-                  d={layer.skylinePath}
-                  fill="none"
-                  stroke="rgba(0,0,0,0.18)"
-                  strokeWidth={5}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  transform="translate(0, 1.5)"
-                />
-                <path
-                  d={layer.skylinePath}
-                  fill="none"
-                  stroke="white"
-                  strokeWidth={3}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-              </g>
-            )}
           </g>
+        ))}
+
+        {/* Individual skylines — AFTER all cube layers so they're not hidden by upper food cubes */}
+        {[...graphRenderData.layers].reverse().map(layer => (
+          layer.skylinePath ? (
+            <g key={`skyline-${layer.placementId}`} pointerEvents="none">
+              <path
+                d={layer.skylinePath}
+                fill="none"
+                stroke="rgba(0,0,0,0.18)"
+                strokeWidth={5}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                transform="translate(0, 1.5)"
+              />
+              <path
+                d={layer.skylinePath}
+                fill="none"
+                stroke="white"
+                strokeWidth={3}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            </g>
+          ) : null
         ))}
 
         {/* BG skyline — single path with rounded corners + shadow line below */}
