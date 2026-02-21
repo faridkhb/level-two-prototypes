@@ -236,18 +236,30 @@ export function BgGraph({
       Math.max(0, h - interventionReduction[i] - sglt2Reduction[i])
     );
 
+    // Pre-compute cumulative decayed heights for individual skylines.
+    // Each food's skyline traces the cumulative decay up to and including that food:
+    //   food 0: skyline = food0_decay (its own contour from row 0)
+    //   food 1: skyline = food0_decay + food1_decay (= pancreasCaps when 2 foods)
+    // This ensures the top food's skyline coincides with the main skyline (hidden under it),
+    // while lower foods' skylines show their own contribution boundary.
+    const cumulativeDecayed: number[][] = [];
+    for (let fi = 0; fi < perFoodDecayed.length; fi++) {
+      const prev = fi > 0 ? cumulativeDecayed[fi - 1] : new Array(TOTAL_COLUMNS).fill(0);
+      cumulativeDecayed.push(perFoodDecayed[fi].map((v, col) => prev[col] + v));
+    }
+
     // Phase 4: Per-food layers — stamp cubes, compute markers and skylines
     const hasMultipleFoods = rawFoods.length >= 2;
+    const bottomY = PAD_TOP + GRAPH_H;
     const layers: FoodRenderLayer[] = rawFoods.map((food, foodIndex) => {
       const foodDecayed = perFoodDecayed[foodIndex];
+      const cumDecayed = cumulativeDecayed[foodIndex];
       const cubes: FoodRenderCube[] = [];
       const colSummary: FoodColumnSummary[] = [];
 
       for (const c of food.columns) {
         let topNormalRow = c.baseRow; // default: no normal cubes visible
-        // Per-food alive count: this food's own decayed height (independent of others)
-        const aliveCount = Math.min(c.count, foodDecayed[c.col]);
-        const skylineRow = Math.min(c.baseRow + aliveCount, TOTAL_ROWS);
+        const skylineRow = Math.min(cumDecayed[c.col], TOTAL_ROWS);
 
         for (let cubeIdx = 0; cubeIdx < c.count; cubeIdx++) {
           const row = c.baseRow + cubeIdx;
@@ -274,39 +286,54 @@ export function BgGraph({
         });
       }
 
-      // Marker: centered over food's OWN decay peak (per-food, independent of others)
-      let maxSkylineH = 0;
+      // Marker: centered over food's OWN peak contribution, tailRow from cumulative skyline
+      let maxOwnDecay = 0;
       for (const cs of colSummary) {
-        if (cs.skylineRow > maxSkylineH) maxSkylineH = cs.skylineRow;
+        const ownDecay = foodDecayed[cs.col];
+        if (ownDecay > maxOwnDecay) maxOwnDecay = ownDecay;
       }
-      const peakCols = colSummary
-        .filter(cs => cs.skylineRow === maxSkylineH && maxSkylineH > cs.baseRow)
-        .map(cs => cs.col);
+      const peakCols: number[] = [];
+      let peakTailRow = 0;
+      for (const cs of colSummary) {
+        if (foodDecayed[cs.col] === maxOwnDecay && maxOwnDecay > 0) {
+          peakCols.push(cs.col);
+          if (cs.skylineRow > peakTailRow) peakTailRow = cs.skylineRow;
+        }
+      }
 
       let marker: FoodMarkerInfo | null = null;
       if (peakCols.length > 0) {
         const peakCenterX = PAD_LEFT +
           ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
-        marker = { peakCenterX, tailRow: maxSkylineH };
+        marker = { peakCenterX, tailRow: peakTailRow };
       }
 
-      // Skyline path: trace food's OWN decay contour (per-food, independent of others)
+      // Skyline path: trace cumulative decay contour with bottom-closing segments
       let skylinePath: string | null = null;
       if (hasMultipleFoods) {
         const parts: string[] = [];
+        let inSeg = false;
         let prevCol = -2;
         for (const cs of colSummary) {
-          if (cs.skylineRow <= cs.baseRow) continue; // no alive cubes for this food
+          if (cs.skylineRow <= 0) {
+            if (inSeg) { parts.push(`V ${bottomY}`); inSeg = false; }
+            prevCol = cs.col;
+            continue;
+          }
           const y = PAD_TOP + GRAPH_H - cs.skylineRow * CELL_SIZE;
           const x = colToX(cs.col);
-          if (cs.col !== prevCol + 1) {
-            parts.push(`M ${x} ${y}`);
+          if (!inSeg || cs.col !== prevCol + 1) {
+            if (inSeg) parts.push(`V ${bottomY}`);
+            parts.push(`M ${x} ${bottomY}`);
+            parts.push(`V ${y}`);
+            inSeg = true;
           } else {
             parts.push(`V ${y}`);
           }
           parts.push(`H ${x + CELL_SIZE}`);
           prevCol = cs.col;
         }
+        if (inSeg) parts.push(`V ${bottomY}`);
         if (parts.length > 0) {
           skylinePath = parts.join(' ');
         }
@@ -328,7 +355,6 @@ export function BgGraph({
     // Phase 5: Main skyline path from columnCaps
     const mainParts: string[] = [];
     let inSegment = false;
-    const bottomY = PAD_TOP + GRAPH_H;
     for (let col = 0; col < TOTAL_COLUMNS; col++) {
       const h = columnCaps[col];
       if (h <= 0) {
