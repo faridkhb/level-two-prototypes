@@ -212,26 +212,22 @@ export function BgGraph({
       rawFoods[i].color = getFoodColor(i);
     }
 
-    // Phase 2: PancreasCaps (with actual decayRate) + per-food decayed heights
+    // Phase 2: PancreasCaps (with actual decayRate) — global alive boundary
     const pancreasCaps = new Array(TOTAL_COLUMNS).fill(0);
-    const perFoodDecayed: number[][] = []; // per-food decayed cubeCount at each column
     for (const placed of placedFoods) {
       const ship = allShips.find(s => s.id === placed.shipId);
       if (!ship) continue;
       const { glucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
       const curve = calculateCurve(glucose, duration, placed.dropColumn, decayRate);
-      const foodDecayed = new Array(TOTAL_COLUMNS).fill(0);
       for (const col of curve) {
         const graphCol = placed.dropColumn + col.columnOffset;
         if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
           pancreasCaps[graphCol] += col.cubeCount;
-          foodDecayed[graphCol] = col.cubeCount;
         }
       }
-      perFoodDecayed.push(foodDecayed);
     }
 
-    // Phase 3: ColumnCaps (pancreas − interventions − SGLT2)
+    // Phase 3: ColumnCaps (pancreas − interventions − SGLT2) — global normal boundary
     const sglt2 = medicationModifiers.sglt2;
     const sglt2Reduction = sglt2
       ? calculateSglt2Reduction(pancreasCaps, sglt2.depth, sglt2.floorRow)
@@ -240,59 +236,31 @@ export function BgGraph({
       Math.max(0, h - interventionReduction[i] - sglt2Reduction[i])
     );
 
-    // Distribute burns across foods top-down (for per-food cube status)
-    const perFoodEffective: number[][] = Array.from(
-      { length: perFoodDecayed.length },
-      () => new Array(TOTAL_COLUMNS).fill(0)
-    );
-    for (let col = 0; col < TOTAL_COLUMNS; col++) {
-      let burnLeft = Math.max(0, pancreasCaps[col] - columnCaps[col]);
-      for (let fi = perFoodDecayed.length - 1; fi >= 0; fi--) {
-        const alive = perFoodDecayed[fi][col];
-        const burned = Math.min(alive, burnLeft);
-        perFoodEffective[fi][col] = alive - burned;
-        burnLeft -= burned;
-      }
-    }
-
-    // Pre-compute cumulative decayed heights for individual skylines.
-    // Each food's skyline traces the cumulative decay up to and including that food:
-    //   food 0: skyline = food0_decay (its own contour from row 0)
-    //   food 1: skyline = food0_decay + food1_decay (= pancreasCaps when 2 foods)
-    // This ensures the top food's skyline coincides with the main skyline (hidden under it),
-    // while lower foods' skylines show their own contribution boundary.
-    const cumulativeDecayed: number[][] = [];
-    for (let fi = 0; fi < perFoodDecayed.length; fi++) {
-      const prev = fi > 0 ? cumulativeDecayed[fi - 1] : new Array(TOTAL_COLUMNS).fill(0);
-      cumulativeDecayed.push(perFoodDecayed[fi].map((v, col) => prev[col] + v));
-    }
-
     // Phase 4: Per-food layers — stamp cubes, compute markers and skylines
+    // Cube status uses GLOBAL boundaries (pancreas eats from top of combined stack):
+    //   row >= pancreasCaps[col] → pancreas
+    //   row >= columnCaps[col]   → burned (intervention)
+    //   else                     → normal
+    // Each cube gets its food's palette color for visual distinction.
     const hasMultipleFoods = rawFoods.length >= 2;
     const bottomY = PAD_TOP + GRAPH_H;
-    const layers: FoodRenderLayer[] = rawFoods.map((food, foodIndex) => {
-      const cumDecayed = cumulativeDecayed[foodIndex];
+    const layers: FoodRenderLayer[] = rawFoods.map((food) => {
       const cubes: FoodRenderCube[] = [];
       const colSummary: FoodColumnSummary[] = [];
 
       for (const c of food.columns) {
-        let topNormalRow = c.baseRow; // default: no normal cubes visible
-        const skylineRow = Math.min(cumDecayed[c.col], TOTAL_ROWS); // stays global for skylines
-
-        // Per-food boundaries for cube status (coloring)
-        const foodAlive = Math.min(c.count, perFoodDecayed[foodIndex][c.col]);
-        const foodEffective = Math.min(foodAlive, perFoodEffective[foodIndex][c.col]);
-        const aliveTop = c.baseRow + foodAlive;
-        const effectiveTop = c.baseRow + foodEffective;
+        let topNormalRow = c.baseRow;
+        // Skyline: top of this food's alive cubes = min(plateauTop, pancreasCap, totalRows)
+        const skylineRow = Math.min(c.baseRow + c.count, pancreasCaps[c.col], TOTAL_ROWS);
 
         for (let cubeIdx = 0; cubeIdx < c.count; cubeIdx++) {
           const row = c.baseRow + cubeIdx;
           if (row >= TOTAL_ROWS) break;
 
           let status: CubeStatus;
-          if (row >= aliveTop) {
+          if (row >= pancreasCaps[c.col]) {
             status = 'pancreas';
-          } else if (row >= effectiveTop) {
+          } else if (row >= columnCaps[c.col]) {
             status = 'burned';
           } else {
             status = 'normal';
@@ -310,8 +278,7 @@ export function BgGraph({
         });
       }
 
-      // Marker: centered over columns where cumulative skylineRow is at its peak
-      // This visually centers the marker on the highest point of the food stack
+      // Marker: centered over columns where this food's alive boundary is highest
       let maxSkyline = 0;
       for (const cs of colSummary) {
         if (cs.skylineRow > maxSkyline) maxSkyline = cs.skylineRow;
@@ -330,14 +297,15 @@ export function BgGraph({
         marker = { peakCenterX, tailRow: maxSkyline };
       }
 
-      // Skyline path: trace cumulative decay contour with bottom-closing segments
+      // Skyline path: trace this food's alive boundary (separates food layers)
       let skylinePath: string | null = null;
       if (hasMultipleFoods) {
         const parts: string[] = [];
         let inSeg = false;
         let prevCol = -2;
         for (const cs of colSummary) {
-          if (cs.skylineRow <= 0) {
+          if (cs.skylineRow <= cs.baseRow) {
+            // No alive cubes for this food at this column — skip
             if (inSeg) { parts.push(`V ${bottomY}`); inSeg = false; }
             prevCol = cs.col;
             continue;
