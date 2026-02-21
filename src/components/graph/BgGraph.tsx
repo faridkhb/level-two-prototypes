@@ -650,9 +650,7 @@ export function BgGraph({
                 : cube.status === 'burned'
                   ? 'bg-graph__cube--burned'
                   : 'bg-graph__cube';
-              const cubeFill = cube.status === 'pancreas'
-                ? 'rgba(246, 153, 63, 0.5)'
-                : layer.color;
+              const cubeFill = layer.color;
               return (
                 <rect
                   key={`${layer.placementId}-${cube.col}-${cube.row}`}
