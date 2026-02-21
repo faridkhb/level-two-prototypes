@@ -1,5 +1,129 @@
 # Changelog
 
+## 22 февраля (v0.37.0 → v0.38.2) — Unified Rendering + Per-Food Colors + Decay Stacking
+
+### v0.38.2 — Decay-Based Stacking (фундаментальный фикс) ⭐
+- **Корневая проблема**: plateau stacking (decayRate=0) ставил кубики верхних продуктов выше alive-границы (pancreasCaps) → все кубики были pancreas → одинаковый бледный цвет
+- **Решение**: стэкирование кубиков по РЕАЛЬНЫМ decay-кривым вместо plateau
+- Alive-кубики всегда ниже pancreasCaps → чёткие индивидуальные цвета
+- Pancreas-кубики рисуются ВЫШЕ всего alive-стека (отдельная визуальная зона)
+- При decayRate=0: decay=plateau, поведение идентично старому
+- Обновлён preview для нового стэкинга
+- **Тег**: `v0.38.2`
+
+### v0.38.1 — Глобальные границы alive/pancreas
+- Заменена per-food модель на глобальные `pancreasCaps`/`columnCaps`
+- Промежуточная версия — не решила проблему полностью (базовые row выше alive-границы)
+
+### v0.38.0 — Гибридная per-food модель
+- Per-food cube status (alive/burned/pancreas по индивидуальному decay)
+- Глобальные скайлайны/маркеры
+- Не решила визуальную проблему: normal/pancreas граница некорректна для 2+ продуктов
+
+### v0.37.9 — Pancreas cubes используют цвет продукта
+- Цвет pancreas-кубиков: `layer.color` вместо фиксированного оранжевого
+
+### v0.37.8 — Откат v0.37.7
+- Revert per-food модели (ломала скайлайны и маркеры)
+
+### v0.37.6 — Фиксированная палитра + полная яркость
+- 7-цветная палитра Tailwind sky (#7dd3fc → #0c4a6e)
+- cubeAppear анимация: opacity 0→1 (вместо 0.85)
+
+### v0.37.5 — Progressive blue gradient
+- Цвет по порядку размещения (1й продукт = голубой, 2й = темнее)
+- Заменена GI-based система на index-based
+
+### v0.37.4 — Skyline Z-order + маркер на skylineRow
+- Индивидуальные скайлайны рисуются ПОСЛЕ всех слоёв кубиков
+- Маркеры центрируются по `max(skylineRow)` вместо `max(foodDecayed)`
+
+### v0.37.0 → v0.37.3 — Unified GraphRenderData
+- Единый `graphRenderData` useMemo заменяет 7 отдельных хуков
+- Layer-based рендеринг (обратный порядок: последний продукт внизу)
+- Интеграция маркеров, скайлайнов, penalty overlays
+
+---
+
+## 21 февраля (v0.32.0 → v0.36.8) — Food Markers + Skylines + Penalty System
+
+### v0.36.5 → v0.36.8 — Layer-based rendering + skyline outlines
+- Белые outlines для стекированных продуктов (food skylines)
+- Layer-based рендеринг с правильным Z-порядком
+- Маркеры используют effective heights
+- Shadow для food outlines
+
+### v0.35.0 → v0.35.3 — Food markers (emoji labels)
+- Emoji маркеры над пиком каждого продукта
+- Белый bubble с хвостом, drop shadow
+- Перетаскиваемые маркеры (drag to move/remove food)
+- Центрирование по пику продукта
+
+### v0.34.0 → v0.34.2 — Penalty / Rating system
+- Submit кнопка для оценки графика
+- Penalty zones: orange (200-300), red (300+)
+- Звёздный рейтинг: 3★ Perfect → 0★ Defeat
+- Penalty highlight overlays с пульсирующей анимацией
+
+### v0.33.0 → v0.33.3 — Pancreas Tier System
+- 4 тира: OFF (0), I (0.25), II (0.5), III (0.75)
+- UI выбора тира с WP-стоимостью
+- Визуальные bars текущего тира
+
+### v0.32.0 → v0.32.5 — BG Main Skyline
+- Основная BG скайлайн по верху колонок
+- Zone-colored (зелёный/жёлтый/оранжевый/красный)
+- Shadow под скайлайном
+- Rounded strokeLinejoin
+
+---
+
+## 20 февраля (v0.31.0 → v0.31.6) — Medications + Boost Zones + GI Colors
+
+### v0.31.0 — Medication System
+- **Три медикамента** как дневные тогглы (ON/OFF), без WP:
+  - **Metformin** (💊 peakReduction): глюкоза ×0.75 → пики на 25% ниже
+  - **SGLT2 Inhibitor** (🧪 thresholdDrain): убирает до 3 кубов в столбце, но не ниже 200 mg/dL
+  - **GLP-1 Agonist** (💉 slowAbsorption): duration ×1.5, глюкоза ÷1.5, kcal −30%, WP +4
+- Пурпурная панель тогглов между графиком и инвентарём
+- Доступность по дням: Day 1 — нет, Day 2 — Metformin, Day 3 — все три
+- Пурпурная пунктирная линия на 200 mg/dL при SGLT2
+- **Новые файлы**: medications.json, MedicationPanel.tsx/css
+- **Типы**: Medication, MedicationType, MedicationModifiers в types.ts
+- **Engine**: computeMedicationModifiers(), applyMedicationToFood(), calculateSglt2Reduction()
+
+### v0.31.1 — Day Navigation
+- Кнопки переключения дней (Day 1/2/3) внизу экрана
+- Активный день подсвечен, disabled при текущем дне
+
+### v0.31.2 — Intervention Boost Zones
+- **Burst-зоны** для упражнений: первые N столбцов получают +X глубину
+  - Light Walk: первые 3 столбца с -4 кубами (база 3 + boost 1)
+  - Heavy Run: первые 5 столбцов с -7 кубами (база 5 + boost 2)
+- Добавлены `boostCols` и `boostExtra` в Intervention тип и interventions.json
+- Подсветка столбцов при drag интервенции (зелёные полупрозрачные колонки)
+
+### v0.31.3 — Per-Cube Burn Preview
+- При перетаскивании интервенции — зелёные оверлеи на конкретных кубах еды (а не целых столбцах)
+- Показывает именно те кубы, которые были бы сожжены при дропе
+- Пульсирующая анимация `previewBurnPulse`
+
+### v0.31.4 — Uniform Green Preview
+- Единый ярко-зелёный цвет `rgba(34, 197, 94, 0.6)` для всех preview-burn кубов
+- Убрано разделение на boost/normal в визуализации
+
+### v0.31.5 — GI-Based Blue Gradient
+- **Цвет кубов по гликемическому индексу**: от светло-синего (медленный рост) до тёмно-синего (быстрый рост)
+- Формула: `rate = glucose / duration`, нормализация по всем 24 продуктам
+- HSL gradient: `hsl(215, 75%, L%)` где `L = 78 - t*46`
+- Заменена старая 8-цветная палитра (blue, red, green, orange...)
+
+### v0.31.6 — Dynamic Color Normalization
+- Нормализация GI-градиента только по размещённым продуктам (а не по всем 24)
+- Цвета адаптивно меняются при добавлении/удалении еды с графика
+
+---
+
 ## 19 февраля (v0.29.0 → v0.30.4) — Graph Redesign + Interventions
 
 ### v0.29.0 — WP Budget System, Kcal Assessment

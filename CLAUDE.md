@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.31.8 | Graph-based food planning with cubes, interventions, medications, decay, wave animations |
+| `main` | BG Planner | v0.38.2 | Graph-based food planning with cubes, interventions, medications, decay, wave animations |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -102,7 +102,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.31.8)
+- `src/version.ts` — version number (v0.38.2)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -137,7 +137,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - `src/App.tsx` — root app component (single screen, no phase routing)
 - `src/App.css` — app layout styles
 
-### Current State (v0.31.8) — Medications + Boost Zones + GI Color Gradient
+### Current State (v0.38.2) — Decay-Based Stacking + Per-Food Colors + Markers + Skylines
 
 - **Single-Screen Design** ✅
   - Graph on top, food inventory + intervention inventory below (horizontal card layout)
@@ -225,10 +225,42 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
   - protein/fat stored for future use, not displayed on cards yet
 
 - **Food Cube Colors** ✅
-  - GI-based blue gradient: cubes colored from light blue to dark blue based on glucose rise rate
-  - Formula: `rate = glucose / duration` (mg/dL per minute), higher rate = darker blue
-  - HSL gradient: `hsl(215, 75%, L%)` where `L = 78 - t*46`, t normalized 0..1
-  - **Dynamic normalization**: min/max computed from only placed foods (colors shift as foods are added/removed)
+  - **Progressive blue palette**: each food gets a progressively darker shade by placement order
+  - 7-color Tailwind sky palette: `#7dd3fc` (sky-300) → `#0c4a6e` (sky-900)
+  - First food = lightest blue, second = darker, third = even darker, etc.
+  - `getFoodColor(index)` returns the hex color for the Nth placed food
+
+- **Decay-Based Stacking** ✅ (v0.38.2)
+  - Cubes are positioned using ACTUAL decay curves (with real decayRate)
+  - Ensures all alive cubes are below the alive boundary (pancreasCaps)
+  - Pancreas-eaten cubes rendered ABOVE the entire alive stack (separate visual zone)
+  - When decayRate=0 (Pancreas OFF): decay=plateau, stacking identical to old flat model
+  - Visual model (bottom → top): food 0 alive → food 1 alive → food 0 pancreas → food 1 pancreas
+
+- **Food Markers** ✅
+  - Each food gets an emoji label marker above its peak on the graph
+  - White bubble with tail pointing to the food's highest alive cubes
+  - Markers are draggable — drag to move food, drag off graph to remove
+  - Centered over columns where the food's alive skylineRow is maximum
+
+- **Individual Food Skylines** ✅
+  - White outlined step-paths between each food's alive zone (when 2+ foods placed)
+  - Trace the boundary between food N and food N+1's alive cubes
+  - Shadow underneath for visibility over cubes
+  - Rendered AFTER all cube layers (Z-order: cubes → individual skylines → main skyline)
+
+- **Penalty / Rating System** ✅
+  - Submit button triggers penalty calculation on current graph state
+  - Orange zone (200-300 mg/dL, rows 7-11): 0.5 penalty weight per cube
+  - Red zone (300+ mg/dL, rows 12+): 1.5 penalty weight per cube
+  - Star rating: 3★ Perfect (≤12.5), 2★ Good (≤50), 1★ Pass (≤100), 0★ Defeat (>100)
+  - Penalty highlight overlays (pulsing orange/red) on cubes above threshold
+
+- **Pancreas Tier System** ✅
+  - 4 tiers: OFF (0), I (0.25), II (0.5), III (0.75) — controls decayRate
+  - Tier selection UI with WP costs (Tier I free, Tier II = 1 WP, Tier III = 2 WP)
+  - Higher tier = faster glucose processing = shorter food curves
+  - 3 visual bars showing current tier level
 
 - **Day Navigation** ✅
   - Cheat buttons at bottom: "Day 1", "Day 2", "Day 3" for quick switching
@@ -388,7 +420,17 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 7. Cubes removed from top — bottom cubes stay visible
 
 #### Food Colors
-GI-based blue gradient using HSL: `hsl(215, 75%, L%)` where lightness ranges from 78% (slowest rise) to 32% (fastest rise). Rise rate = `glucose / duration`. Normalized dynamically across placed foods only — colors shift as foods are added/removed from the graph.
+Progressive blue palette by placement order: 7-color Tailwind sky shades from `#7dd3fc` (lightest) to `#0c4a6e` (darkest). First food placed = lightest, each subsequent food = darker shade.
+
+#### Cube Stacking Model (Decay-Based, v0.38.2)
+Cubes are stacked using ACTUAL decay curves (not plateau curves):
+1. Each food's alive cubes are positioned by cumulative decay heights (contiguous stacking)
+2. Pancreas-eaten cubes (plateau count − decay count) stack above ALL alive cubes
+3. Global boundaries determine cube status:
+   - `row < columnCaps[col]` → **normal** (full color)
+   - `row < pancreasCaps[col]` → **burned** (intervention, dimmed 0.35)
+   - `row >= pancreasCaps[col]` → **pancreas** (dimmed 0.45)
+4. When `decayRate=0`: decay=plateau, all cubes alive, no pancreas zone
 
 #### BG Zones
 | Zone | Range | Color |
@@ -411,9 +453,8 @@ GI-based blue gradient using HSL: `hsl(215, 75%, L%)` where lightness ranges fro
 - Metformin, fiber system
 
 ### Known Issues
-- Win/loss conditions not yet implemented (to be discussed)
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
-- Food drag preview doesn't show ghost cubes yet (intervention preview works)
+- Food drag preview starts on top of alive stack (pancreasCaps), not on top of visible pancreas cubes — may show a gap in the preview
 
 ---
 
