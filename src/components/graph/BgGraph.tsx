@@ -33,9 +33,9 @@ const ZONE_NORMAL = 140;
 const ZONE_ELEVATED = 200;
 const ZONE_HIGH = 300;
 
-// GI-based blue gradient: glucose rise rate → light blue (slow) to dark blue (fast)
-function getGiColor(riseRate: number, minRate: number, maxRate: number): string {
-  const t = maxRate > minRate ? (riseRate - minRate) / (maxRate - minRate) : 0;
+// Progressive blue gradient: first food = lightest, each next = darker
+function getFoodColor(index: number, total: number): string {
+  const t = total > 1 ? index / (total - 1) : 0;
   // HSL: hue 215 (blue), saturation 75%, lightness 78% (light) → 32% (dark)
   const lightness = 78 - t * 46;
   return `hsl(215, 75%, ${Math.round(lightness)}%)`;
@@ -163,14 +163,6 @@ export function BgGraph({
   // Every cube is pre-stamped with status (normal/burned/pancreas), markers and
   // skylines are derived from the SAME data that stamps cubes — no desync possible.
   const graphRenderData = useMemo((): GraphRenderData => {
-    // Precompute GI rate range for color normalization
-    const placedShipIds = new Set(placedFoods.map(p => p.shipId));
-    const placedRates = allShips
-      .filter(s => placedShipIds.has(s.id))
-      .map(s => s.load / s.duration);
-    const minRate = placedRates.length > 0 ? Math.min(...placedRates) : 0;
-    const maxRate = placedRates.length > 0 ? Math.max(...placedRates) : 1;
-
     // Phase 1: Plateau stacking (decayRate=0) — all cubes including pancreas-eaten
     const plateauHeights = new Array(TOTAL_COLUMNS).fill(0);
     const rawFoods: Array<{
@@ -202,10 +194,15 @@ export function BgGraph({
         placementId: placed.id,
         shipId: placed.shipId,
         dropColumn: placed.dropColumn,
-        color: getGiColor(ship.load / ship.duration, minRate, maxRate),
+        color: '', // assigned below after all foods are collected
         emoji: ship.emoji,
         columns: cols,
       });
+    }
+
+    // Assign progressive blue colors: first food = lightest, each next = darker
+    for (let i = 0; i < rawFoods.length; i++) {
+      rawFoods[i].color = getFoodColor(i, rawFoods.length);
     }
 
     // Phase 2: PancreasCaps (with actual decayRate) + per-food decayed heights
