@@ -27,11 +27,11 @@
     transform: scale(0.3);
   }
   60% {
-    opacity: 0.9;
+    opacity: 1;
     transform: scale(1.08);
   }
   100% {
-    opacity: 0.85;
+    opacity: 1;
     transform: scale(1);
   }
 }

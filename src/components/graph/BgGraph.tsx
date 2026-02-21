@@ -33,12 +33,19 @@ const ZONE_NORMAL = 140;
 const ZONE_ELEVATED = 200;
 const ZONE_HIGH = 300;
 
-// Progressive blue gradient: first food = lightest, each next = darker
-function getFoodColor(index: number, total: number): string {
-  const t = total > 1 ? index / (total - 1) : 0;
-  // HSL: hue 215 (blue), saturation 75%, lightness 78% (light) → 32% (dark)
-  const lightness = 78 - t * 46;
-  return `hsl(215, 75%, ${Math.round(lightness)}%)`;
+// Fixed blue palette: each food gets a progressively darker shade
+const FOOD_PALETTE = [
+  '#7dd3fc', // sky-300 — light blue (голубой)
+  '#38bdf8', // sky-400
+  '#0ea5e9', // sky-500
+  '#0284c7', // sky-600
+  '#0369a1', // sky-700
+  '#075985', // sky-800
+  '#0c4a6e', // sky-900 — dark navy
+];
+
+function getFoodColor(index: number): string {
+  return FOOD_PALETTE[Math.min(index, FOOD_PALETTE.length - 1)];
 }
 
 const PREVIEW_COLOR = 'rgba(99, 179, 237, 0.4)';
@@ -202,7 +209,7 @@ export function BgGraph({
 
     // Assign progressive blue colors: first food = lightest, each next = darker
     for (let i = 0; i < rawFoods.length; i++) {
-      rawFoods[i].color = getFoodColor(i, rawFoods.length);
+      rawFoods[i].color = getFoodColor(i);
     }
 
     // Phase 2: PancreasCaps (with actual decayRate) + per-food decayed heights
