@@ -212,7 +212,9 @@ export function BgGraph({
     const originalPlateauHeights = new Array(TOTAL_COLUMNS).fill(0);
     const afterMetPlateauHeights = new Array(TOTAL_COLUMNS).fill(0);
     // Decompose medication: Metformin-only glucose multiplier (undo GLP-1's glucose effect)
-    const metOnlyGlucoseMult = medicationModifiers.glucoseMultiplier * medicationModifiers.durationMultiplier;
+    const metOnlyGlucoseMult = medicationModifiers.glp1GlucoseMultiplier !== 1
+      ? medicationModifiers.glucoseMultiplier / medicationModifiers.glp1GlucoseMultiplier
+      : medicationModifiers.glucoseMultiplier;
     const hasMedEffect = medicationModifiers.glucoseMultiplier < 1 || medicationModifiers.durationMultiplier > 1;
     const rawFoods: Array<{
       placementId: string;

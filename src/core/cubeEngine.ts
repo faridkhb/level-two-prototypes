@@ -200,12 +200,16 @@ export function computeMedicationModifiers(
         };
         break;
       }
-      case 'slowAbsorption':
-        modifiers.durationMultiplier *= (med.durationMultiplier ?? 1);
-        modifiers.glucoseMultiplier *= (1 / (med.durationMultiplier ?? 1));
+      case 'slowAbsorption': {
+        const durMult = med.durationMultiplier ?? 1;
+        modifiers.durationMultiplier *= durMult;
+        const glcMult = med.glucoseMultiplier ?? (1 / durMult);
+        modifiers.glucoseMultiplier *= glcMult;
+        modifiers.glp1GlucoseMultiplier *= glcMult;
         modifiers.kcalMultiplier *= (med.kcalMultiplier ?? 1);
         modifiers.wpBonus += (med.wpBonus ?? 0);
         break;
+      }
     }
   }
 

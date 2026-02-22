@@ -5,8 +5,8 @@
       "name": "Metformin",
       "emoji": "\ud83d\udc8a",
       "type": "peakReduction",
-      "multiplier": 0.75,
-      "description": "Reduces peak glucose by 25%"
+      "multiplier": 0.80,
+      "description": "Reduces peak glucose by 20%"
     },
     {
       "id": "sglt2",
@@ -23,9 +23,10 @@
       "emoji": "\ud83d\udc89",
       "type": "slowAbsorption",
       "durationMultiplier": 1.5,
+      "glucoseMultiplier": 0.90,
       "kcalMultiplier": 0.7,
       "wpBonus": 4,
-      "description": "Slower absorption, reduced appetite, +4 WP"
+      "description": "Slower absorption (-10% glucose), reduced appetite, +4 WP"
     }
   ]
 }

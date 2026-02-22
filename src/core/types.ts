@@ -123,13 +123,15 @@ export interface Medication {
   floorMgDl?: number;          // don't remove below this level
   // slowAbsorption (GLP-1)
   durationMultiplier?: number; // 1.5 = 50% longer duration
+  glucoseMultiplier?: number;  // 0.90 = -10% glucose (overrides 1/durationMult)
   kcalMultiplier?: number;     // 0.7 = -30% kcal budget
   wpBonus?: number;            // +4 WP
 }
 
 export interface MedicationModifiers {
-  glucoseMultiplier: number;     // Metformin: 0.75, GLP-1: 1/durationMult
+  glucoseMultiplier: number;     // Combined: Metformin × GLP-1 glucose effects
   durationMultiplier: number;    // GLP-1: 1.5
+  glp1GlucoseMultiplier: number; // GLP-1's individual glucose contribution (for visual decomposition)
   sglt2: { depth: number; floorRow: number } | null;
   kcalMultiplier: number;        // GLP-1: 0.7
   wpBonus: number;               // GLP-1: +4
@@ -138,6 +140,7 @@ export interface MedicationModifiers {
 export const DEFAULT_MEDICATION_MODIFIERS: MedicationModifiers = {
   glucoseMultiplier: 1,
   durationMultiplier: 1,
+  glp1GlucoseMultiplier: 1,
   sglt2: null,
   kcalMultiplier: 1,
   wpBonus: 0,
