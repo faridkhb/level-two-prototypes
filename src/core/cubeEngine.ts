@@ -65,7 +65,7 @@ export function calculateCurve(
 export function calculateGraphState(
   placedFoods: PlacedFood[],
   allShips: Ship[],
-  decayRate: number = 0.25
+  decayRate: number = 0
 ): number[] {
   const bgValues = new Array(TOTAL_COLUMNS).fill(0);
 
@@ -91,7 +91,7 @@ export function calculateGraphState(
 export function buildFoodPyramids(
   placedFoods: PlacedFood[],
   allShips: Ship[],
-  decayRate: number = 0.25
+  decayRate: number = 0
 ): FoodPyramid[] {
   return placedFoods.map(placed => {
     const ship = allShips.find(s => s.id === placed.shipId);
@@ -279,15 +279,15 @@ export function calculatePenaltyFromState(
   placedInterventions: PlacedIntervention[],
   allInterventions: Intervention[],
   medicationModifiers: MedicationModifiers,
-  decayRate: number,
+  pancreasDepth: number,
 ): PenaltyResult {
-  // Build food heights per column
+  // Build food heights per column using plateau curves (no decay)
   const totalHeights = new Array(TOTAL_COLUMNS).fill(0);
   for (const placed of placedFoods) {
     const ship = allShips.find(s => s.id === placed.shipId);
     if (!ship) continue;
     const { glucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
-    const curve = calculateCurve(glucose, duration, placed.dropColumn, decayRate);
+    const curve = calculateCurve(glucose, duration, placed.dropColumn, 0);
     for (const col of curve) {
       const graphCol = placed.dropColumn + col.columnOffset;
       if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
@@ -296,17 +296,20 @@ export function calculatePenaltyFromState(
     }
   }
 
+  // Pancreas: flat reduction from top
+  const aliveCaps = totalHeights.map(h => Math.max(0, h - pancreasDepth));
+
   // Intervention reduction
   const interventionRed = calculateInterventionReduction(placedInterventions, allInterventions);
 
-  // SGLT2 reduction
+  // SGLT2 reduction (applied on alive caps after pancreas)
   const sglt2 = medicationModifiers.sglt2;
   const sglt2Red = sglt2
-    ? calculateSglt2Reduction(totalHeights, sglt2.depth, sglt2.floorRow)
+    ? calculateSglt2Reduction(aliveCaps, sglt2.depth, sglt2.floorRow)
     : new Array(TOTAL_COLUMNS).fill(0);
 
-  // Column caps (effective visible height)
-  const columnCaps = totalHeights.map((h, i) =>
+  // Column caps (effective visible height after all reductions)
+  const columnCaps = aliveCaps.map((h, i) =>
     Math.max(0, h - interventionRed[i] - sglt2Red[i])
   );
 

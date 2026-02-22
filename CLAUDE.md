@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.38.2 | Graph-based food planning with cubes, interventions, medications, decay, wave animations |
+| `main` | BG Planner | v0.39.0 | Graph-based food planning with cubes, interventions, medications, global flat pancreas, wave animations |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -102,7 +102,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.38.2)
+- `src/version.ts` — version number (v0.39.0)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -137,7 +137,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - `src/App.tsx` — root app component (single screen, no phase routing)
 - `src/App.css` — app layout styles
 
-### Current State (v0.38.2) — Decay-Based Stacking + Per-Food Colors + Markers + Skylines
+### Current State (v0.39.0) — Global Flat Pancreas + Per-Food Colors + Markers + Skylines
 
 - **Single-Screen Design** ✅
   - Graph on top, food inventory + intervention inventory below (horizontal card layout)
@@ -156,12 +156,11 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - **Cube Engine** ✅
   - Food → cubes: glucose / 20 = peak cube height
   - Duration → columns: duration / 15 = ramp-up column count
-  - **Ramp + Decay curve** (replaces old pyramid):
+  - **Ramp + Plateau curve**:
     - Rise phase: linear from 0 to peak over duration columns
-    - Decay ON: gradual decline after peak (~0.5 cubes per column = 1 cube/30 min)
-    - Decay OFF: flat plateau from peak to right edge
+    - Plateau: flat at peak cubes to right edge of graph
   - Stacking: cubes from different foods stack vertically
-  - Decay toggle: ON/OFF button in header (toggling restarts game)
+  - Pancreas: global flat reduction of `depth` cubes from top (see Pancreas Tier System)
 
 - **Intervention System** ✅
   - Two interventions: Light Walk (🚶 60m, 2 WP, -3 cubes) and Heavy Run (🏃 30m, 4 WP, -5 cubes)
@@ -230,12 +229,14 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
   - First food = lightest blue, second = darker, third = even darker, etc.
   - `getFoodColor(index)` returns the hex color for the Nth placed food
 
-- **Decay-Based Stacking** ✅ (v0.38.2)
-  - Cubes are positioned using ACTUAL decay curves (with real decayRate)
-  - Ensures all alive cubes are below the alive boundary (pancreasCaps)
-  - Pancreas-eaten cubes rendered ABOVE the entire alive stack (separate visual zone)
-  - When decayRate=0 (Pancreas OFF): decay=plateau, stacking identical to old flat model
-  - Visual model (bottom → top): food 0 alive → food 1 alive → food 0 pancreas → food 1 pancreas
+- **Global Flat Pancreas** ✅ (v0.39.0)
+  - All foods stacked using plateau curves (no per-food decay)
+  - Pancreas removes flat `depth` cubes from the TOP of each column globally
+  - Three zones per column: normal (full color) → burned (intervention, 0.35) → pancreas (0.45)
+  - Formulas: `aliveCap = max(0, totalHeight - pancreasDepth)`, `columnCap = max(0, aliveCap - interventions - sglt2)`
+  - Tier depths: OFF=0, I=2, II=4, III=6
+  - Preview exactly matches result (same plateau + flat reduction logic)
+  - See `docs/pancreas-accumulating.md` for alternative accumulating variant
 
 - **Food Markers** ✅
   - Each food gets an emoji label marker above its peak on the graph
@@ -257,9 +258,10 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
   - Penalty highlight overlays (pulsing orange/red) on cubes above threshold
 
 - **Pancreas Tier System** ✅
-  - 4 tiers: OFF (0), I (0.25), II (0.5), III (0.75) — controls decayRate
+  - 4 tiers: OFF (depth=0), I (depth=2), II (depth=4), III (depth=6)
+  - Global flat reduction: removes `depth` cubes from top of each column
   - Tier selection UI with WP costs (Tier I free, Tier II = 1 WP, Tier III = 2 WP)
-  - Higher tier = faster glucose processing = shorter food curves
+  - Higher tier = more cubes removed from top = lower visible stack
   - 3 visual bars showing current tier level
 
 - **Day Navigation** ✅
@@ -269,7 +271,6 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - **Game Settings** ✅
   - Time format toggle: 12h ↔ 24h
   - BG unit toggle: mg/dL ↔ mmol/L
-  - Decay toggle: ON ↔ OFF (restarts game)
   - Persisted in localStorage
 
 ### Food Data Structure
@@ -398,17 +399,17 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 | TOTAL_COLUMNS | 48 | `types.ts` derived |
 | TOTAL_ROWS | 17 | `types.ts` derived |
 | CELL_SIZE | 18px (SVG) | `BgGraph.tsx` |
-| DECAY_RATE | 0.5 cubes/col | `cubeEngine.ts` |
+| PANCREAS_DEPTH | 0/2/4/6 cubes | `types.ts` PANCREAS_TIERS |
 
 ### Cube Engine Details
 
-#### Ramp + Decay/Plateau Algorithm
+#### Ramp + Plateau Algorithm
 1. `peakCubes = Math.round(glucose / 20)`
 2. `riseCols = Math.round(duration / 15)`
 3. Rise phase (cols 0..riseCols-1): linear from 1 to peakCubes
-4. If decay ON: decline at 0.5 cubes/col until 0
-5. If decay OFF: flat plateau at peakCubes to right edge
-6. Drop column = left edge (start of food absorption)
+4. Plateau: flat at peakCubes to right edge of graph
+5. Drop column = left edge (start of food absorption)
+6. Pancreas: flat reduction of `pancreasDepth` cubes from global stack top
 
 #### Intervention Algorithm
 1. `depth` = cubes to remove at peak
@@ -422,15 +423,16 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 #### Food Colors
 Progressive blue palette by placement order: 7-color Tailwind sky shades from `#7dd3fc` (lightest) to `#0c4a6e` (darkest). First food placed = lightest, each subsequent food = darker shade.
 
-#### Cube Stacking Model (Decay-Based, v0.38.2)
-Cubes are stacked using ACTUAL decay curves (not plateau curves):
-1. Each food's alive cubes are positioned by cumulative decay heights (contiguous stacking)
-2. Pancreas-eaten cubes (plateau count − decay count) stack above ALL alive cubes
-3. Global boundaries determine cube status:
+#### Cube Stacking Model (Global Flat Pancreas, v0.39.0)
+All foods stacked using plateau curves (decayRate=0), then pancreas removes flat depth from top:
+1. Each food's cubes positioned by cumulative plateau heights (contiguous stacking)
+2. Pancreas removes `pancreasDepth` cubes from global top of each column
+3. Three zones per column determined by absolute row:
    - `row < columnCaps[col]` → **normal** (full color)
-   - `row < pancreasCaps[col]` → **burned** (intervention, dimmed 0.35)
-   - `row >= pancreasCaps[col]` → **pancreas** (dimmed 0.45)
-4. When `decayRate=0`: decay=plateau, all cubes alive, no pancreas zone
+   - `row < aliveCaps[col]` → **burned** (intervention, dimmed 0.35)
+   - `row >= aliveCaps[col]` → **pancreas** (dimmed 0.45)
+4. Formulas: `aliveCap = max(0, totalHeight - pancreasDepth)`, `columnCap = max(0, aliveCap - interventions - sglt2)`
+5. When pancreasDepth=0 (Tier OFF): all cubes alive, no pancreas zone
 
 #### BG Zones
 | Zone | Range | Color |
@@ -454,7 +456,6 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
-- Food drag preview starts on top of alive stack (pancreasCaps), not on top of visible pancreas cubes — may show a gap in the preview
 
 ---
 
