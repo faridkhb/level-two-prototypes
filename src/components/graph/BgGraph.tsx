@@ -73,7 +73,8 @@ interface FoodColumnSummary {
   baseRow: number;
   totalCount: number;
   topNormalRow: number;
-  skylineRow: number; // per-food decay boundary (independent of other foods)
+  aliveTop: number;   // per-food alive boundary (unclamped — for markers)
+  skylineRow: number;  // clamped by columnCaps (for skyline paths)
 }
 
 interface FoodMarkerInfo {
@@ -290,26 +291,29 @@ export function BgGraph({
         }
         pancreasOffset[c.col] += visibleEaten;
 
-        // Skyline: top of this food's alive cubes, clamped by columnCaps (interventions)
-        const skylineRow = Math.min(c.baseRow + c.aliveCount, columnCaps[c.col], TOTAL_ROWS);
+        // aliveTop: food's own alive boundary (for markers — stable, independent)
+        const aliveTop = Math.min(c.baseRow + c.aliveCount, TOTAL_ROWS);
+        // skylineRow: clamped by columnCaps (for skyline paths — descends with interventions)
+        const skylineRow = Math.min(aliveTop, columnCaps[c.col]);
 
         colSummary.push({
           col: c.col,
           baseRow: c.baseRow,
           totalCount: c.aliveCount + c.pancreasExtra,
           topNormalRow,
+          aliveTop,
           skylineRow,
         });
       }
 
-      // Marker: centered on food's own alive peak
-      let maxSkyline = 0;
+      // Marker: centered on food's own alive peak (uses aliveTop, not skylineRow)
+      let maxAlive = 0;
       for (const cs of colSummary) {
-        if (cs.skylineRow > maxSkyline) maxSkyline = cs.skylineRow;
+        if (cs.aliveTop > maxAlive) maxAlive = cs.aliveTop;
       }
       const peakCols: number[] = [];
       for (const cs of colSummary) {
-        if (cs.skylineRow === maxSkyline && maxSkyline > cs.baseRow) {
+        if (cs.aliveTop === maxAlive && maxAlive > cs.baseRow) {
           peakCols.push(cs.col);
         }
       }
@@ -318,7 +322,7 @@ export function BgGraph({
       if (peakCols.length > 0) {
         const peakCenterX = PAD_LEFT +
           ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
-        marker = { peakCenterX, tailRow: maxSkyline };
+        marker = { peakCenterX, tailRow: maxAlive };
       }
 
       // Skyline path: trace boundary between this food's alive zone and the next
