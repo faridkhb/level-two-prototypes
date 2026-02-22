@@ -279,8 +279,9 @@ export function BgGraph({
           cubes.push({ col: c.col, row, status });
         }
 
-        // Pancreas cubes — thin visual layer (per-column increment, not cumulative wedge)
-        const visibleEaten = Math.min(c.pancreasExtra, Math.max(1, Math.ceil(decayRate * 2)));
+        // Pancreas cubes — thin visual layer matching pancreas tier (1/2/3 cubes)
+        const pancreasTierHeight = Math.max(1, Math.round(decayRate * 4));
+        const visibleEaten = Math.min(c.pancreasExtra, pancreasTierHeight);
         const pBase = pancreasCaps[c.col] + pancreasOffset[c.col];
         for (let i = 0; i < visibleEaten; i++) {
           const row = pBase + i;
@@ -658,7 +659,7 @@ export function BgGraph({
                 : cube.status === 'burned'
                   ? 'bg-graph__cube--burned'
                   : 'bg-graph__cube';
-              const cubeFill = layer.color;
+              const cubeFill = cube.status === 'pancreas' ? '#f97316' : layer.color;
               return (
                 <rect
                   key={`${layer.placementId}-${cube.col}-${cube.row}`}
