@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.38.2 | Graph-based food planning with cubes, interventions, medications, decay, wave animations |
+| `main` | BG Planner | v0.39.2 | Graph-based food planning with cubes, interventions, medications, decay, wave animations |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -102,7 +102,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.38.2)
+- `src/version.ts` — version number (v0.39.2)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -137,7 +137,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - `src/App.tsx` — root app component (single screen, no phase routing)
 - `src/App.css` — app layout styles
 
-### Current State (v0.38.2) — Decay-Based Stacking + Per-Food Colors + Markers + Skylines
+### Current State (v0.39.2) — Per-Source Burn Coloring + Medication Cubes + Intervention Markers
 
 - **Single-Screen Design** ✅
   - Graph on top, food inventory + intervention inventory below (horizontal card layout)
@@ -171,25 +171,38 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
     - Heavy Run: first 5 cols at -7 cubes (base 5 + boost 2)
   - **Drag preview**: when dragging an intervention over the graph, per-cube green overlays show exactly which food cubes would be burned (pulsing animation)
   - Cubes are removed from the **top** of the food stack at each column
-  - Burned cubes rendered semi-transparent (opacity 0.35) in original food color
+  - **Per-source burn coloring** (v0.39.0): burned cubes colored by source, not food color
+    - Walk burned: `#86efac` light green (opacity 0.55)
+    - Run burned: `#22c55e` darker green (opacity 0.55)
+    - SGLT2 burned: `#c084fc` purple (opacity 0.55)
+    - Stacking order in burned zone (bottom→top): walk → run → SGLT2
   - Click burned cubes to remove intervention
   - Interventions share WP budget with food
+  - **Intervention Markers** (v0.38.8): emoji bubble markers on peak reduction column
+    - White bubble with green border (`#22c55e`), same style as food markers
+    - Draggable — drag to move intervention, drag off graph to remove
+    - Markers use `columnCaps` height (responsive to other interventions)
 
 - **Medication System** ✅
   - Three medications as day-wide toggles (ON/OFF), no WP cost
-  - **Metformin** (💊 `peakReduction`): reduces all food glucose by 25% → lower peaks
+  - **Metformin** (💊 `peakReduction`): reduces all food glucose by 20% (×0.80) → lower peaks
   - **SGLT2 Inhibitor** (🧪 `thresholdDrain`): removes up to 3 cubes per column, but not below 200 mg/dL
     - Purple dashed drain line at 200 mg/dL threshold
     - Reduction depends on actual food height: `min(depth, max(0, height - floorRow))`
-  - **GLP-1 Agonist** (💉 `slowAbsorption`): duration ×1.5 (wider curves), glucose ÷1.5 (lower peaks), kcal budget −30%, WP +4
+  - **GLP-1 Agonist** (💉 `slowAbsorption`): duration ×1.5 (wider curves), glucose ×0.90 (−10%, decoupled from duration), kcal budget −30%, WP +4
   - Purple toggle panel between graph and food inventory
   - All medications stack multiplicatively (glucose) and additively (drain, WP)
   - Available per day via `availableMedications` in level config
   - Day 1: none, Day 2: Metformin, Day 3: all three
+  - **Medication-prevented cubes** (v0.39.1): visual layer above pancreas zone showing cubes that medications prevented
+    - Metformin: `#f0abfc` fuchsia-300 (opacity 0.45)
+    - GLP-1: `#a78bfa` violet-400 (opacity 0.45)
+    - Per-medication attribution via intermediate Metformin-only curve computation
+    - `glp1GlucoseMultiplier` field in MedicationModifiers for accurate decomposition
 
 - **Wave Animations** ✅
   - `cubeAppear`: food cubes pop in with scale (0.3→1.08→1) + opacity wave, left-to-right
-  - `cubeBurn`: burned cubes fade to 0.35 opacity with wave effect
+  - `cubeBurn`: burned cubes fade to 0.55 opacity with wave effect (increased from 0.35 for burn color visibility)
   - Wave delay: 20ms per column offset from drop point
 
 - **WP Budget** ✅
@@ -233,21 +246,25 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - **Decay-Based Stacking** ✅ (v0.38.2)
   - Cubes are positioned using ACTUAL decay curves (with real decayRate)
   - Ensures all alive cubes are below the alive boundary (pancreasCaps)
-  - Pancreas-eaten cubes rendered ABOVE the entire alive stack (separate visual zone)
+  - **Thin pancreas layer** (v0.38.4): only render `min(pancreasExtra, tierHeight)` eaten cubes per column
+    - `tierHeight = max(1, round(decayRate * 4))` → Tier I=1, II=2, III=3 cubes
+  - Pancreas-eaten cubes rendered in orange (`#f97316`) ABOVE the entire alive stack
   - When decayRate=0 (Pancreas OFF): decay=plateau, stacking identical to old flat model
-  - Visual model (bottom → top): food 0 alive → food 1 alive → food 0 pancreas → food 1 pancreas
+  - Visual model (bottom → top): alive → intervention burned → pancreas eaten → medication prevented
 
 - **Food Markers** ✅
   - Each food gets an emoji label marker above its peak on the graph
   - White bubble with tail pointing to the food's highest alive cubes
   - Markers are draggable — drag to move food, drag off graph to remove
-  - Centered over columns where the food's alive skylineRow is maximum
+  - Centered over columns where the food's `skylineRow` is maximum
+  - **skylineRow vs aliveTop** (v0.38.7): `aliveTop` = unclamped per-food boundary; `skylineRow` = clamped by `columnCaps` (responds to interventions)
 
 - **Individual Food Skylines** ✅
   - White outlined step-paths between each food's alive zone (when 2+ foods placed)
   - Trace the boundary between food N and food N+1's alive cubes
   - Shadow underneath for visibility over cubes
-  - Rendered AFTER all cube layers (Z-order: cubes → individual skylines → main skyline)
+  - **Clamped by columnCaps** (v0.38.6): skylines descend when interventions remove cubes
+  - Rendered AFTER all cube layers (Z-order: cubes → med cubes → individual skylines → main skyline)
 
 - **Penalty / Rating System** ✅
   - Submit button triggers penalty calculation on current graph state
@@ -310,8 +327,8 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
   "name": "Metformin",
   "emoji": "💊",
   "type": "peakReduction",
-  "multiplier": 0.75,
-  "description": "Reduces peak glucose by 25%"
+  "multiplier": 0.80,
+  "description": "Reduces peak glucose by 20%"
 }
 ```
 
@@ -319,9 +336,9 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 
 | Medication | Emoji | Type | Effect | Parameters |
 |-----------|-------|------|--------|------------|
-| Metformin | 💊 | peakReduction | Glucose ×0.75 | multiplier: 0.75 |
+| Metformin | 💊 | peakReduction | Glucose ×0.80 (−20%) | multiplier: 0.80 |
 | SGLT2 Inhibitor | 🧪 | thresholdDrain | -3 cubes, floor 200 | depth: 3, floorMgDl: 200 |
-| GLP-1 Agonist | 💉 | slowAbsorption | Duration ×1.5, kcal −30%, WP +4 | durationMult: 1.5, kcalMult: 0.7, wpBonus: 4 |
+| GLP-1 Agonist | 💉 | slowAbsorption | Duration ×1.5, glucose ×0.90 (−10%), kcal −30%, WP +4 | durationMult: 1.5, glucoseMult: 0.90, kcalMult: 0.7, wpBonus: 4 |
 
 ### Food Parameters Table
 
@@ -422,15 +439,19 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 #### Food Colors
 Progressive blue palette by placement order: 7-color Tailwind sky shades from `#7dd3fc` (lightest) to `#0c4a6e` (darkest). First food placed = lightest, each subsequent food = darker shade.
 
-#### Cube Stacking Model (Decay-Based, v0.38.2)
+#### Cube Stacking Model (Decay-Based, v0.39.2)
 Cubes are stacked using ACTUAL decay curves (not plateau curves):
 1. Each food's alive cubes are positioned by cumulative decay heights (contiguous stacking)
-2. Pancreas-eaten cubes (plateau count − decay count) stack above ALL alive cubes
-3. Global boundaries determine cube status:
-   - `row < columnCaps[col]` → **normal** (full color)
-   - `row < pancreasCaps[col]` → **burned** (intervention, dimmed 0.35)
-   - `row >= pancreasCaps[col]` → **pancreas** (dimmed 0.45)
-4. When `decayRate=0`: decay=plateau, all cubes alive, no pancreas zone
+2. Pancreas-eaten cubes — thin visual layer (1-3 cubes matching tier) stacked above ALL alive cubes
+3. Medication-prevented cubes stacked above pancreas zone (Metformin pink, GLP-1 violet)
+4. Global boundaries determine cube status:
+   - `row < columnCaps[col]` → **normal** (full food color)
+   - `row >= columnCaps[col]` → **burned** — color by source:
+     - offset < walkReduction → light green `#86efac`
+     - offset < walkReduction + runReduction → dark green `#22c55e`
+     - else → purple `#c084fc` (SGLT2)
+   - `row >= pancreasCaps[col]` → **pancreas** (orange `#f97316`)
+5. When `decayRate=0`: decay=plateau, all cubes alive, no pancreas zone
 
 #### BG Zones
 | Zone | Range | Color |
@@ -454,7 +475,8 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
-- Food drag preview starts on top of alive stack (pancreasCaps), not on top of visible pancreas cubes — may show a gap in the preview
+- Food drag preview starts on top of alive stack (pancreasCaps), not on top of visible pancreas/medication cubes — may show a gap in the preview
+- Medication-prevented cubes are approximate — GLP-1 redistributes glucose across more columns, so negative differences (where GLP-1 extended curve) are clamped to 0
 
 ---
 
