@@ -118,6 +118,7 @@ interface BgGraphProps {
   onFoodClick?: (placementId: string) => void;
   onFoodMove?: (placementId: string, newColumn: number) => void;
   onInterventionClick?: (placementId: string) => void;
+  onInterventionMove?: (placementId: string, newColumn: number) => void;
 }
 
 // Convert row (0 = bottom = bgMin) to SVG y
@@ -151,9 +152,11 @@ export function BgGraph({
   onFoodClick,
   onFoodMove,
   onInterventionClick,
+  onInterventionMove,
 }: BgGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
+  const interventionMarkerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
 
   const { setNodeRef, isOver } = useDroppable({
     id: 'bg-graph',
@@ -459,6 +462,41 @@ export function BgGraph({
     return reduction;
   }, [previewIntervention, previewColumn]);
 
+  // Intervention markers: emoji bubbles at each intervention's peak reduction column
+  const interventionMarkers = useMemo(() => {
+    return placedInterventions.map(placed => {
+      const intervention = allInterventions.find(i => i.id === placed.interventionId);
+      if (!intervention) return null;
+      const curve = calculateInterventionCurve(
+        intervention.depth, intervention.duration, placed.dropColumn,
+        intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+      );
+      if (curve.length === 0) return null;
+      // Find peak reduction column(s)
+      let maxDepth = 0;
+      for (const cc of curve) { if (cc.cubeCount > maxDepth) maxDepth = cc.cubeCount; }
+      const peakCols: number[] = [];
+      for (const cc of curve) {
+        if (cc.cubeCount === maxDepth) {
+          const col = placed.dropColumn + cc.columnOffset;
+          if (col >= 0 && col < TOTAL_COLUMNS) peakCols.push(col);
+          if (peakCols.length >= 3) break; // limit to first few peak cols
+        }
+      }
+      if (peakCols.length === 0) return null;
+      const peakCenterX = PAD_LEFT +
+        ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
+      // Tail points to top of columnCaps at peak column
+      const tailRow = graphRenderData.columnCaps[peakCols[0]] ?? 0;
+      return {
+        placementId: placed.id,
+        emoji: intervention.emoji,
+        peakCenterX,
+        tailRow,
+      };
+    }).filter(Boolean) as Array<{ placementId: string; emoji: string; peakCenterX: number; tailRow: number }>;
+  }, [placedInterventions, allInterventions, graphRenderData.columnCaps]);
+
   const handleCubeClick = useCallback(
     (placementId: string, isIntervention: boolean) => {
       if (!interactive) return;
@@ -509,6 +547,45 @@ export function BgGraph({
       onFoodClick?.(drag.placementId);
     }
   }, [onFoodClick]);
+
+  // Intervention marker pointer drag handlers
+  const handleIntMarkerDown = useCallback((e: React.PointerEvent<SVGGElement>, placementId: string) => {
+    if (!interactive) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    interventionMarkerDragRef.current = { placementId, lastCol: -1 };
+  }, [interactive]);
+
+  const handleIntMarkerMove = useCallback((e: React.PointerEvent<SVGGElement>) => {
+    const drag = interventionMarkerDragRef.current;
+    if (!drag) return;
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const scale = rect.width / SVG_W;
+    const svgX = (e.clientX - rect.left) / scale;
+    const col = Math.max(0, Math.min(Math.floor((svgX - PAD_LEFT) / CELL_SIZE), TOTAL_COLUMNS - 1));
+    if (col !== drag.lastCol) {
+      drag.lastCol = col;
+      onInterventionMove?.(drag.placementId, col);
+    }
+  }, [onInterventionMove]);
+
+  const handleIntMarkerUp = useCallback((e: React.PointerEvent<SVGGElement>) => {
+    const drag = interventionMarkerDragRef.current;
+    if (!drag) return;
+    interventionMarkerDragRef.current = null;
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const scale = rect.width / SVG_W;
+    const svgX = (e.clientX - rect.left) / scale;
+    const svgY = (e.clientY - rect.top) / scale;
+    if (svgX < PAD_LEFT || svgX > PAD_LEFT + GRAPH_W || svgY < PAD_TOP || svgY > PAD_TOP + GRAPH_H) {
+      onInterventionClick?.(drag.placementId);
+    }
+  }, [onInterventionClick]);
 
   return (
     <div ref={setNodeRef} className={`bg-graph ${isOver ? 'bg-graph--drag-over' : ''}`}>
@@ -788,6 +865,50 @@ export function BgGraph({
                 fontSize={30} style={{ pointerEvents: 'none' }}
               >
                 {layer.emoji}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Intervention markers — emoji labels at each intervention's peak */}
+        {interactive && interventionMarkers.map(im => {
+          const cx = im.peakCenterX;
+          const tailBottomY = PAD_TOP + GRAPH_H - im.tailRow * CELL_SIZE;
+          const tailH = 11;
+          const tailTopY = tailBottomY - tailH;
+          const mW = 50;
+          const mH = 44;
+          const mY = tailTopY - mH;
+          return (
+            <g
+              key={`int-marker-${im.placementId}`}
+              style={{ cursor: 'grab' }}
+              onPointerDown={(e) => handleIntMarkerDown(e, im.placementId)}
+              onPointerMove={handleIntMarkerMove}
+              onPointerUp={handleIntMarkerUp}
+            >
+              <g filter="url(#bubble-shadow)">
+                <rect
+                  x={cx - mW / 2} y={mY}
+                  width={mW} height={mH}
+                  rx={8} fill="white"
+                  stroke="#22c55e" strokeWidth={1.2}
+                />
+                <polygon
+                  points={`${cx - 6},${tailTopY} ${cx + 6},${tailTopY} ${cx},${tailBottomY}`}
+                  fill="white" stroke="#22c55e" strokeWidth={1.2}
+                />
+                <line
+                  x1={cx - 5.5} y1={tailTopY} x2={cx + 5.5} y2={tailTopY}
+                  stroke="white" strokeWidth={2}
+                />
+              </g>
+              <text
+                x={cx} y={mY + mH / 2 + 1}
+                textAnchor="middle" dominantBaseline="central"
+                fontSize={30} style={{ pointerEvents: 'none' }}
+              >
+                {im.emoji}
               </text>
             </g>
           );

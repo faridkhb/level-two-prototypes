@@ -51,6 +51,7 @@ export function PlanningPhase() {
     placedInterventions,
     placeIntervention,
     removeIntervention,
+    moveIntervention,
     activeMedications,
     toggleMedication,
     moveFood,
@@ -265,6 +266,14 @@ export function PlanningPhase() {
       moveFood(placementId, newColumn);
     },
     [moveFood, gamePhase]
+  );
+
+  const handleInterventionMove = useCallback(
+    (placementId: string, newColumn: number) => {
+      if (gamePhase !== 'planning') return;
+      moveIntervention(placementId, newColumn);
+    },
+    [moveIntervention, gamePhase]
   );
 
   const handleToggleTimeFormat = useCallback(() => {
@@ -483,6 +492,7 @@ export function PlanningPhase() {
             onFoodClick={handleFoodClick}
             onFoodMove={handleFoodMove}
             onInterventionClick={handleInterventionClick}
+            onInterventionMove={handleInterventionMove}
           />
 
           {isPlanning && (

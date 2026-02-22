@@ -54,6 +54,7 @@ interface GameState {
   moveFood: (placementId: string, newDropColumn: number) => void;
   placeIntervention: (interventionId: string, dropColumn: number) => void;
   removeIntervention: (placementId: string) => void;
+  moveIntervention: (placementId: string, newDropColumn: number) => void;
   toggleMedication: (medicationId: string) => void;
   clearFoods: () => void;
   goToDay: (day: number) => void;
@@ -124,6 +125,13 @@ export const useGameStore = create<GameState>()(
       removeIntervention: (placementId) =>
         set((state) => ({
           placedInterventions: state.placedInterventions.filter((i) => i.id !== placementId),
+        })),
+
+      moveIntervention: (placementId, newDropColumn) =>
+        set((state) => ({
+          placedInterventions: state.placedInterventions.map((i) =>
+            i.id === placementId ? { ...i, dropColumn: newDropColumn } : i
+          ),
         })),
 
       toggleMedication: (medicationId) =>
