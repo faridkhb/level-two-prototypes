@@ -13,7 +13,7 @@ import {
   columnToTimeString,
   formatBgValue,
 } from '../../core/types';
-import { calculateCurve, calculateInterventionCurve, calculateInterventionReduction, applyMedicationToFood, calculateSglt2Reduction } from '../../core/cubeEngine';
+import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, calculateSglt2Reduction } from '../../core/cubeEngine';
 import './BgGraph.css';
 
 // SVG layout constants
@@ -66,6 +66,7 @@ interface FoodRenderCube {
   col: number;
   row: number;
   status: CubeStatus;
+  burnColor?: string; // per-source color for burned cubes (walk/run/SGLT2)
 }
 
 interface FoodColumnSummary {
@@ -162,11 +163,32 @@ export function BgGraph({
     id: 'bg-graph',
   });
 
-  // Calculate intervention reduction per column (in cubes)
-  const interventionReduction = useMemo(
-    () => calculateInterventionReduction(placedInterventions, allInterventions),
-    [placedInterventions, allInterventions]
-  );
+  // Calculate intervention reduction per column, split by type (walk/run)
+  const interventionReductions = useMemo(() => {
+    const walk = new Array(TOTAL_COLUMNS).fill(0);
+    const run = new Array(TOTAL_COLUMNS).fill(0);
+
+    for (const placed of placedInterventions) {
+      const intervention = allInterventions.find(i => i.id === placed.interventionId);
+      if (!intervention) continue;
+
+      const curve = calculateInterventionCurve(
+        intervention.depth, intervention.duration, placed.dropColumn,
+        intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+      );
+      const target = intervention.id === 'lightwalk' ? walk : run;
+      for (const col of curve) {
+        const graphCol = placed.dropColumn + col.columnOffset;
+        if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+          target[graphCol] += col.cubeCount;
+        }
+      }
+    }
+
+    const total = walk.map((w, i) => w + run[i]);
+    return { walk, run, total };
+  }, [placedInterventions, allInterventions]);
+  const interventionReduction = interventionReductions.total;
 
   // Unified graph render data: single source of truth for all visual elements.
   // Replaces 7 separate useMemo hooks (foodCubeData, pancreasCaps, plateauHeights,
@@ -274,13 +296,25 @@ export function BgGraph({
           if (row >= TOTAL_ROWS) break;
 
           let status: CubeStatus;
+          let burnColor: string | undefined;
           if (row >= columnCaps[c.col]) {
             status = 'burned';
+            // Determine burn source by row position within burned zone
+            const offset = row - columnCaps[c.col];
+            const walkR = interventionReductions.walk[c.col];
+            const runR = interventionReductions.run[c.col];
+            if (offset < walkR) {
+              burnColor = '#86efac'; // light green (walk)
+            } else if (offset < walkR + runR) {
+              burnColor = '#22c55e'; // darker green (run)
+            } else {
+              burnColor = '#c084fc'; // purple (SGLT2)
+            }
           } else {
             status = 'normal';
             topNormalRow = row + 1;
           }
-          cubes.push({ col: c.col, row, status });
+          cubes.push({ col: c.col, row, status, burnColor });
         }
 
         // Pancreas cubes — thin visual layer matching pancreas tier (1/2/3 cubes)
@@ -403,7 +437,7 @@ export function BgGraph({
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
     return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps };
-  }, [placedFoods, allShips, medicationModifiers, decayRate, interventionReduction]);
+  }, [placedFoods, allShips, medicationModifiers, decayRate, interventionReduction, interventionReductions]);
 
   // Preview curve (shown during drag hover)
   // With decay stacking, preview cubes start on top of the alive stack (pancreasCaps).
@@ -740,7 +774,11 @@ export function BgGraph({
                 : cube.status === 'burned'
                   ? 'bg-graph__cube--burned'
                   : 'bg-graph__cube';
-              const cubeFill = cube.status === 'pancreas' ? '#f97316' : layer.color;
+              const cubeFill = cube.status === 'pancreas'
+                ? '#f97316'
+                : cube.status === 'burned' && cube.burnColor
+                  ? cube.burnColor
+                  : layer.color;
               return (
                 <rect
                   key={`${layer.placementId}-${cube.col}-${cube.row}`}
