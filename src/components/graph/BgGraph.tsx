@@ -277,14 +277,15 @@ export function BgGraph({
         });
       }
 
-      // Marker: centered on food's own alive peak
-      let maxSkyline = 0;
+      // Marker: centered on food's total peak (including pancreas cubes)
+      let maxTopRow = 0;
       for (const cs of colSummary) {
-        if (cs.skylineRow > maxSkyline) maxSkyline = cs.skylineRow;
+        const topRow = cs.baseRow + cs.totalCount;
+        if (topRow > maxTopRow) maxTopRow = topRow;
       }
       const peakCols: number[] = [];
       for (const cs of colSummary) {
-        if (cs.skylineRow === maxSkyline && maxSkyline > cs.baseRow) {
+        if (cs.baseRow + cs.totalCount === maxTopRow && maxTopRow > cs.baseRow) {
           peakCols.push(cs.col);
         }
       }
@@ -293,7 +294,7 @@ export function BgGraph({
       if (peakCols.length > 0) {
         const peakCenterX = PAD_LEFT +
           ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
-        marker = { peakCenterX, tailRow: maxSkyline };
+        marker = { peakCenterX, tailRow: maxTopRow };
       }
 
       // Skyline path: trace boundary between this food's alive zone and the next
