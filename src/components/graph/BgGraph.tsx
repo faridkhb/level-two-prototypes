@@ -95,12 +95,19 @@ interface FoodRenderLayer {
   skylinePath: string | null;
 }
 
+interface MedCube {
+  col: number;
+  row: number;
+  color: string;
+}
+
 interface GraphRenderData {
   layers: FoodRenderLayer[];
   mainSkylinePath: string;
   columnCaps: number[];
   plateauHeights: number[];
   pancreasCaps: number[];
+  medCubes: MedCube[];
 }
 
 interface BgGraphProps {
@@ -202,6 +209,11 @@ export function BgGraph({
     // When decayRate=0: decay=plateau, so stacking is identical to old model.
     const decayHeights = new Array(TOTAL_COLUMNS).fill(0);
     const plateauHeights = new Array(TOTAL_COLUMNS).fill(0);
+    const originalPlateauHeights = new Array(TOTAL_COLUMNS).fill(0);
+    const afterMetPlateauHeights = new Array(TOTAL_COLUMNS).fill(0);
+    // Decompose medication: Metformin-only glucose multiplier (undo GLP-1's glucose effect)
+    const metOnlyGlucoseMult = medicationModifiers.glucoseMultiplier * medicationModifiers.durationMultiplier;
+    const hasMedEffect = medicationModifiers.glucoseMultiplier < 1 || medicationModifiers.durationMultiplier > 1;
     const rawFoods: Array<{
       placementId: string;
       shipId: string;
@@ -230,6 +242,25 @@ export function BgGraph({
         if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
           plateauMap[graphCol] = pc.cubeCount;
           plateauHeights[graphCol] += pc.cubeCount;
+        }
+      }
+
+      // Original (unmedicated) + after-Metformin-only plateau heights for medication cube display
+      if (hasMedEffect) {
+        const origCurve = calculateCurve(ship.load, ship.duration, placed.dropColumn, 0);
+        for (const oc of origCurve) {
+          const graphCol = placed.dropColumn + oc.columnOffset;
+          if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+            originalPlateauHeights[graphCol] += oc.cubeCount;
+          }
+        }
+        const afterMetGlucose = ship.load * metOnlyGlucoseMult;
+        const afterMetCurve = calculateCurve(afterMetGlucose, ship.duration, placed.dropColumn, 0);
+        for (const mc of afterMetCurve) {
+          const graphCol = placed.dropColumn + mc.columnOffset;
+          if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+            afterMetPlateauHeights[graphCol] += mc.cubeCount;
+          }
         }
       }
 
@@ -436,7 +467,30 @@ export function BgGraph({
     if (inSegment) mainParts.push(`V ${bottomY}`);
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
-    return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps };
+    // Phase 6: Medication cubes — show what medications prevented (above pancreas zone)
+    const medCubes: MedCube[] = [];
+    if (hasMedEffect) {
+      const MET_COLOR = '#f0abfc';  // fuchsia-300 (Metformin)
+      const GLP1_COLOR = '#a78bfa'; // violet-400 (GLP-1)
+      for (let col = 0; col < TOTAL_COLUMNS; col++) {
+        const metReduction = Math.max(0, originalPlateauHeights[col] - afterMetPlateauHeights[col]);
+        const glp1Reduction = Math.max(0, afterMetPlateauHeights[col] - plateauHeights[col]);
+        const baseRow = pancreasCaps[col] + pancreasOffset[col];
+        // Stack: Metformin cubes first (bottom), then GLP-1 cubes (top)
+        for (let i = 0; i < metReduction; i++) {
+          const row = baseRow + i;
+          if (row >= TOTAL_ROWS) break;
+          medCubes.push({ col, row, color: MET_COLOR });
+        }
+        for (let i = 0; i < glp1Reduction; i++) {
+          const row = baseRow + metReduction + i;
+          if (row >= TOTAL_ROWS) break;
+          medCubes.push({ col, row, color: GLP1_COLOR });
+        }
+      }
+    }
+
+    return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps, medCubes };
   }, [placedFoods, allShips, medicationModifiers, decayRate, interventionReduction, interventionReductions]);
 
   // Preview curve (shown during drag hover)
@@ -805,6 +859,24 @@ export function BgGraph({
             })}
           </g>
         ))}
+
+        {/* Medication-prevented cubes (above pancreas zone) */}
+        {graphRenderData.medCubes.length > 0 && (
+          <g className="bg-graph__med-cubes" pointerEvents="none">
+            {graphRenderData.medCubes.map(mc => (
+              <rect
+                key={`med-${mc.col}-${mc.row}`}
+                x={colToX(mc.col) + 0.5}
+                y={rowToY(mc.row) + 0.5}
+                width={CELL_SIZE - 1}
+                height={CELL_SIZE - 1}
+                fill={mc.color}
+                rx={2}
+                opacity={0.45}
+              />
+            ))}
+          </g>
+        )}
 
         {/* Individual skylines — AFTER all cube layers so they're not hidden by upper food cubes */}
         {[...graphRenderData.layers].reverse().map(layer => (
