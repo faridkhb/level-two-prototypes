@@ -281,8 +281,9 @@ export function calculatePenaltyFromState(
   medicationModifiers: MedicationModifiers,
   pancreasRate: number,
 ): PenaltyResult {
-  // Build food heights per column using plateau curves (no decay)
-  const totalHeights = new Array(TOTAL_COLUMNS).fill(0);
+  // Build per-food alive caps using plateau curves + per-food pancreas reduction.
+  // Each food's reduction is based on elapsed time from its own dropColumn.
+  const aliveCaps = new Array(TOTAL_COLUMNS).fill(0);
   for (const placed of placedFoods) {
     const ship = allShips.find(s => s.id === placed.shipId);
     if (!ship) continue;
@@ -291,22 +292,12 @@ export function calculatePenaltyFromState(
     for (const col of curve) {
       const graphCol = placed.dropColumn + col.columnOffset;
       if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
-        totalHeights[graphCol] += col.cubeCount;
+        const elapsed = Math.max(0, graphCol - placed.dropColumn);
+        const reduction = pancreasRate > 0 ? Math.round(pancreasRate * elapsed) : 0;
+        aliveCaps[graphCol] += Math.max(0, col.cubeCount - reduction);
       }
     }
   }
-
-  // Pancreas: accumulating reduction from top
-  let firstFoodCol = TOTAL_COLUMNS;
-  for (let col = 0; col < TOTAL_COLUMNS; col++) {
-    if (totalHeights[col] > 0) { firstFoodCol = col; break; }
-  }
-  const aliveCaps = totalHeights.map((h, col) => {
-    if (h <= 0 || pancreasRate <= 0) return h;
-    const elapsed = Math.max(0, col - firstFoodCol);
-    const reduction = Math.round(pancreasRate * elapsed);
-    return Math.max(0, h - reduction);
-  });
 
   // Intervention reduction
   const interventionRed = calculateInterventionReduction(placedInterventions, allInterventions);

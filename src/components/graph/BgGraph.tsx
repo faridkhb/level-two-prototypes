@@ -176,7 +176,7 @@ export function BgGraph({
       dropColumn: number;
       color: string;
       emoji: string;
-      columns: Array<{ col: number; baseRow: number; count: number }>;
+      columns: Array<{ col: number; baseRow: number; count: number; aliveCount: number }>;
     }> = [];
 
     for (const placed of placedFoods) {
@@ -186,14 +186,17 @@ export function BgGraph({
 
       const curve = calculateCurve(glucose, duration, placed.dropColumn, 0);
 
-      const cols: Array<{ col: number; baseRow: number; count: number }> = [];
+      const cols: Array<{ col: number; baseRow: number; count: number; aliveCount: number }> = [];
       for (const cc of curve) {
         const graphCol = placed.dropColumn + cc.columnOffset;
         if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+          const elapsed = Math.max(0, graphCol - placed.dropColumn);
+          const reduction = pancreasRate > 0 ? Math.round(pancreasRate * elapsed) : 0;
           cols.push({
             col: graphCol,
             baseRow: totalHeights[graphCol],
             count: cc.cubeCount,
+            aliveCount: Math.max(0, cc.cubeCount - reduction),
           });
           totalHeights[graphCol] += cc.cubeCount;
         }
@@ -214,18 +217,14 @@ export function BgGraph({
       rawFoods[i].color = getFoodColor(i);
     }
 
-    // Phase 2: Pancreas — accumulating reduction from top.
-    // Reduction grows with time elapsed since first food column.
-    let firstFoodCol = TOTAL_COLUMNS;
-    for (let col = 0; col < TOTAL_COLUMNS; col++) {
-      if (totalHeights[col] > 0) { firstFoodCol = col; break; }
+    // Phase 2: Pancreas — per-food independent reduction.
+    // Each food's reduction is based on elapsed time from its own dropColumn.
+    const aliveCaps = new Array(TOTAL_COLUMNS).fill(0);
+    for (const food of rawFoods) {
+      for (const c of food.columns) {
+        aliveCaps[c.col] += c.aliveCount;
+      }
     }
-    const aliveCaps = totalHeights.map((h, col) => {
-      if (h <= 0 || pancreasRate <= 0) return h;
-      const elapsed = Math.max(0, col - firstFoodCol);
-      const reduction = Math.round(pancreasRate * elapsed);
-      return Math.max(0, h - reduction);
-    });
 
     // Phase 3: ColumnCaps (aliveCaps − interventions − SGLT2)
     const sglt2 = medicationModifiers.sglt2;
@@ -237,8 +236,8 @@ export function BgGraph({
     );
 
     // Phase 4: Per-food layers — stamp cubes, compute markers and skylines
-    // Cube status determined by absolute row vs global thresholds:
-    //   row < columnCap → normal | row < aliveCap → burned | row >= aliveCap → pancreas
+    // Cube status determined by per-food alive boundary:
+    //   row >= baseRow + aliveCount → pancreas | row >= columnCap → burned | else → normal
     const hasMultipleFoods = rawFoods.length >= 2;
     const bottomY = PAD_TOP + GRAPH_H;
     const layers: FoodRenderLayer[] = rawFoods.map((food) => {
@@ -247,13 +246,14 @@ export function BgGraph({
 
       for (const c of food.columns) {
         let topNormalRow = c.baseRow;
+        const aliveTop = c.baseRow + c.aliveCount;
 
         for (let cubeIdx = 0; cubeIdx < c.count; cubeIdx++) {
           const row = c.baseRow + cubeIdx;
           if (row >= TOTAL_ROWS) break;
 
           let status: CubeStatus;
-          if (row >= aliveCaps[c.col]) {
+          if (row >= aliveTop) {
             status = 'pancreas';
           } else if (row >= columnCaps[c.col]) {
             status = 'burned';
@@ -264,9 +264,8 @@ export function BgGraph({
           cubes.push({ col: c.col, row, status });
         }
 
-        // Skyline: top of this food's alive cubes (clamped by aliveCaps)
-        const topOfFood = Math.min(c.baseRow + c.count, aliveCaps[c.col]);
-        const skylineRow = Math.max(c.baseRow, topOfFood);
+        // Skyline: top of this food's alive cubes (per-food boundary)
+        const skylineRow = aliveTop;
 
         colSummary.push({
           col: c.col,
@@ -374,7 +373,7 @@ export function BgGraph({
   }, [placedFoods, allShips, medicationModifiers, pancreasRate, interventionReduction]);
 
   // Preview curve (shown during drag hover)
-  // Preview uses same accumulating logic: reduction = rate × elapsed from first food col.
+  // Per-food independent: preview food uses its own dropColumn for elapsed.
   const previewCubes = useMemo(() => {
     if (!previewShip || previewColumn == null) return null;
     const { glucose, duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
@@ -384,27 +383,21 @@ export function BgGraph({
     const { totalHeights } = graphRenderData;
     const cubes: Array<{ col: number; row: number; isPancreasEaten: boolean }> = [];
 
-    // Find first food col considering the preview food
-    let firstFoodCol = previewColumn;
-    for (let col = 0; col < TOTAL_COLUMNS; col++) {
-      if (totalHeights[col] > 0) { firstFoodCol = Math.min(firstFoodCol, col); break; }
-    }
-
     for (const cc of curve) {
       const graphCol = previewColumn + cc.columnOffset;
       if (graphCol < 0 || graphCol >= TOTAL_COLUMNS) continue;
 
       const startRow = totalHeights[graphCol];
-      const newTotal = totalHeights[graphCol] + cc.cubeCount;
-      // Accumulating reduction at this column
-      const elapsed = Math.max(0, graphCol - firstFoodCol);
+      // Per-food reduction: elapsed from THIS food's drop column
+      const elapsed = Math.max(0, graphCol - previewColumn);
       const reduction = pancreasRate > 0 ? Math.round(pancreasRate * elapsed) : 0;
-      const newAliveCap = Math.max(0, newTotal - reduction);
+      const previewAlive = Math.max(0, cc.cubeCount - reduction);
+      const aliveTop = startRow + previewAlive;
 
       for (let cubeIdx = 0; cubeIdx < cc.cubeCount; cubeIdx++) {
         const row = startRow + cubeIdx;
         if (row >= TOTAL_ROWS) break;
-        cubes.push({ col: graphCol, row, isPancreasEaten: row >= newAliveCap });
+        cubes.push({ col: graphCol, row, isPancreasEaten: row >= aliveTop });
       }
     }
 
