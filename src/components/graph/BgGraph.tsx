@@ -309,14 +309,14 @@ export function BgGraph({
         });
       }
 
-      // Marker: centered on food's own alive peak (uses aliveTop, not skylineRow)
-      let maxAlive = 0;
+      // Marker: centered on food's effective peak (skylineRow = alive clamped by interventions)
+      let maxPeak = 0;
       for (const cs of colSummary) {
-        if (cs.aliveTop > maxAlive) maxAlive = cs.aliveTop;
+        if (cs.skylineRow > maxPeak) maxPeak = cs.skylineRow;
       }
       const peakCols: number[] = [];
       for (const cs of colSummary) {
-        if (cs.aliveTop === maxAlive && maxAlive > cs.baseRow) {
+        if (cs.skylineRow === maxPeak && maxPeak > cs.baseRow) {
           peakCols.push(cs.col);
         }
       }
@@ -325,7 +325,7 @@ export function BgGraph({
       if (peakCols.length > 0) {
         const peakCenterX = PAD_LEFT +
           ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
-        marker = { peakCenterX, tailRow: maxAlive };
+        marker = { peakCenterX, tailRow: maxPeak };
       }
 
       // Skyline path: trace boundary between this food's alive zone and the next
