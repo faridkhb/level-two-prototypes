@@ -30,7 +30,7 @@ interface ReplayData {
   foods: Array<{ shipId: string; dropColumn: number }>;
   interventions: Array<{ interventionId: string; dropColumn: number }>;
   medications: string[];
-  pancreasDepth: number;
+  pancreasRate: number;
 }
 
 function getNextPancreasTier(current: PancreasTier, maxBars: number): PancreasTier {
@@ -148,7 +148,7 @@ export function PlanningPhase() {
 
   // Pancreas tier system
   const currentPancreasTier = (pancreasTierPerDay[currentDay] ?? 1) as PancreasTier;
-  const currentPancreasDepth = PANCREAS_TIERS[currentPancreasTier].depth;
+  const currentPancreasRate = PANCREAS_TIERS[currentPancreasTier].rate;
   const totalLockedBars = Object.values(lockedBarsPerDay).reduce((a, b) => a + b, 0);
   const barsAvailable = PANCREAS_TOTAL_BARS - totalLockedBars;
 
@@ -299,14 +299,14 @@ export function PlanningPhase() {
       foods: placedFoods.map(f => ({ shipId: f.shipId, dropColumn: f.dropColumn })),
       interventions: placedInterventions.map(i => ({ interventionId: i.interventionId, dropColumn: i.dropColumn })),
       medications: [...activeMedications],
-      pancreasDepth: currentPancreasDepth,
+      pancreasRate: currentPancreasRate,
     };
 
     // Clear graph
     clearFoods();
     setGamePhase('replaying');
     setPenaltyResult(null);
-  }, [submitEnabled, placedFoods, placedInterventions, activeMedications, clearFoods, lockPancreasBars, currentPancreasDepth, submitDayWp, currentDay, wpUsed, effectiveWpBudget]);
+  }, [submitEnabled, placedFoods, placedInterventions, activeMedications, clearFoods, lockPancreasBars, currentPancreasRate, submitDayWp, currentDay, wpUsed, effectiveWpBudget]);
 
   // === Replay animation effect ===
   useEffect(() => {
@@ -338,7 +338,7 @@ export function PlanningPhase() {
 
           // We need to read current state from the store
           const state = useGameStore.getState();
-          const replayPancreasDepth = replayDataRef.current?.pancreasDepth ?? currentPancreasDepth;
+          const replayPancreasRate = replayDataRef.current?.pancreasRate ?? currentPancreasRate;
           // Recompute medication modifiers from replay data (closure's medicationModifiers
           // is stale because clearFoods() resets activeMedications before the effect fires)
           const replayMedMods = data.medications.length > 0
@@ -350,7 +350,7 @@ export function PlanningPhase() {
             state.placedInterventions,
             allInterventions,
             replayMedMods,
-            replayPancreasDepth,
+            replayPancreasRate,
           );
 
           // Last day: add WP penalty for unspent WP
@@ -473,7 +473,7 @@ export function PlanningPhase() {
             placedInterventions={placedInterventions}
             allInterventions={allInterventions}
             settings={settings}
-            pancreasDepth={currentPancreasDepth}
+            pancreasRate={currentPancreasRate}
             medicationModifiers={medicationModifiers}
             previewShip={isPlanning ? activeShip : null}
             previewIntervention={isPlanning ? activeIntervention : null}

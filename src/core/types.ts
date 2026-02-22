@@ -44,11 +44,11 @@ export const DEFAULT_SETTINGS: GameSettings = {
 
 export type PancreasTier = 0 | 1 | 2 | 3;
 
-export const PANCREAS_TIERS: Record<PancreasTier, { depth: number; cost: number; label: string }> = {
-  0: { depth: 0, cost: 0, label: 'OFF' },
-  1: { depth: 2, cost: 0, label: 'I' },
-  2: { depth: 4, cost: 1, label: 'II' },
-  3: { depth: 6, cost: 2, label: 'III' },
+export const PANCREAS_TIERS: Record<PancreasTier, { rate: number; cost: number; label: string }> = {
+  0: { rate: 0, cost: 0, label: 'OFF' },
+  1: { rate: 0.25, cost: 0, label: 'I' },
+  2: { rate: 0.5, cost: 1, label: 'II' },
+  3: { rate: 0.75, cost: 2, label: 'III' },
 };
 
 export const PANCREAS_TOTAL_BARS = 3;

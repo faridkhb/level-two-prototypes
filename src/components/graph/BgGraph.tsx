@@ -107,7 +107,7 @@ interface BgGraphProps {
   placedInterventions: PlacedIntervention[];
   allInterventions: Intervention[];
   settings: GameSettings;
-  pancreasDepth: number;
+  pancreasRate: number;
   medicationModifiers?: MedicationModifiers;
   previewShip?: Ship | null;
   previewIntervention?: Intervention | null;
@@ -140,7 +140,7 @@ export function BgGraph({
   placedInterventions,
   allInterventions,
   settings,
-  pancreasDepth,
+  pancreasRate,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   previewShip,
   previewIntervention,
@@ -214,8 +214,18 @@ export function BgGraph({
       rawFoods[i].color = getFoodColor(i);
     }
 
-    // Phase 2: Pancreas — global flat reduction from top
-    const aliveCaps = totalHeights.map(h => Math.max(0, h - pancreasDepth));
+    // Phase 2: Pancreas — accumulating reduction from top.
+    // Reduction grows with time elapsed since first food column.
+    let firstFoodCol = TOTAL_COLUMNS;
+    for (let col = 0; col < TOTAL_COLUMNS; col++) {
+      if (totalHeights[col] > 0) { firstFoodCol = col; break; }
+    }
+    const aliveCaps = totalHeights.map((h, col) => {
+      if (h <= 0 || pancreasRate <= 0) return h;
+      const elapsed = Math.max(0, col - firstFoodCol);
+      const reduction = Math.round(pancreasRate * elapsed);
+      return Math.max(0, h - reduction);
+    });
 
     // Phase 3: ColumnCaps (aliveCaps − interventions − SGLT2)
     const sglt2 = medicationModifiers.sglt2;
@@ -361,10 +371,10 @@ export function BgGraph({
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
     return { layers, mainSkylinePath, columnCaps, totalHeights, aliveCaps };
-  }, [placedFoods, allShips, medicationModifiers, pancreasDepth, interventionReduction]);
+  }, [placedFoods, allShips, medicationModifiers, pancreasRate, interventionReduction]);
 
   // Preview curve (shown during drag hover)
-  // Preview uses same logic as actual placement: plateau curve + global pancreasDepth.
+  // Preview uses same accumulating logic: reduction = rate × elapsed from first food col.
   const previewCubes = useMemo(() => {
     if (!previewShip || previewColumn == null) return null;
     const { glucose, duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
@@ -374,14 +384,22 @@ export function BgGraph({
     const { totalHeights } = graphRenderData;
     const cubes: Array<{ col: number; row: number; isPancreasEaten: boolean }> = [];
 
+    // Find first food col considering the preview food
+    let firstFoodCol = previewColumn;
+    for (let col = 0; col < TOTAL_COLUMNS; col++) {
+      if (totalHeights[col] > 0) { firstFoodCol = Math.min(firstFoodCol, col); break; }
+    }
+
     for (const cc of curve) {
       const graphCol = previewColumn + cc.columnOffset;
       if (graphCol < 0 || graphCol >= TOTAL_COLUMNS) continue;
 
-      // Preview cubes start on top of existing stack
       const startRow = totalHeights[graphCol];
-      // New alive cap with pancreas reduction applied to combined total
-      const newAliveCap = Math.max(0, totalHeights[graphCol] + cc.cubeCount - pancreasDepth);
+      const newTotal = totalHeights[graphCol] + cc.cubeCount;
+      // Accumulating reduction at this column
+      const elapsed = Math.max(0, graphCol - firstFoodCol);
+      const reduction = pancreasRate > 0 ? Math.round(pancreasRate * elapsed) : 0;
+      const newAliveCap = Math.max(0, newTotal - reduction);
 
       for (let cubeIdx = 0; cubeIdx < cc.cubeCount; cubeIdx++) {
         const row = startRow + cubeIdx;
@@ -391,7 +409,7 @@ export function BgGraph({
     }
 
     return cubes;
-  }, [previewShip, previewColumn, graphRenderData, medicationModifiers, pancreasDepth]);
+  }, [previewShip, previewColumn, graphRenderData, medicationModifiers, pancreasRate]);
 
   // Intervention preview: per-column reduction array
   const interventionPreviewData = useMemo(() => {
