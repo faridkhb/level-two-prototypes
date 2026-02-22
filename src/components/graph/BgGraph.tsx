@@ -320,31 +320,36 @@ export function BgGraph({
       }
 
       // Skyline path: trace boundary between this food's alive zone and the next
+      // Vertical edges stop at the food's own baseRow (not graph bottom)
+      // so skylines don't cross through lower foods' zones
       let skylinePath: string | null = null;
       if (hasMultipleFoods) {
         const parts: string[] = [];
         let inSeg = false;
         let prevCol = -2;
+        let lastBaseY = bottomY;
         for (const cs of colSummary) {
+          const baseY = PAD_TOP + GRAPH_H - cs.baseRow * CELL_SIZE;
           if (cs.skylineRow <= cs.baseRow) {
-            if (inSeg) { parts.push(`V ${bottomY}`); inSeg = false; }
+            if (inSeg) { parts.push(`V ${lastBaseY}`); inSeg = false; }
             prevCol = cs.col;
             continue;
           }
           const y = PAD_TOP + GRAPH_H - cs.skylineRow * CELL_SIZE;
           const x = colToX(cs.col);
           if (!inSeg || cs.col !== prevCol + 1) {
-            if (inSeg) parts.push(`V ${bottomY}`);
-            parts.push(`M ${x} ${bottomY}`);
+            if (inSeg) parts.push(`V ${lastBaseY}`);
+            parts.push(`M ${x} ${baseY}`);
             parts.push(`V ${y}`);
             inSeg = true;
           } else {
             parts.push(`V ${y}`);
           }
           parts.push(`H ${x + CELL_SIZE}`);
+          lastBaseY = baseY;
           prevCol = cs.col;
         }
-        if (inSeg) parts.push(`V ${bottomY}`);
+        if (inSeg) parts.push(`V ${lastBaseY}`);
         if (parts.length > 0) {
           skylinePath = parts.join(' ');
         }
