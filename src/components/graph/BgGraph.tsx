@@ -290,8 +290,8 @@ export function BgGraph({
         }
         pancreasOffset[c.col] += visibleEaten;
 
-        // Skyline: top of this food's alive cubes
-        const skylineRow = Math.min(c.baseRow + c.aliveCount, TOTAL_ROWS);
+        // Skyline: top of this food's alive cubes, clamped by columnCaps (interventions)
+        const skylineRow = Math.min(c.baseRow + c.aliveCount, columnCaps[c.col], TOTAL_ROWS);
 
         colSummary.push({
           col: c.col,
