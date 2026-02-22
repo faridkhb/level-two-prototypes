@@ -279,14 +279,15 @@ export function BgGraph({
           cubes.push({ col: c.col, row, status });
         }
 
-        // Pancreas cubes (stacked above ALL alive cubes at this column)
+        // Pancreas cubes — thin visual layer (per-column increment, not cumulative wedge)
+        const visibleEaten = Math.min(c.pancreasExtra, Math.max(1, Math.ceil(decayRate * 2)));
         const pBase = pancreasCaps[c.col] + pancreasOffset[c.col];
-        for (let i = 0; i < c.pancreasExtra; i++) {
+        for (let i = 0; i < visibleEaten; i++) {
           const row = pBase + i;
           if (row >= TOTAL_ROWS) break;
           cubes.push({ col: c.col, row, status: 'pancreas' });
         }
-        pancreasOffset[c.col] += c.pancreasExtra;
+        pancreasOffset[c.col] += visibleEaten;
 
         // Skyline: top of this food's alive cubes
         const skylineRow = Math.min(c.baseRow + c.aliveCount, TOTAL_ROWS);
