@@ -65,7 +65,7 @@ export function calculateCurve(
 export function calculateGraphState(
   placedFoods: PlacedFood[],
   allShips: Ship[],
-  decayRate: number = 0
+  decayRate: number = 0.25
 ): number[] {
   const bgValues = new Array(TOTAL_COLUMNS).fill(0);
 
@@ -91,7 +91,7 @@ export function calculateGraphState(
 export function buildFoodPyramids(
   placedFoods: PlacedFood[],
   allShips: Ship[],
-  decayRate: number = 0
+  decayRate: number = 0.25
 ): FoodPyramid[] {
   return placedFoods.map(placed => {
     const ship = allShips.find(s => s.id === placed.shipId);
@@ -279,22 +279,19 @@ export function calculatePenaltyFromState(
   placedInterventions: PlacedIntervention[],
   allInterventions: Intervention[],
   medicationModifiers: MedicationModifiers,
-  pancreasRate: number,
+  decayRate: number,
 ): PenaltyResult {
-  // Build per-food alive caps using plateau curves + per-food pancreas reduction.
-  // Each food's reduction is based on elapsed time from its own dropColumn.
-  const aliveCaps = new Array(TOTAL_COLUMNS).fill(0);
+  // Build food heights per column
+  const totalHeights = new Array(TOTAL_COLUMNS).fill(0);
   for (const placed of placedFoods) {
     const ship = allShips.find(s => s.id === placed.shipId);
     if (!ship) continue;
     const { glucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
-    const curve = calculateCurve(glucose, duration, placed.dropColumn, 0);
+    const curve = calculateCurve(glucose, duration, placed.dropColumn, decayRate);
     for (const col of curve) {
       const graphCol = placed.dropColumn + col.columnOffset;
       if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
-        const elapsed = Math.max(0, graphCol - placed.dropColumn);
-        const reduction = pancreasRate > 0 ? Math.round(pancreasRate * elapsed) : 0;
-        aliveCaps[graphCol] += Math.max(0, col.cubeCount - reduction);
+        totalHeights[graphCol] += col.cubeCount;
       }
     }
   }
@@ -302,14 +299,14 @@ export function calculatePenaltyFromState(
   // Intervention reduction
   const interventionRed = calculateInterventionReduction(placedInterventions, allInterventions);
 
-  // SGLT2 reduction (applied on alive caps after pancreas)
+  // SGLT2 reduction
   const sglt2 = medicationModifiers.sglt2;
   const sglt2Red = sglt2
-    ? calculateSglt2Reduction(aliveCaps, sglt2.depth, sglt2.floorRow)
+    ? calculateSglt2Reduction(totalHeights, sglt2.depth, sglt2.floorRow)
     : new Array(TOTAL_COLUMNS).fill(0);
 
-  // Column caps (effective visible height after all reductions)
-  const columnCaps = aliveCaps.map((h, i) =>
+  // Column caps (effective visible height)
+  const columnCaps = totalHeights.map((h, i) =>
     Math.max(0, h - interventionRed[i] - sglt2Red[i])
   );
 

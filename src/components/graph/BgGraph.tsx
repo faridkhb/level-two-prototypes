@@ -73,7 +73,7 @@ interface FoodColumnSummary {
   baseRow: number;
   totalCount: number;
   topNormalRow: number;
-  skylineRow: number; // top of this food's alive cubes (clamped by aliveCaps)
+  skylineRow: number; // per-food decay boundary (independent of other foods)
 }
 
 interface FoodMarkerInfo {
@@ -97,8 +97,8 @@ interface GraphRenderData {
   layers: FoodRenderLayer[];
   mainSkylinePath: string;
   columnCaps: number[];
-  totalHeights: number[];
-  aliveCaps: number[];
+  plateauHeights: number[];
+  pancreasCaps: number[];
 }
 
 interface BgGraphProps {
@@ -107,7 +107,7 @@ interface BgGraphProps {
   placedInterventions: PlacedIntervention[];
   allInterventions: Intervention[];
   settings: GameSettings;
-  pancreasRate: number;
+  decayRate: number;
   medicationModifiers?: MedicationModifiers;
   previewShip?: Ship | null;
   previewIntervention?: Intervention | null;
@@ -140,7 +140,7 @@ export function BgGraph({
   placedInterventions,
   allInterventions,
   settings,
-  pancreasRate,
+  decayRate,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   previewShip,
   previewIntervention,
@@ -165,18 +165,24 @@ export function BgGraph({
   );
 
   // Unified graph render data: single source of truth for all visual elements.
+  // Replaces 7 separate useMemo hooks (foodCubeData, pancreasCaps, plateauHeights,
+  // columnCaps, foodSkylinePaths, markerData, skylinePath) with one coherent pass.
   // Every cube is pre-stamped with status (normal/burned/pancreas), markers and
   // skylines are derived from the SAME data that stamps cubes — no desync possible.
   const graphRenderData = useMemo((): GraphRenderData => {
-    // Phase 1: Stack all foods using plateau curves (no decay).
-    const totalHeights = new Array(TOTAL_COLUMNS).fill(0);
+    // Phase 1: Decay-based stacking — cube POSITIONS from actual decay curves.
+    // This ensures all alive cubes are below the alive boundary (pancreasCaps).
+    // Pancreas-eaten cubes are stacked ABOVE all alive cubes (separate visual zone).
+    // When decayRate=0: decay=plateau, so stacking is identical to old model.
+    const decayHeights = new Array(TOTAL_COLUMNS).fill(0);
+    const plateauHeights = new Array(TOTAL_COLUMNS).fill(0);
     const rawFoods: Array<{
       placementId: string;
       shipId: string;
       dropColumn: number;
       color: string;
       emoji: string;
-      columns: Array<{ col: number; baseRow: number; count: number; aliveCount: number }>;
+      columns: Array<{ col: number; baseRow: number; aliveCount: number; pancreasExtra: number }>;
     }> = [];
 
     for (const placed of placedFoods) {
@@ -184,21 +190,38 @@ export function BgGraph({
       if (!ship) continue;
       const { glucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
 
-      const curve = calculateCurve(glucose, duration, placed.dropColumn, 0);
+      // Decay curve: determines cube POSITIONS (actual visible alive cubes)
+      const decayCurve = calculateCurve(glucose, duration, placed.dropColumn, decayRate);
+      // Plateau curve: determines TOTAL cubes per column (including pancreas-eaten)
+      const plateauCurve = decayRate > 0
+        ? calculateCurve(glucose, duration, placed.dropColumn, 0)
+        : decayCurve; // same when no decay
 
-      const cols: Array<{ col: number; baseRow: number; count: number; aliveCount: number }> = [];
-      for (const cc of curve) {
-        const graphCol = placed.dropColumn + cc.columnOffset;
+      // Build plateau count lookup + accumulate plateauHeights (for preview)
+      const plateauMap: Record<number, number> = {};
+      for (const pc of plateauCurve) {
+        const graphCol = placed.dropColumn + pc.columnOffset;
         if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
-          const elapsed = Math.max(0, graphCol - placed.dropColumn);
-          const reduction = pancreasRate > 0 ? Math.round(pancreasRate * elapsed) : 0;
+          plateauMap[graphCol] = pc.cubeCount;
+          plateauHeights[graphCol] += pc.cubeCount;
+        }
+      }
+
+      // Build column entries from DECAY curve (alive cubes + per-column pancreas excess)
+      const cols: Array<{ col: number; baseRow: number; aliveCount: number; pancreasExtra: number }> = [];
+      for (const dc of decayCurve) {
+        const graphCol = placed.dropColumn + dc.columnOffset;
+        if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+          const baseRow = decayHeights[graphCol];
+          const aliveCount = dc.cubeCount;
+          const plateauCount = plateauMap[graphCol] ?? aliveCount;
           cols.push({
             col: graphCol,
-            baseRow: totalHeights[graphCol],
-            count: cc.cubeCount,
-            aliveCount: Math.max(0, cc.cubeCount - reduction),
+            baseRow,
+            aliveCount,
+            pancreasExtra: Math.max(0, plateauCount - aliveCount),
           });
-          totalHeights[graphCol] += cc.cubeCount;
+          decayHeights[graphCol] += aliveCount;
         }
       }
 
@@ -217,45 +240,37 @@ export function BgGraph({
       rawFoods[i].color = getFoodColor(i);
     }
 
-    // Phase 2: Pancreas — per-food independent reduction.
-    // Each food's reduction is based on elapsed time from its own dropColumn.
-    const aliveCaps = new Array(TOTAL_COLUMNS).fill(0);
-    for (const food of rawFoods) {
-      for (const c of food.columns) {
-        aliveCaps[c.col] += c.aliveCount;
-      }
-    }
+    // pancreasCaps = sum of decay heights (already computed)
+    const pancreasCaps = decayHeights;
 
-    // Phase 3: ColumnCaps (aliveCaps − interventions − SGLT2)
+    // Phase 3: ColumnCaps (pancreas − interventions − SGLT2)
     const sglt2 = medicationModifiers.sglt2;
     const sglt2Reduction = sglt2
-      ? calculateSglt2Reduction(aliveCaps, sglt2.depth, sglt2.floorRow)
+      ? calculateSglt2Reduction(pancreasCaps, sglt2.depth, sglt2.floorRow)
       : new Array(TOTAL_COLUMNS).fill(0);
-    const columnCaps = aliveCaps.map((h, i) =>
+    const columnCaps = pancreasCaps.map((h, i) =>
       Math.max(0, h - interventionReduction[i] - sglt2Reduction[i])
     );
 
     // Phase 4: Per-food layers — stamp cubes, compute markers and skylines
-    // Cube status determined by per-food alive boundary:
-    //   row >= baseRow + aliveCount → pancreas | row >= columnCap → burned | else → normal
+    // Alive cubes use decay-stacked positions. Pancreas cubes stack above all alive cubes.
     const hasMultipleFoods = rawFoods.length >= 2;
     const bottomY = PAD_TOP + GRAPH_H;
+    const pancreasOffset = new Array(TOTAL_COLUMNS).fill(0);
     const layers: FoodRenderLayer[] = rawFoods.map((food) => {
       const cubes: FoodRenderCube[] = [];
       const colSummary: FoodColumnSummary[] = [];
 
       for (const c of food.columns) {
         let topNormalRow = c.baseRow;
-        const aliveTop = c.baseRow + c.aliveCount;
 
-        for (let cubeIdx = 0; cubeIdx < c.count; cubeIdx++) {
+        // Alive cubes (positioned by decay stacking — guaranteed below pancreasCaps)
+        for (let cubeIdx = 0; cubeIdx < c.aliveCount; cubeIdx++) {
           const row = c.baseRow + cubeIdx;
           if (row >= TOTAL_ROWS) break;
 
           let status: CubeStatus;
-          if (row >= aliveTop) {
-            status = 'pancreas';
-          } else if (row >= columnCaps[c.col]) {
+          if (row >= columnCaps[c.col]) {
             status = 'burned';
           } else {
             status = 'normal';
@@ -264,19 +279,28 @@ export function BgGraph({
           cubes.push({ col: c.col, row, status });
         }
 
-        // Skyline: top of this food's alive cubes (per-food boundary)
-        const skylineRow = aliveTop;
+        // Pancreas cubes (stacked above ALL alive cubes at this column)
+        const pBase = pancreasCaps[c.col] + pancreasOffset[c.col];
+        for (let i = 0; i < c.pancreasExtra; i++) {
+          const row = pBase + i;
+          if (row >= TOTAL_ROWS) break;
+          cubes.push({ col: c.col, row, status: 'pancreas' });
+        }
+        pancreasOffset[c.col] += c.pancreasExtra;
+
+        // Skyline: top of this food's alive cubes
+        const skylineRow = Math.min(c.baseRow + c.aliveCount, TOTAL_ROWS);
 
         colSummary.push({
           col: c.col,
           baseRow: c.baseRow,
-          totalCount: c.count,
+          totalCount: c.aliveCount + c.pancreasExtra,
           topNormalRow,
           skylineRow,
         });
       }
 
-      // Marker: centered on food's alive peak (skylineRow = top of non-eaten cubes)
+      // Marker: centered on food's own alive peak
       let maxSkyline = 0;
       for (const cs of colSummary) {
         if (cs.skylineRow > maxSkyline) maxSkyline = cs.skylineRow;
@@ -369,40 +393,50 @@ export function BgGraph({
     if (inSegment) mainParts.push(`V ${bottomY}`);
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
-    return { layers, mainSkylinePath, columnCaps, totalHeights, aliveCaps };
-  }, [placedFoods, allShips, medicationModifiers, pancreasRate, interventionReduction]);
+    return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps };
+  }, [placedFoods, allShips, medicationModifiers, decayRate, interventionReduction]);
 
   // Preview curve (shown during drag hover)
-  // Per-food independent: preview food uses its own dropColumn for elapsed.
+  // With decay stacking, preview cubes start on top of the alive stack (pancreasCaps).
+  // Alive preview cubes shown normally, pancreas-eaten ones shown dimmed.
   const previewCubes = useMemo(() => {
     if (!previewShip || previewColumn == null) return null;
     const { glucose, duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
 
-    const curve = calculateCurve(glucose, duration, previewColumn, 0);
+    // Plateau curve: total cubes (for visual extent)
+    const plateauCurve = calculateCurve(glucose, duration, previewColumn, 0);
+    // Decayed curve: alive cubes
+    const decayedCurve = calculateCurve(glucose, duration, previewColumn, decayRate);
 
-    const { totalHeights } = graphRenderData;
+    const decayedCounts: Record<number, number> = {};
+    for (const pc of decayedCurve) {
+      const graphCol = previewColumn + pc.columnOffset;
+      if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+        decayedCounts[graphCol] = pc.cubeCount;
+      }
+    }
+
+    const { pancreasCaps } = graphRenderData;
     const cubes: Array<{ col: number; row: number; isPancreasEaten: boolean }> = [];
 
-    for (const cc of curve) {
-      const graphCol = previewColumn + cc.columnOffset;
+    for (const pc of plateauCurve) {
+      const graphCol = previewColumn + pc.columnOffset;
       if (graphCol < 0 || graphCol >= TOTAL_COLUMNS) continue;
+      const decayedCount = decayedCounts[graphCol] ?? 0;
+      // New alive boundary = existing alive + preview alive
+      const combinedCap = pancreasCaps[graphCol] + decayedCount;
+      // Preview cubes start on top of existing alive stack
+      const startRow = pancreasCaps[graphCol];
 
-      const startRow = totalHeights[graphCol];
-      // Per-food reduction: elapsed from THIS food's drop column
-      const elapsed = Math.max(0, graphCol - previewColumn);
-      const reduction = pancreasRate > 0 ? Math.round(pancreasRate * elapsed) : 0;
-      const previewAlive = Math.max(0, cc.cubeCount - reduction);
-      const aliveTop = startRow + previewAlive;
-
-      for (let cubeIdx = 0; cubeIdx < cc.cubeCount; cubeIdx++) {
+      for (let cubeIdx = 0; cubeIdx < pc.cubeCount; cubeIdx++) {
         const row = startRow + cubeIdx;
         if (row >= TOTAL_ROWS) break;
-        cubes.push({ col: graphCol, row, isPancreasEaten: row >= aliveTop });
+        cubes.push({ col: graphCol, row, isPancreasEaten: row >= combinedCap });
       }
     }
 
     return cubes;
-  }, [previewShip, previewColumn, graphRenderData, medicationModifiers, pancreasRate]);
+  }, [previewShip, previewColumn, graphRenderData, medicationModifiers, decayRate]);
 
   // Intervention preview: per-column reduction array
   const interventionPreviewData = useMemo(() => {
