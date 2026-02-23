@@ -4,6 +4,33 @@ import { InterventionCard } from './InterventionCard';
 import './ShipInventory.css';
 import './MedicationPanel.css';
 
+function getMedicationTooltip(med: Medication): string {
+  switch (med.type) {
+    case 'peakReduction': {
+      const pct = Math.round((1 - (med.multiplier ?? 1)) * 100);
+      return `Glucose -${pct}% (×${med.multiplier ?? 1})`;
+    }
+    case 'thresholdDrain':
+      return `Drain ${med.depth ?? 0} cubes, floor ${med.floorMgDl ?? 200} mg/dL`;
+    case 'slowAbsorption': {
+      const parts: string[] = [];
+      if (med.durationMultiplier) parts.push(`Duration ×${med.durationMultiplier}`);
+      if (med.glucoseMultiplier) {
+        const pct = Math.round((1 - med.glucoseMultiplier) * 100);
+        parts.push(`Glucose -${pct}%`);
+      }
+      if (med.kcalMultiplier) {
+        const pct = Math.round((1 - med.kcalMultiplier) * 100);
+        parts.push(`Kcal -${pct}%`);
+      }
+      if (med.wpBonus) parts.push(`WP +${med.wpBonus}`);
+      return parts.join(', ');
+    }
+    default:
+      return med.description;
+  }
+}
+
 interface InterventionInventoryProps {
   allInterventions: Intervention[];
   availableInterventions: AvailableFood[];
@@ -68,17 +95,18 @@ export function InterventionInventory({
           const med = allMedications.find(m => m.id === medId);
           if (!med) return null;
           const isActive = activeMedications.includes(medId);
+          const tooltip = getMedicationTooltip(med);
           return (
             <button
               key={medId}
               className={`medication-toggle ${isActive ? 'medication-toggle--active' : ''}`}
               onClick={() => onMedicationToggle?.(medId)}
-              data-tooltip={med.description}
+              data-tooltip={tooltip}
             >
               <span className="medication-toggle__emoji">{med.emoji}</span>
               <div className="medication-toggle__details">
                 <span className="medication-toggle__name">{med.name}</span>
-                <span className="medication-toggle__desc">{med.description}</span>
+                <span className="medication-toggle__desc">{tooltip}</span>
               </div>
               <span className="medication-toggle__status">
                 {isActive ? 'ON' : 'OFF'}
