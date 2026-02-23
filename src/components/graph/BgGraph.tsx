@@ -606,6 +606,22 @@ export function BgGraph({
     return placedInterventions.map(placed => {
       const intervention = allInterventions.find(i => i.id === placed.interventionId);
       if (!intervention) return null;
+
+      // Break interventions: marker centered over the blocked zone
+      if (intervention.isBreak) {
+        const cols = Math.max(1, Math.ceil(intervention.duration / 15));
+        const startCol = placed.dropColumn;
+        const endCol = startCol + cols - 1;
+        const peakCenterX = PAD_LEFT + ((startCol + endCol) / 2 + 0.5) * CELL_SIZE;
+        return {
+          placementId: placed.id,
+          emoji: intervention.emoji,
+          peakCenterX,
+          tailRow: 0, // tail points to graph bottom
+          isBreak: true,
+        };
+      }
+
       const curve = calculateInterventionCurve(
         intervention.depth, intervention.duration, placed.dropColumn,
         intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
@@ -632,8 +648,9 @@ export function BgGraph({
         emoji: intervention.emoji,
         peakCenterX,
         tailRow,
+        isBreak: false,
       };
-    }).filter(Boolean) as Array<{ placementId: string; emoji: string; peakCenterX: number; tailRow: number }>;
+    }).filter(Boolean) as Array<{ placementId: string; emoji: string; peakCenterX: number; tailRow: number; isBreak: boolean }>;
   }, [placedInterventions, allInterventions, graphRenderData.columnCaps]);
 
   const handleCubeClick = useCallback(
@@ -1111,6 +1128,7 @@ export function BgGraph({
           const mW = 50;
           const mH = 44;
           const tailH = 11;
+          const borderColor = im.isBreak ? '#a78bfa' : '#22c55e';
           // Clamp horizontal: marker stays within graph bounds
           const cx = Math.max(PAD_LEFT + mW / 2, Math.min(PAD_LEFT + GRAPH_W - mW / 2, im.peakCenterX));
           // Clamp vertical: tail ≥ 60 mg/dL (row 0), marker body doesn't exceed graph top
@@ -1133,11 +1151,11 @@ export function BgGraph({
                   x={cx - mW / 2} y={mY}
                   width={mW} height={mH}
                   rx={8} fill="white"
-                  stroke="#22c55e" strokeWidth={1.2}
+                  stroke={borderColor} strokeWidth={1.2}
                 />
                 <polygon
                   points={`${cx - 6},${tailTopY} ${cx + 6},${tailTopY} ${cx},${tailBottomY}`}
-                  fill="white" stroke="#22c55e" strokeWidth={1.2}
+                  fill="white" stroke={borderColor} strokeWidth={1.2}
                 />
                 <line
                   x1={cx - 5.5} y1={tailTopY} x2={cx + 5.5} y2={tailTopY}
@@ -1205,6 +1223,22 @@ export function BgGraph({
               );
             })
         )}
+
+        {/* Break preview: purple zone overlay when dragging a break intervention */}
+        {previewIntervention?.isBreak && previewColumn != null && (() => {
+          const cols = Math.max(1, Math.ceil(previewIntervention.duration / 15));
+          const x = PAD_LEFT + previewColumn * CELL_SIZE;
+          const w = cols * CELL_SIZE;
+          return (
+            <rect
+              x={x} y={PAD_TOP} width={w} height={GRAPH_H}
+              fill="#a78bfa" opacity={0.18}
+              stroke="#a78bfa" strokeWidth={1} strokeDasharray="4 2"
+              pointerEvents="none"
+              className="bg-graph__cube--preview"
+            />
+          );
+        })()}
 
         {/* Preview cubes (during drag) — blue for normal, orange for pancreas-eaten */}
         {/* Includes correction overlays on existing food's orange cubes that become normal */}
