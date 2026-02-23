@@ -24,8 +24,14 @@ import { ShipCardOverlay } from './ShipCard';
 import { InterventionCardOverlay } from './InterventionCard';
 import './PlanningPhase.css';
 
-// Reveal phase delays (ms): phase 0→1, 1→2, 2→3, 3→4, 4→results
-const REVEAL_DELAYS = [300, 1500, 1200, 1200, 1200];
+// Reveal: hold time (ms) after showing each phase before advancing
+const REVEAL_INITIAL_DELAY = 300;
+const REVEAL_HOLD: Record<number, number> = {
+  1: 1500,  // food cubes (longer — wave animation spans full graph)
+  2: 1200,  // pancreas
+  3: 1200,  // exercise
+  4: 1200,  // medications
+};
 
 function getNextPancreasTier(current: PancreasTier, maxBars: number): PancreasTier {
   const sequence: PancreasTier[] = [1, 2, 3];
@@ -80,6 +86,7 @@ export function PlanningPhase() {
   const [penaltyResult, setPenaltyResult] = useState<PenaltyResult | null>(null);
   const [revealPhase, setRevealPhase] = useState<number | undefined>(undefined);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const revealSequenceRef = useRef<number[]>([]);
 
   // Load configs on mount
   useEffect(() => {
@@ -297,23 +304,33 @@ export function PlanningPhase() {
     // Save WP state for carry-over penalty
     submitDayWp(currentDay, wpUsed, effectiveWpBudget);
 
+    // Build reveal sequence — only phases that have content
+    const phases: number[] = [1]; // food cubes always present
+    if (currentDecayRate > 0) phases.push(2); // pancreas
+    if (placedInterventions.length > 0) phases.push(3); // exercise
+    if (activeMedications.length > 0) phases.push(4); // medications
+    revealSequenceRef.current = phases;
+
     // Start reveal — graph stays populated, revealPhase controls layer visibility
     setGamePhase('replaying');
     setRevealPhase(0);
     setPenaltyResult(null);
-  }, [submitEnabled, lockPancreasBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget]);
+  }, [submitEnabled, lockPancreasBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, currentDecayRate, placedInterventions.length, activeMedications.length]);
 
-  // === Reveal animation effect — progressive layer reveal ===
+  // === Reveal animation effect — progressive layer reveal (skips empty phases) ===
   useEffect(() => {
     if (gamePhase !== 'replaying') return;
 
-    let currentPhase = 0;
+    const sequence = revealSequenceRef.current;
+    let seqIndex = 0;
 
     function advancePhase() {
-      currentPhase++;
-      if (currentPhase <= 4) {
-        setRevealPhase(currentPhase);
-        revealTimerRef.current = setTimeout(advancePhase, REVEAL_DELAYS[currentPhase]);
+      if (seqIndex < sequence.length) {
+        const phase = sequence[seqIndex];
+        setRevealPhase(phase);
+        seqIndex++;
+        const holdTime = REVEAL_HOLD[phase] ?? 1200;
+        revealTimerRef.current = setTimeout(advancePhase, holdTime);
       } else {
         // All phases done — calculate penalty and show results
         const penalty = calculatePenaltyFromState(
@@ -348,7 +365,7 @@ export function PlanningPhase() {
       }
     }
 
-    revealTimerRef.current = setTimeout(advancePhase, REVEAL_DELAYS[0]);
+    revealTimerRef.current = setTimeout(advancePhase, REVEAL_INITIAL_DELAY);
 
     return () => {
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);

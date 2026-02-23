@@ -960,7 +960,7 @@ export function BgGraph({
         )}
 
         {/* Food markers — emoji labels above each food's own peak */}
-        {interactive && graphRenderData.layers.map(layer => {
+        {(interactive || (revealPhase !== undefined && revealPhase >= 1)) && graphRenderData.layers.map(layer => {
           if (!layer.marker) return null;
           const cx = layer.marker.peakCenterX;
           const tailBottomY = PAD_TOP + GRAPH_H - layer.marker.tailRow * CELL_SIZE;
@@ -972,10 +972,12 @@ export function BgGraph({
           return (
             <g
               key={`marker-${layer.placementId}`}
-              style={{ cursor: 'grab' }}
-              onPointerDown={(e) => handleMarkerPointerDown(e, layer.placementId)}
-              onPointerMove={handleMarkerPointerMove}
-              onPointerUp={handleMarkerPointerUp}
+              style={interactive ? { cursor: 'grab' } : undefined}
+              {...(interactive ? {
+                onPointerDown: (e: React.PointerEvent<SVGGElement>) => handleMarkerPointerDown(e, layer.placementId),
+                onPointerMove: handleMarkerPointerMove,
+                onPointerUp: handleMarkerPointerUp,
+              } : {})}
             >
               {/* Shadow + background + tail */}
               <g filter="url(#bubble-shadow)">
@@ -1008,7 +1010,7 @@ export function BgGraph({
         })}
 
         {/* Intervention markers — emoji labels at each intervention's peak */}
-        {interactive && interventionMarkers.map(im => {
+        {(interactive || (revealPhase !== undefined && revealPhase >= 3)) && interventionMarkers.map(im => {
           const cx = im.peakCenterX;
           const tailBottomY = PAD_TOP + GRAPH_H - im.tailRow * CELL_SIZE;
           const tailH = 11;
@@ -1019,10 +1021,12 @@ export function BgGraph({
           return (
             <g
               key={`int-marker-${im.placementId}`}
-              style={{ cursor: 'grab' }}
-              onPointerDown={(e) => handleIntMarkerDown(e, im.placementId)}
-              onPointerMove={handleIntMarkerMove}
-              onPointerUp={handleIntMarkerUp}
+              style={interactive ? { cursor: 'grab' } : undefined}
+              {...(interactive ? {
+                onPointerDown: (e: React.PointerEvent<SVGGElement>) => handleIntMarkerDown(e, im.placementId),
+                onPointerMove: handleIntMarkerMove,
+                onPointerUp: handleIntMarkerUp,
+              } : {})}
             >
               <g filter="url(#bubble-shadow)">
                 <rect
