@@ -51,13 +51,6 @@ function getFoodColor(index: number): string {
 const PREVIEW_COLOR = 'rgba(99, 179, 237, 0.4)';
 const PREVIEW_PANCREAS_COLOR = 'rgba(246, 153, 63, 0.35)';
 
-// Zone clip bands for skyline coloring (rendered bottom→top, higher zones paint on top)
-const ZONE_CLIP_BANDS = [
-  { id: 'zone-clip-green', color: '#48bb78', yTop: PAD_TOP + GRAPH_H - 4 * CELL_SIZE - 3, yBot: PAD_TOP + GRAPH_H + 3 },
-  { id: 'zone-clip-yellow', color: '#ecc94b', yTop: PAD_TOP + GRAPH_H - 7 * CELL_SIZE - 3, yBot: PAD_TOP + GRAPH_H - 4 * CELL_SIZE + 3 },
-  { id: 'zone-clip-orange', color: '#ed8936', yTop: PAD_TOP + GRAPH_H - 12 * CELL_SIZE - 3, yBot: PAD_TOP + GRAPH_H - 7 * CELL_SIZE + 3 },
-  { id: 'zone-clip-red', color: '#fc8181', yTop: PAD_TOP - 3, yBot: PAD_TOP + GRAPH_H - 12 * CELL_SIZE + 3 },
-];
 
 // Unified render data types
 type CubeStatus = 'normal' | 'burned' | 'pancreas';
@@ -108,6 +101,7 @@ interface GraphRenderData {
   plateauHeights: number[];
   pancreasCaps: number[];
   medCubes: MedCube[];
+  effectiveRows: number;
 }
 
 interface BgGraphProps {
@@ -128,11 +122,6 @@ interface BgGraphProps {
   onFoodMove?: (placementId: string, newColumn: number) => void;
   onInterventionClick?: (placementId: string) => void;
   onInterventionMove?: (placementId: string, newColumn: number) => void;
-}
-
-// Convert row (0 = bottom = bgMin) to SVG y
-function rowToY(row: number): number {
-  return PAD_TOP + GRAPH_H - (row + 1) * CELL_SIZE;
 }
 
 // Convert column to SVG x
@@ -306,6 +295,15 @@ export function BgGraph({
       rawFoods[i].color = getFoodColor(i);
     }
 
+    // Dynamic Y-axis expansion: compute effectiveRows from max cube height
+    const maxHeight = hasMedEffect
+      ? Math.max(0, ...originalPlateauHeights)
+      : Math.max(0, ...plateauHeights);
+    const effectiveRows = maxHeight <= TOTAL_ROWS
+      ? TOTAL_ROWS
+      : TOTAL_ROWS + Math.ceil((maxHeight - TOTAL_ROWS) / 5) * 5;
+    const cellHeight = GRAPH_H / effectiveRows;
+
     // pancreasCaps = sum of decay heights (already computed)
     const pancreasCaps = decayHeights;
 
@@ -333,7 +331,7 @@ export function BgGraph({
         // Alive cubes (positioned by decay stacking — guaranteed below pancreasCaps)
         for (let cubeIdx = 0; cubeIdx < c.aliveCount; cubeIdx++) {
           const row = c.baseRow + cubeIdx;
-          if (row >= TOTAL_ROWS) break;
+          if (row >= effectiveRows) break;
 
           let status: CubeStatus;
           let burnColor: string | undefined;
@@ -363,13 +361,13 @@ export function BgGraph({
         const pBase = pancreasCaps[c.col] + pancreasOffset[c.col];
         for (let i = 0; i < visibleEaten; i++) {
           const row = pBase + i;
-          if (row >= TOTAL_ROWS) break;
+          if (row >= effectiveRows) break;
           cubes.push({ col: c.col, row, status: 'pancreas' });
         }
         pancreasOffset[c.col] += visibleEaten;
 
         // aliveTop: food's own alive boundary (for markers — stable, independent)
-        const aliveTop = Math.min(c.baseRow + c.aliveCount, TOTAL_ROWS);
+        const aliveTop = Math.min(c.baseRow + c.aliveCount, effectiveRows);
         // skylineRow: clamped by columnCaps (for skyline paths — descends with interventions)
         const skylineRow = Math.min(aliveTop, columnCaps[c.col]);
 
@@ -418,13 +416,13 @@ export function BgGraph({
         let prevCol = -2;
         let lastBaseY = bottomY;
         for (const cs of colSummary) {
-          const baseY = PAD_TOP + GRAPH_H - cs.baseRow * CELL_SIZE;
+          const baseY = PAD_TOP + GRAPH_H - cs.baseRow * cellHeight;
           if (cs.skylineRow <= cs.baseRow) {
             if (inSeg) { parts.push(`V ${lastBaseY}`); inSeg = false; }
             prevCol = cs.col;
             continue;
           }
-          const y = PAD_TOP + GRAPH_H - cs.skylineRow * CELL_SIZE;
+          const y = PAD_TOP + GRAPH_H - cs.skylineRow * cellHeight;
           const x = colToX(cs.col);
           if (!inSeg || cs.col !== prevCol + 1) {
             if (inSeg) parts.push(`V ${lastBaseY}`);
@@ -466,7 +464,7 @@ export function BgGraph({
         if (inSegment) { mainParts.push(`V ${bottomY}`); inSegment = false; }
         continue;
       }
-      const y = PAD_TOP + GRAPH_H - h * CELL_SIZE;
+      const y = PAD_TOP + GRAPH_H - h * cellHeight;
       if (!inSegment) {
         mainParts.push(`M ${colToX(col)} ${bottomY}`);
         mainParts.push(`V ${y}`);
@@ -494,19 +492,43 @@ export function BgGraph({
         // Stack: Metformin cubes first (bottom), then GLP-1 cubes (top)
         for (let i = 0; i < metReduction; i++) {
           const row = baseRow + i;
-          if (row >= TOTAL_ROWS) break;
+          if (row >= effectiveRows) break;
           medCubes.push({ col, row, color: MET_COLOR });
         }
         for (let i = 0; i < glp1Reduction; i++) {
           const row = baseRow + metReduction + i;
-          if (row >= TOTAL_ROWS) break;
+          if (row >= effectiveRows) break;
           medCubes.push({ col, row, color: GLP1_COLOR });
         }
       }
     }
 
-    return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps, medCubes };
+    return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps, medCubes, effectiveRows };
   }, [placedFoods, allShips, medicationModifiers, decayRate, interventionReduction, interventionReductions]);
+
+  // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
+  const { effectiveRows } = graphRenderData;
+  const cellHeight = GRAPH_H / effectiveRows;
+  const rowToY = (row: number) => PAD_TOP + GRAPH_H - (row + 1) * cellHeight;
+
+  // Dynamic zone clip bands (Y-positions depend on cellHeight)
+  const zoneClipBands = [
+    { id: 'zone-clip-green', color: '#48bb78',
+      yTop: PAD_TOP + GRAPH_H - 4 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H + 3 },
+    { id: 'zone-clip-yellow', color: '#ecc94b',
+      yTop: PAD_TOP + GRAPH_H - 7 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - 4 * cellHeight + 3 },
+    { id: 'zone-clip-orange', color: '#ed8936',
+      yTop: PAD_TOP + GRAPH_H - 12 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - 7 * cellHeight + 3 },
+    { id: 'zone-clip-red', color: '#fc8181',
+      yTop: PAD_TOP - 3, yBot: PAD_TOP + GRAPH_H - 12 * cellHeight + 3 },
+  ];
+
+  // Dynamic Y-axis tick labels (extend beyond 400 when graph expands)
+  const yTicks = [...DEFAULT_Y_TICKS];
+  const maxMgDl = GRAPH_CONFIG.bgMin + effectiveRows * GRAPH_CONFIG.cellHeightMgDl;
+  for (let tick = 500; tick <= maxMgDl; tick += 100) {
+    yTicks.push(tick);
+  }
 
   // Preview curve (shown during drag hover)
   // With decay stacking, preview cubes start on top of the alive stack (pancreasCaps).
@@ -542,7 +564,7 @@ export function BgGraph({
 
       for (let cubeIdx = 0; cubeIdx < pc.cubeCount; cubeIdx++) {
         const row = startRow + cubeIdx;
-        if (row >= TOTAL_ROWS) break;
+        if (row >= graphRenderData.effectiveRows) break;
         cubes.push({ col: graphCol, row, isPancreasEaten: row >= combinedCap });
       }
     }
@@ -725,7 +747,7 @@ export function BgGraph({
       >
         <defs>
           {/* Zone clip paths for skyline coloring */}
-          {ZONE_CLIP_BANDS.map(z => (
+          {zoneClipBands.map(z => (
             <clipPath key={z.id} id={z.id}>
               <rect x={0} y={z.yTop} width={SVG_W} height={z.yBot - z.yTop} />
             </clipPath>
@@ -741,7 +763,7 @@ export function BgGraph({
           x={PAD_LEFT}
           y={rowToY(mgdlToRow(ZONE_NORMAL) - 1)}
           width={GRAPH_W}
-          height={(mgdlToRow(ZONE_NORMAL) - 0) * CELL_SIZE}
+          height={(mgdlToRow(ZONE_NORMAL) - 0) * cellHeight}
           fill="#c6f6d5"
           opacity={0.3}
         />
@@ -749,7 +771,7 @@ export function BgGraph({
           x={PAD_LEFT}
           y={rowToY(mgdlToRow(ZONE_ELEVATED) - 1)}
           width={GRAPH_W}
-          height={(mgdlToRow(ZONE_ELEVATED) - mgdlToRow(ZONE_NORMAL)) * CELL_SIZE}
+          height={(mgdlToRow(ZONE_ELEVATED) - mgdlToRow(ZONE_NORMAL)) * cellHeight}
           fill="#fefcbf"
           opacity={0.3}
         />
@@ -757,7 +779,7 @@ export function BgGraph({
           x={PAD_LEFT}
           y={rowToY(mgdlToRow(ZONE_HIGH) - 1)}
           width={GRAPH_W}
-          height={(mgdlToRow(ZONE_HIGH) - mgdlToRow(ZONE_ELEVATED)) * CELL_SIZE}
+          height={(mgdlToRow(ZONE_HIGH) - mgdlToRow(ZONE_ELEVATED)) * cellHeight}
           fill="#fed7d7"
           opacity={0.3}
         />
@@ -765,7 +787,7 @@ export function BgGraph({
           x={PAD_LEFT}
           y={PAD_TOP}
           width={GRAPH_W}
-          height={(TOTAL_ROWS - mgdlToRow(ZONE_HIGH)) * CELL_SIZE}
+          height={(effectiveRows - mgdlToRow(ZONE_HIGH)) * cellHeight}
           fill="#fc8181"
           opacity={0.2}
         />
@@ -784,13 +806,13 @@ export function BgGraph({
         ))}
 
         {/* Grid lines - horizontal (BG) */}
-        {Array.from({ length: TOTAL_ROWS + 1 }, (_, i) => (
+        {Array.from({ length: effectiveRows + 1 }, (_, i) => (
           <line
             key={`h-${i}`}
             x1={PAD_LEFT}
-            y1={PAD_TOP + i * CELL_SIZE}
+            y1={PAD_TOP + i * cellHeight}
             x2={PAD_LEFT + GRAPH_W}
-            y2={PAD_TOP + i * CELL_SIZE}
+            y2={PAD_TOP + i * cellHeight}
             stroke="#e2e8f0"
             strokeWidth={0.3}
           />
@@ -808,9 +830,10 @@ export function BgGraph({
         />
 
         {/* Y axis labels */}
-        {DEFAULT_Y_TICKS.map(tick => {
+        {yTicks.map(tick => {
           const row = mgdlToRow(tick);
-          const y = rowToY(row - 1) + CELL_SIZE / 2;
+          if (row > effectiveRows) return null;
+          const y = rowToY(row - 1) + cellHeight / 2;
           return (
             <text
               key={`y-${tick}`}
@@ -891,7 +914,7 @@ export function BgGraph({
                   x={colToX(cube.col) + 0.5}
                   y={rowToY(cube.row) + 0.5}
                   width={CELL_SIZE - 1}
-                  height={CELL_SIZE - 1}
+                  height={cellHeight - 1}
                   fill={cubeFill}
                   rx={2}
                   className={cubeClass}
@@ -923,7 +946,7 @@ export function BgGraph({
                   x={colToX(mc.col) + 0.5}
                   y={rowToY(mc.row) + 0.5}
                   width={CELL_SIZE - 1}
-                  height={CELL_SIZE - 1}
+                  height={cellHeight - 1}
                   fill={mc.color}
                   rx={2}
                   className={revealPhase !== undefined ? 'bg-graph__cube--med-reveal' : undefined}
@@ -974,7 +997,7 @@ export function BgGraph({
               transform="translate(0, 2)"
             />
             {/* Zone-colored skyline — clipped per zone band */}
-            {ZONE_CLIP_BANDS.map(z => (
+            {zoneClipBands.map(z => (
               <path
                 key={z.id}
                 d={graphRenderData.mainSkylinePath}
@@ -993,7 +1016,7 @@ export function BgGraph({
         {(interactive || (revealPhase !== undefined && revealPhase >= 1)) && graphRenderData.layers.map(layer => {
           if (!layer.marker) return null;
           const cx = layer.marker.peakCenterX;
-          const tailBottomY = PAD_TOP + GRAPH_H - layer.marker.tailRow * CELL_SIZE;
+          const tailBottomY = PAD_TOP + GRAPH_H - layer.marker.tailRow * cellHeight;
           const tailH = 11;
           const tailTopY = tailBottomY - tailH;
           const mW = 50;
@@ -1042,7 +1065,7 @@ export function BgGraph({
         {/* Intervention markers — emoji labels at each intervention's peak */}
         {(interactive || (revealPhase !== undefined && revealPhase >= 3)) && interventionMarkers.map(im => {
           const cx = im.peakCenterX;
-          const tailBottomY = PAD_TOP + GRAPH_H - im.tailRow * CELL_SIZE;
+          const tailBottomY = PAD_TOP + GRAPH_H - im.tailRow * cellHeight;
           const tailH = 11;
           const tailTopY = tailBottomY - tailH;
           const mW = 50;
@@ -1100,7 +1123,7 @@ export function BgGraph({
                   x={colToX(cube.col) + 0.5}
                   y={rowToY(cube.row) + 0.5}
                   width={CELL_SIZE - 1}
-                  height={CELL_SIZE - 1}
+                  height={cellHeight - 1}
                   fill={isRed ? 'rgba(245, 101, 101, 0.7)' : 'rgba(237, 137, 54, 0.6)'}
                   rx={2}
                   className="bg-graph__cube--penalty"
@@ -1127,7 +1150,7 @@ export function BgGraph({
                   x={colToX(cube.col) + 0.5}
                   y={rowToY(cube.row) + 0.5}
                   width={CELL_SIZE - 1}
-                  height={CELL_SIZE - 1}
+                  height={cellHeight - 1}
                   fill="rgba(34, 197, 94, 0.6)"
                   rx={2}
                   className="bg-graph__cube--preview-burn"
@@ -1144,7 +1167,7 @@ export function BgGraph({
             x={colToX(cube.col) + 0.5}
             y={rowToY(cube.row) + 0.5}
             width={CELL_SIZE - 1}
-            height={CELL_SIZE - 1}
+            height={cellHeight - 1}
             fill={cube.isPancreasEaten ? PREVIEW_PANCREAS_COLOR : PREVIEW_COLOR}
             rx={2}
             className="bg-graph__cube--preview"
