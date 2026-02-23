@@ -8,7 +8,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, PancreasTier } from '../../core/types';
+import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, PancreasTier, PlacedFood, PlacedIntervention } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectOvereatingPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
@@ -39,6 +39,61 @@ function togglePancreasTier(current: PancreasTier, maxBars: number): PancreasTie
   // ON → BOOST (if affordable)
   if (getPancreasTiers()[3].cost <= maxBars) return 3;
   return 1; // can't afford boost, stay ON
+}
+
+// === Break blocking helpers ===
+
+function getOccupiedColumns(dropColumn: number, durationMinutes: number): [number, number] {
+  const cols = Math.max(1, Math.ceil(durationMinutes / 15));
+  return [dropColumn, dropColumn + cols - 1];
+}
+
+function rangesOverlap(a: [number, number], b: [number, number]): boolean {
+  return a[0] <= b[1] && b[0] <= a[1];
+}
+
+/** Check if a new item (food or non-break intervention) overlaps with any placed break */
+function isBlockedByBreaks(
+  dropColumn: number,
+  durationMinutes: number,
+  placedIntvs: PlacedIntervention[],
+  allIntvs: Intervention[],
+): boolean {
+  const newRange = getOccupiedColumns(dropColumn, durationMinutes);
+  for (const placed of placedIntvs) {
+    const intv = allIntvs.find(i => i.id === placed.interventionId);
+    if (!intv?.isBreak) continue;
+    const breakRange = getOccupiedColumns(placed.dropColumn, intv.duration);
+    if (rangesOverlap(newRange, breakRange)) return true;
+  }
+  return false;
+}
+
+/** Check if a new break overlaps with any placed food or non-break intervention */
+function isBreakBlockedByPlacements(
+  dropColumn: number,
+  durationMinutes: number,
+  placedFoodsList: PlacedFood[],
+  allShipsList: Ship[],
+  placedIntvs: PlacedIntervention[],
+  allIntvs: Intervention[],
+): boolean {
+  const breakRange = getOccupiedColumns(dropColumn, durationMinutes);
+  // Check vs foods
+  for (const placed of placedFoodsList) {
+    const ship = allShipsList.find(s => s.id === placed.shipId);
+    if (!ship) continue;
+    const foodRange = getOccupiedColumns(placed.dropColumn, ship.duration);
+    if (rangesOverlap(breakRange, foodRange)) return true;
+  }
+  // Check vs non-break interventions
+  for (const placed of placedIntvs) {
+    const intv = allIntvs.find(i => i.id === placed.interventionId);
+    if (!intv || intv.isBreak) continue;
+    const intvRange = getOccupiedColumns(placed.dropColumn, intv.duration);
+    if (rangesOverlap(breakRange, intvRange)) return true;
+  }
+  return false;
 }
 
 export function PlanningPhase() {
@@ -256,17 +311,29 @@ export function PlanningPhase() {
       if (isIntervention) {
         const intervention = active.data.current?.intervention as Intervention | undefined;
         if (!intervention) return;
+        // Breaks have negative wpCost, so they always pass wpCost > wpRemaining check
         if (intervention.wpCost > wpRemaining) return;
+
+        if (intervention.isBreak) {
+          // Break can't overlap with food or non-break interventions
+          if (isBreakBlockedByPlacements(col, intervention.duration, placedFoods, allShips, placedInterventions, allInterventions)) return;
+        } else {
+          // Regular intervention can't overlap with breaks
+          if (isBlockedByBreaks(col, intervention.duration, placedInterventions, allInterventions)) return;
+        }
+
         placeIntervention(intervention.id, col);
       } else {
         const ship = active.data.current?.ship as Ship | undefined;
         if (!ship) return;
         const shipWp = ship.wpCost ?? 0;
         if (shipWp > wpRemaining) return;
+        // Food can't overlap with breaks
+        if (isBlockedByBreaks(col, ship.duration, placedInterventions, allInterventions)) return;
         placeFood(ship.id, col);
       }
     },
-    [placeFood, placeIntervention, wpRemaining, gamePhase]
+    [placeFood, placeIntervention, wpRemaining, gamePhase, placedFoods, allShips, placedInterventions, allInterventions]
   );
 
   const handleFoodClick = useCallback(
@@ -454,9 +521,7 @@ export function PlanningPhase() {
           dayLabel={`Day ${currentDay}/${currentLevel.days}`}
           kcalUsed={kcalUsed}
           kcalBudget={kcalBudget}
-          wpUsed={wpUsed}
-          wpBudget={wpBudget}
-          wpPenalty={wpPenalty}
+          wpRemaining={wpRemaining}
           overeatingPenalty={overeatingSteps}
           settings={settings}
           medicationModifiers={medicationModifiers}

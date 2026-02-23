@@ -50,12 +50,16 @@ export function InterventionCard({
     >
       <span className="intervention-card__emoji">{intervention.emoji}</span>
 
-      <span className="intervention-card__badge">{intervention.wpCost}☀️</span>
+      <span className="intervention-card__badge">
+        {intervention.isBreak
+          ? `+${Math.abs(intervention.wpCost)}`
+          : intervention.wpCost}☀️
+      </span>
 
       <div className="intervention-card__details">
         <span className="intervention-card__name">{intervention.name}</span>
         <span className="intervention-card__info">
-          {intervention.duration}m · -{intervention.depth} cubes
+          {intervention.duration}m · {intervention.isBreak ? 'blocks time' : `-${intervention.depth} cubes`}
         </span>
       </div>
 
@@ -71,11 +75,15 @@ export function InterventionCardOverlay({ intervention }: { intervention: Interv
   return (
     <div className="intervention-card intervention-card--overlay">
       <span className="intervention-card__emoji">{intervention.emoji}</span>
-      <span className="intervention-card__badge">{intervention.wpCost}☀️</span>
+      <span className="intervention-card__badge">
+        {intervention.isBreak
+          ? `+${Math.abs(intervention.wpCost)}`
+          : intervention.wpCost}☀️
+      </span>
       <div className="intervention-card__details">
         <span className="intervention-card__name">{intervention.name}</span>
         <span className="intervention-card__info">
-          {intervention.duration}m · -{intervention.depth} cubes
+          {intervention.duration}m · {intervention.isBreak ? 'blocks time' : `-${intervention.depth} cubes`}
         </span>
       </div>
     </div>

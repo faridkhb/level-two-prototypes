@@ -16,9 +16,7 @@ interface PlanningHeaderProps {
   dayLabel: string;
   kcalUsed: number;
   kcalBudget: number;
-  wpUsed: number;
-  wpBudget: number;
-  wpPenalty?: number;
+  wpRemaining: number;
   overeatingPenalty?: number;
   settings: GameSettings;
   medicationModifiers?: MedicationModifiers;
@@ -32,9 +30,7 @@ export function PlanningHeader({
   dayLabel,
   kcalUsed,
   kcalBudget,
-  wpUsed,
-  wpBudget,
-  wpPenalty = 0,
+  wpRemaining,
   overeatingPenalty = 0,
   settings,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
@@ -45,27 +41,15 @@ export function PlanningHeader({
 }: PlanningHeaderProps) {
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier)
     + overeatingPenalty * OVEREATING_PENALTY_KCAL;
-  const rawWpBudget = wpBudget + medicationModifiers.wpBonus;
-  const wpFloor = Math.ceil(wpBudget * 0.5);
-  const totalWpPenalty = wpPenalty + overeatingPenalty * OVEREATING_PENALTY_WP;
-  const effectiveWpBudget = Math.max(rawWpBudget - totalWpPenalty, wpFloor);
   const assessment = getKcalAssessment(kcalUsed, effectiveKcalBudget);
-  const wpOver = wpUsed > effectiveWpBudget;
-  const wpPerfect = wpUsed === effectiveWpBudget && wpUsed > 0;
   const hasKcalMod = medicationModifiers.kcalMultiplier !== 1;
-  const hasWpMod = medicationModifiers.wpBonus !== 0;
-  const hasPenalty = wpPenalty > 0;
   const hasOvereating = overeatingPenalty > 0;
+  const wpOver = wpRemaining < 0;
 
   // Live forecast: penalty being built up on current day
   const liveOvereatingSteps = getOvereatingPenalty(kcalUsed, effectiveKcalBudget);
   const forecastWp = liveOvereatingSteps * OVEREATING_PENALTY_WP;
   const forecastKcal = liveOvereatingSteps * OVEREATING_PENALTY_KCAL;
-
-  const wpTooltip = [
-    hasPenalty ? `${wpPenalty} unspent WP from previous day` : '',
-    hasOvereating ? `Overeating penalty: −${overeatingPenalty * OVEREATING_PENALTY_WP} WP` : '',
-  ].filter(Boolean).join('. ');
 
   const kcalTooltip = hasOvereating
     ? `Overeating penalty: +${overeatingPenalty * OVEREATING_PENALTY_KCAL} kcal budget (you must eat more)`
@@ -75,20 +59,9 @@ export function PlanningHeader({
     <div className="planning-header__wp">
       <span className="planning-header__wp-label">WP</span>
       <span className={`planning-header__wp-value ${wpOver ? 'planning-header__wp-value--over' : ''}`}>
-        {wpUsed}/
-        {(hasPenalty || hasOvereating) && (
-          <span className="planning-header__wp-strikethrough">{rawWpBudget}</span>
-        )}
-        {(hasPenalty || hasOvereating) ? ' ' : ''}{effectiveWpBudget}
-        {hasWpMod && <span className="planning-header__wp-bonus"> (+{medicationModifiers.wpBonus})</span>}
+        {wpRemaining}
       </span>
       <span className="planning-header__wp-icon">{'\u2600\uFE0F'}</span>
-      {wpPerfect && <span className="planning-header__wp-perfect">{'\u2713'}</span>}
-      {hasOvereating && (
-        <span className="planning-header__penalty-badge planning-header__penalty-badge--wp">
-          −{overeatingPenalty * OVEREATING_PENALTY_WP}
-        </span>
-      )}
     </div>
   );
 
@@ -169,11 +142,7 @@ export function PlanningHeader({
     <div className="planning-header">
       <div className="planning-header__day">{dayLabel}</div>
 
-      {wpTooltip ? (
-        <Tooltip text={wpTooltip} position="bottom">
-          {wpSection}
-        </Tooltip>
-      ) : wpSection}
+      {wpSection}
 
       {kcalTooltip ? (
         <Tooltip text={kcalTooltip} position="bottom">

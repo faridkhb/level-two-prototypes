@@ -103,6 +103,7 @@ interface RawInterventionConfig {
   wpCost: number;
   boostCols?: number;
   boostExtra?: number;
+  isBreak?: boolean;
 }
 
 function transformIntervention(raw: RawInterventionConfig): Intervention {
@@ -115,6 +116,7 @@ function transformIntervention(raw: RawInterventionConfig): Intervention {
     wpCost: raw.wpCost,
     boostCols: raw.boostCols,
     boostExtra: raw.boostExtra,
+    isBreak: raw.isBreak,
   };
 }
 

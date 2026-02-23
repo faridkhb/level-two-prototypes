@@ -19,6 +19,28 @@
       "wpCost": 4,
       "boostCols": 5,
       "boostExtra": 2
+    },
+    {
+      "id": "takeabreak",
+      "name": "Take a Break",
+      "emoji": "☕",
+      "depth": 0,
+      "duration": 30,
+      "wpCost": -1,
+      "boostCols": 0,
+      "boostExtra": 0,
+      "isBreak": true
+    },
+    {
+      "id": "takearest",
+      "name": "Take a Rest",
+      "emoji": "😴",
+      "depth": 0,
+      "duration": 60,
+      "wpCost": -2,
+      "boostCols": 0,
+      "boostExtra": 0,
+      "isBreak": true
     }
   ]
 }

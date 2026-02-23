@@ -98,6 +98,7 @@ export interface Intervention {
   wpCost: number;
   boostCols?: number;     // First N columns get extra depth (burst zone)
   boostExtra?: number;    // Extra cubes removed in burst zone
+  isBreak?: boolean;      // Blocks time, gives WP instead of costing
 }
 
 export interface PlacedIntervention {

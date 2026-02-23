@@ -895,6 +895,24 @@ export function BgGraph({
           />
         )}
 
+        {/* Break zones — semi-transparent overlay for break interventions */}
+        {placedInterventions.map(placed => {
+          const intv = allInterventions.find(i => i.id === placed.interventionId);
+          if (!intv?.isBreak) return null;
+          const cols = Math.max(1, Math.ceil(intv.duration / 15));
+          const x = PAD_LEFT + placed.dropColumn * CELL_SIZE;
+          const w = cols * CELL_SIZE;
+          return (
+            <rect
+              key={`break-${placed.id}`}
+              x={x} y={PAD_TOP} width={w} height={GRAPH_H}
+              fill="#a78bfa" opacity={0.12}
+              stroke="#a78bfa" strokeWidth={0.5} strokeDasharray="4 2"
+              pointerEvents="none"
+            />
+          );
+        })}
+
         {/* Per-food cube layers: last placed rendered first (bottom), first placed last (top) */}
         {[...graphRenderData.layers].reverse().map(layer => (
           <g key={`food-layer-${layer.placementId}`} className="bg-graph__food-group">
