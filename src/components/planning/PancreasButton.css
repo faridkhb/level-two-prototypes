@@ -1,109 +1,70 @@
-.pancreas-button {
-  background: #2d3748;
-  border-radius: 12px;
-  padding: 10px 14px;
+.pancreas-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  background: rgba(45, 55, 72, 0.88);
+  border: 1.5px solid rgba(160, 174, 192, 0.3);
+  border-radius: 8px;
+  padding: 5px 10px;
   cursor: pointer;
   user-select: none;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-  min-width: 100px;
+  color: #cbd5e0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+  backdrop-filter: blur(4px);
 }
 
-.pancreas-button:hover {
-  transform: scale(1.03);
-  box-shadow: 0 2px 8px rgba(246, 153, 63, 0.25);
+.pancreas-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(246, 153, 63, 0.3);
+  background: rgba(45, 55, 72, 0.95);
 }
 
-.pancreas-button:active {
-  transform: scale(0.97);
+.pancreas-btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
-.pancreas-button--disabled {
-  opacity: 0.5;
+/* Boost state — orange accent */
+.pancreas-btn--boost {
+  border-color: rgba(246, 153, 63, 0.5);
+  background: rgba(45, 55, 72, 0.92);
+}
+
+.pancreas-btn--boost .pancreas-btn__text {
+  color: #f6993f;
+}
+
+.pancreas-btn--disabled {
+  opacity: 0.45;
   cursor: default;
   pointer-events: none;
 }
 
-/* Header: emoji + label + tier */
-.pancreas-button__header {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.pancreas-btn__emoji {
+  font-size: 14px;
+  line-height: 1;
 }
 
-.pancreas-button__emoji {
-  font-size: 16px;
-}
-
-.pancreas-button__label {
+.pancreas-btn__text {
   color: #a0aec0;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.pancreas-button__tier {
-  color: #f6993f;
   font-size: 11px;
   font-weight: 700;
 }
 
-.pancreas-button__tier--off {
-  color: #718096;
-}
-
-/* Battery: 3 segments + nub */
-.pancreas-button__battery {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  background: #1a202c;
-  border-radius: 4px;
-  padding: 3px 4px;
-  border: 1.5px solid #4a5568;
-}
-
-.pancreas-button__segment {
-  width: 20px;
-  height: 14px;
-  border-radius: 2px;
-  background: #4a5568;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.pancreas-button__segment--active {
-  background: hsl(28, 90%, 60%);
-  box-shadow: 0 0 6px rgba(246, 153, 63, 0.6);
-}
-
-.pancreas-button__segment--locked {
-  background: #2d3748;
-  opacity: 0.4;
-}
-
-.pancreas-button__battery-nub {
-  width: 4px;
-  height: 8px;
-  background: #4a5568;
-  border-radius: 0 2px 2px 0;
-  margin-left: 1px;
-}
-
-/* Bar dots */
-.pancreas-button__bars {
-  display: flex;
-  gap: 3px;
-  font-size: 10px;
-}
-
-.pancreas-button__bar-dot {
-  color: #4a5568;
-}
-
-.pancreas-button__bar-dot--used {
+.pancreas-btn__cost {
+  background: rgba(246, 153, 63, 0.25);
   color: #f6993f;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+.pancreas-btn__lock {
+  font-size: 10px;
+  opacity: 0.5;
 }

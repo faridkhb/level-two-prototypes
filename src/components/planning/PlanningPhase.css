@@ -41,7 +41,19 @@
   align-items: stretch;
 }
 
-/* Interventions row: inventory + pancreas button side by side */
+/* Graph wrapper: relative container for pancreas overlay */
+.planning-phase__graph-wrapper {
+  position: relative;
+}
+
+.planning-phase__pancreas-overlay {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+}
+
+/* Interventions row */
 .planning-phase__interventions-row {
   display: flex;
   gap: 12px;

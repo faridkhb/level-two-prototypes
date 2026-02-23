@@ -33,14 +33,11 @@ const REVEAL_HOLD: Record<number, number> = {
   4: 1200,  // medications
 };
 
-function getNextPancreasTier(current: PancreasTier, maxBars: number): PancreasTier {
-  const sequence: PancreasTier[] = [1, 2, 3];
-  const currentIdx = sequence.indexOf(current);
-  for (let offset = 1; offset <= 3; offset++) {
-    const next = sequence[(currentIdx + offset) % 3];
-    if (PANCREAS_TIERS[next].cost <= maxBars) return next;
-  }
-  return 1;
+function togglePancreasTier(current: PancreasTier, maxBars: number): PancreasTier {
+  if (current === 3) return 1; // BOOST → ON
+  // ON → BOOST (if affordable)
+  if (PANCREAS_TIERS[3].cost <= maxBars) return 3;
+  return 1; // can't afford boost, stay ON
 }
 
 export function PlanningPhase() {
@@ -296,8 +293,8 @@ export function PlanningPhase() {
     });
   }, [settings.bgUnit, updateSettings]);
 
-  const handleCyclePancreas = useCallback(() => {
-    const nextTier = getNextPancreasTier(currentPancreasTier, barsAvailable);
+  const handleTogglePancreas = useCallback(() => {
+    const nextTier = togglePancreasTier(currentPancreasTier, barsAvailable);
     setPancreasTier(currentDay, nextTier);
   }, [currentPancreasTier, barsAvailable, currentDay, setPancreasTier]);
 
@@ -456,25 +453,37 @@ export function PlanningPhase() {
         )}
 
         <div className="planning-phase__content">
-          <BgGraph
-            placedFoods={placedFoods}
-            allShips={allShips}
-            placedInterventions={placedInterventions}
-            allInterventions={allInterventions}
-            settings={settings}
-            decayRate={currentDecayRate}
-            medicationModifiers={medicationModifiers}
-            previewShip={isPlanning ? activeShip : null}
-            previewIntervention={isPlanning ? activeIntervention : null}
-            previewColumn={isPlanning ? previewColumn : null}
-            showPenaltyHighlight={showResults}
-            revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
-            interactive={isPlanning}
-            onFoodClick={handleFoodClick}
-            onFoodMove={handleFoodMove}
-            onInterventionClick={handleInterventionClick}
-            onInterventionMove={handleInterventionMove}
-          />
+          <div className="planning-phase__graph-wrapper">
+            <BgGraph
+              placedFoods={placedFoods}
+              allShips={allShips}
+              placedInterventions={placedInterventions}
+              allInterventions={allInterventions}
+              settings={settings}
+              decayRate={currentDecayRate}
+              medicationModifiers={medicationModifiers}
+              previewShip={isPlanning ? activeShip : null}
+              previewIntervention={isPlanning ? activeIntervention : null}
+              previewColumn={isPlanning ? previewColumn : null}
+              showPenaltyHighlight={showResults}
+              revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
+              interactive={isPlanning}
+              onFoodClick={handleFoodClick}
+              onFoodMove={handleFoodMove}
+              onInterventionClick={handleInterventionClick}
+              onInterventionMove={handleInterventionMove}
+            />
+            {isPlanning && (
+              <div className="planning-phase__pancreas-overlay">
+                <PancreasButton
+                  currentTier={currentPancreasTier}
+                  barsAvailable={barsAvailable}
+                  onToggle={handleTogglePancreas}
+                  disabled={gamePhase !== 'planning'}
+                />
+              </div>
+            )}
+          </div>
 
           {isPlanning && (
             <>
@@ -495,12 +504,6 @@ export function PlanningPhase() {
                   availableMedicationIds={dayConfig?.availableMedications ?? []}
                   activeMedications={activeMedications}
                   onMedicationToggle={toggleMedication}
-                />
-                <PancreasButton
-                  currentTier={currentPancreasTier}
-                  barsAvailable={barsAvailable}
-                  onCycle={handleCyclePancreas}
-                  disabled={gamePhase !== 'planning'}
                 />
               </div>
             </>
