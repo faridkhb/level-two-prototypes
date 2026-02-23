@@ -7,7 +7,7 @@
     {
       "day": 1,
       "kcalBudget": 1800,
-      "wpBudget": 12,
+      "wpBudget": 10,
       "availableFoods": [
         { "id": "burger", "count": 1 },
         { "id": "icecream", "count": 1 },
@@ -20,7 +20,8 @@
         { "id": "sandwich", "count": 1 },
         { "id": "nutsmixed", "count": 1 },
         { "id": "milk", "count": 1 },
-        { "id": "chickpeas", "count": 1 }
+        { "id": "chickpeas", "count": 1 },
+        { "id": "oatmeal", "count": 1 }
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
@@ -32,7 +33,7 @@
     {
       "day": 2,
       "kcalBudget": 2000,
-      "wpBudget": 12,
+      "wpBudget": 10,
       "availableFoods": [
         { "id": "pizza", "count": 1 },
         { "id": "chickpeas", "count": 1 },
@@ -45,7 +46,8 @@
         { "id": "popcorn", "count": 1 },
         { "id": "sandwich", "count": 1 },
         { "id": "burger", "count": 1 },
-        { "id": "greekyogurt", "count": 1 }
+        { "id": "greekyogurt", "count": 1 },
+        { "id": "rice", "count": 1 }
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
@@ -58,7 +60,7 @@
     {
       "day": 3,
       "kcalBudget": 2000,
-      "wpBudget": 12,
+      "wpBudget": 10,
       "availableFoods": [
         { "id": "chocolatemuffin", "count": 1 },
         { "id": "sandwich", "count": 1 },
@@ -70,7 +72,8 @@
         { "id": "banana", "count": 1 },
         { "id": "nutsmixed", "count": 1 },
         { "id": "milk", "count": 1 },
-        { "id": "burger", "count": 1 }
+        { "id": "burger", "count": 1 },
+        { "id": "eggsboiled", "count": 1 }
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
