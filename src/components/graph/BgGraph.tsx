@@ -82,6 +82,7 @@ interface FoodRenderLayer {
   dropColumn: number;
   color: string;
   emoji: string;
+  carbs: number;
   cubes: FoodRenderCube[];
   colSummary: FoodColumnSummary[];
   marker: FoodMarkerInfo | null;
@@ -218,6 +219,7 @@ export function BgGraph({
       dropColumn: number;
       color: string;
       emoji: string;
+      carbs: number;
       columns: Array<{ col: number; baseRow: number; aliveCount: number; pancreasExtra: number }>;
     }> = [];
 
@@ -286,6 +288,7 @@ export function BgGraph({
         dropColumn: placed.dropColumn,
         color: '',
         emoji: ship.emoji,
+        carbs: ship.carbs ?? 0,
         columns: cols,
       });
     }
@@ -458,6 +461,7 @@ export function BgGraph({
         dropColumn: food.dropColumn,
         color: food.color,
         emoji: food.emoji,
+        carbs: food.carbs,
         cubes,
         colSummary,
         marker,
@@ -1026,7 +1030,7 @@ export function BgGraph({
         {(interactive || (revealPhase !== undefined && revealPhase >= 1)) && graphRenderData.layers.map(layer => {
           if (!layer.marker) return null;
           const mW = 50;
-          const mH = 44;
+          const mH = 52;
           const tailH = 11;
           // Clamp horizontal: marker stays within graph bounds
           const cx = Math.max(PAD_LEFT + mW / 2, Math.min(PAD_LEFT + GRAPH_W - mW / 2, layer.marker.peakCenterX));
@@ -1065,11 +1069,20 @@ export function BgGraph({
               </g>
               {/* Emoji */}
               <text
-                x={cx} y={mY + mH / 2 + 1}
+                x={cx} y={mY + 20}
                 textAnchor="middle" dominantBaseline="central"
-                fontSize={30} style={{ pointerEvents: 'none' }}
+                fontSize={26} style={{ pointerEvents: 'none' }}
               >
                 {layer.emoji}
+              </text>
+              {/* Carbs label */}
+              <text
+                x={cx} y={mY + mH - 7}
+                textAnchor="middle" dominantBaseline="central"
+                fontSize={10} fontWeight={700} fill="#4a5568"
+                style={{ pointerEvents: 'none' }}
+              >
+                {layer.carbs}g
               </text>
             </g>
           );
