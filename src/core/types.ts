@@ -48,10 +48,10 @@ export const PANCREAS_TIERS: Record<PancreasTier, { decayRate: number; cost: num
   0: { decayRate: 0, cost: 0, label: 'OFF' },
   1: { decayRate: 0.25, cost: 0, label: 'I' },
   2: { decayRate: 0.5, cost: 1, label: 'II' },
-  3: { decayRate: 0.75, cost: 2, label: 'III' },
+  3: { decayRate: 0.75, cost: 1, label: 'III' },
 };
 
-export const PANCREAS_TOTAL_BARS = 3;
+export const PANCREAS_TOTAL_BARS = 1;
 
 // === WP Carry-Over Penalty ===
 

@@ -477,7 +477,7 @@ export function PlanningPhase() {
               <div className="planning-phase__pancreas-overlay">
                 <PancreasButton
                   currentTier={currentPancreasTier}
-                  barsAvailable={barsAvailable}
+                  usesRemaining={barsAvailable}
                   onToggle={handleTogglePancreas}
                   disabled={gamePhase !== 'planning'}
                 />
