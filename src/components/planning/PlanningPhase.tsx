@@ -17,7 +17,7 @@ import { BgGraph, pointerToColumn } from '../graph';
 import { PlanningHeader } from './PlanningHeader';
 import { ShipInventory } from './ShipInventory';
 import { InterventionInventory } from './InterventionInventory';
-import { MedicationPanel } from './MedicationPanel';
+// MedicationPanel merged into InterventionInventory
 import { PancreasButton } from './PancreasButton';
 import { ResultPanel } from './ResultPanel';
 import { ShipCardOverlay } from './ShipCard';
@@ -497,13 +497,6 @@ export function PlanningPhase() {
 
           {isPlanning && (
             <>
-              <MedicationPanel
-                allMedications={allMedications}
-                availableMedicationIds={dayConfig?.availableMedications ?? []}
-                activeMedications={activeMedications}
-                onToggle={toggleMedication}
-              />
-
               <ShipInventory
                 allShips={allShips}
                 availableFoods={dayConfig?.availableFoods || []}
@@ -517,6 +510,10 @@ export function PlanningPhase() {
                   availableInterventions={dayConfig?.availableInterventions || []}
                   placedInterventions={placedInterventions}
                   wpRemaining={wpRemaining}
+                  allMedications={allMedications}
+                  availableMedicationIds={dayConfig?.availableMedications ?? []}
+                  activeMedications={activeMedications}
+                  onMedicationToggle={toggleMedication}
                 />
                 <PancreasButton
                   currentTier={currentPancreasTier}
