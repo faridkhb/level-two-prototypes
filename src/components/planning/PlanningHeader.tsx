@@ -96,19 +96,21 @@ export function PlanningHeader({
         </span>
       )}
       <span className="planning-header__kcal-dash">{'\u2014'}</span>
-      <span
-        className="planning-header__kcal-assessment"
-        style={{ color: assessment.color }}
-      >
-        {assessment.label}
-      </span>
-      {liveOvereatingSteps > 0 && (
+      {liveOvereatingSteps > 0 ? (
         <Tooltip text={`Overeating penalty for next day: \u2212${forecastWp} WP, +${forecastKcal} kcal budget`} position="bottom">
-          <span className="planning-header__forecast">
+          <span className="planning-header__assessment-badge" style={{ background: `${assessment.color}22`, borderColor: `${assessment.color}44` }}>
+            <span style={{ color: assessment.color }}>{assessment.label}</span>
             <span className="planning-header__forecast-wp">{'\u2212'}{forecastWp} WP</span>
             <span className="planning-header__forecast-kcal">+{forecastKcal} kcal</span>
           </span>
         </Tooltip>
+      ) : (
+        <span
+          className="planning-header__kcal-assessment"
+          style={{ color: assessment.color }}
+        >
+          {assessment.label}
+        </span>
       )}
     </div>
   );
