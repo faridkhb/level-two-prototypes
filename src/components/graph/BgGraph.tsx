@@ -381,26 +381,37 @@ export function BgGraph({
       }
 
       // Marker: centered on food's OWN VISIBLE peak (skylineRow - baseRow)
-      // Uses visible height (alive cubes after interventions), matching the individual skyline
+      // Falls back to aliveTop (pre-intervention height) if all cubes are burned
       let maxVisibleHeight = 0;
+      let useFallback = false;
       for (const cs of colSummary) {
         const visibleHeight = Math.max(0, cs.skylineRow - cs.baseRow);
         if (visibleHeight > maxVisibleHeight) maxVisibleHeight = visibleHeight;
       }
+      if (maxVisibleHeight === 0) {
+        useFallback = true;
+        for (const cs of colSummary) {
+          const h = Math.max(0, cs.aliveTop - cs.baseRow);
+          if (h > maxVisibleHeight) maxVisibleHeight = h;
+        }
+      }
       const peakCols: number[] = [];
       for (const cs of colSummary) {
-        const visibleHeight = Math.max(0, cs.skylineRow - cs.baseRow);
-        if (visibleHeight === maxVisibleHeight && maxVisibleHeight > 0) {
+        const h = useFallback
+          ? Math.max(0, cs.aliveTop - cs.baseRow)
+          : Math.max(0, cs.skylineRow - cs.baseRow);
+        if (h === maxVisibleHeight && maxVisibleHeight > 0) {
           peakCols.push(cs.col);
         }
       }
 
       let marker: FoodMarkerInfo | null = null;
       if (peakCols.length > 0) {
-        // Tail points to skylineRow (top of visible alive cubes) — matches the skyline path
         const anchorCol = peakCols[Math.floor(peakCols.length / 2)];
         const anchorSummary = colSummary.find(cs => cs.col === anchorCol);
-        const tailRow = anchorSummary ? anchorSummary.skylineRow : 0;
+        const tailRow = anchorSummary
+          ? (useFallback ? anchorSummary.aliveTop : anchorSummary.skylineRow)
+          : 0;
         const peakCenterX = PAD_LEFT +
           ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
         marker = { peakCenterX, tailRow };
