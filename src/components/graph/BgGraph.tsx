@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef } from 'react';
+import { useMemo, useCallback, useRef, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, MedicationModifiers } from '../../core/types';
 import {
@@ -167,6 +167,11 @@ export function BgGraph({
   const svgRef = useRef<SVGSVGElement>(null);
   const markerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
   const interventionMarkerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
+
+  // Floating card overlay when dragging marker outside graph
+  const [dragOutside, setDragOutside] = useState<{
+    emoji: string; name: string; clientX: number; clientY: number;
+  } | null>(null);
 
   const { setNodeRef, isOver } = useDroppable({
     id: 'bg-graph',
@@ -624,17 +629,30 @@ export function BgGraph({
     const rect = svg.getBoundingClientRect();
     const scale = rect.width / SVG_W;
     const svgX = (e.clientX - rect.left) / scale;
-    const col = Math.max(0, Math.min(Math.floor((svgX - PAD_LEFT) / CELL_SIZE), TOTAL_COLUMNS - 1));
-    if (col !== drag.lastCol) {
-      drag.lastCol = col;
-      onFoodMove?.(drag.placementId, col);
+    const svgY = (e.clientY - rect.top) / scale;
+    const isOutside = svgX < PAD_LEFT || svgX > PAD_LEFT + GRAPH_W || svgY < PAD_TOP || svgY > PAD_TOP + GRAPH_H;
+    if (isOutside) {
+      // Show floating card under cursor
+      const placed = placedFoods.find(f => f.id === drag.placementId);
+      const ship = placed ? allShips.find(s => s.id === placed.shipId) : null;
+      if (ship) {
+        setDragOutside({ emoji: ship.emoji, name: ship.name, clientX: e.clientX, clientY: e.clientY });
+      }
+    } else {
+      setDragOutside(null);
+      const col = Math.max(0, Math.min(Math.floor((svgX - PAD_LEFT) / CELL_SIZE), TOTAL_COLUMNS - 1));
+      if (col !== drag.lastCol) {
+        drag.lastCol = col;
+        onFoodMove?.(drag.placementId, col);
+      }
     }
-  }, [onFoodMove]);
+  }, [onFoodMove, placedFoods, allShips]);
 
   const handleMarkerPointerUp = useCallback((e: React.PointerEvent<SVGGElement>) => {
     const drag = markerDragRef.current;
     if (!drag) return;
     markerDragRef.current = null;
+    setDragOutside(null);
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -663,17 +681,29 @@ export function BgGraph({
     const rect = svg.getBoundingClientRect();
     const scale = rect.width / SVG_W;
     const svgX = (e.clientX - rect.left) / scale;
-    const col = Math.max(0, Math.min(Math.floor((svgX - PAD_LEFT) / CELL_SIZE), TOTAL_COLUMNS - 1));
-    if (col !== drag.lastCol) {
-      drag.lastCol = col;
-      onInterventionMove?.(drag.placementId, col);
+    const svgY = (e.clientY - rect.top) / scale;
+    const isOutside = svgX < PAD_LEFT || svgX > PAD_LEFT + GRAPH_W || svgY < PAD_TOP || svgY > PAD_TOP + GRAPH_H;
+    if (isOutside) {
+      const placed = placedInterventions.find(i => i.id === drag.placementId);
+      const intervention = placed ? allInterventions.find(iv => iv.id === placed.interventionId) : null;
+      if (intervention) {
+        setDragOutside({ emoji: intervention.emoji, name: intervention.name, clientX: e.clientX, clientY: e.clientY });
+      }
+    } else {
+      setDragOutside(null);
+      const col = Math.max(0, Math.min(Math.floor((svgX - PAD_LEFT) / CELL_SIZE), TOTAL_COLUMNS - 1));
+      if (col !== drag.lastCol) {
+        drag.lastCol = col;
+        onInterventionMove?.(drag.placementId, col);
+      }
     }
-  }, [onInterventionMove]);
+  }, [onInterventionMove, placedInterventions, allInterventions]);
 
   const handleIntMarkerUp = useCallback((e: React.PointerEvent<SVGGElement>) => {
     const drag = interventionMarkerDragRef.current;
     if (!drag) return;
     interventionMarkerDragRef.current = null;
+    setDragOutside(null);
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -1160,6 +1190,21 @@ export function BgGraph({
           );
         })()}
       </svg>
+
+      {/* Floating card when dragging marker outside graph */}
+      {dragOutside && (
+        <div
+          className="bg-graph__drag-card"
+          style={{
+            position: 'fixed',
+            left: dragOutside.clientX + 12,
+            top: dragOutside.clientY - 20,
+          }}
+        >
+          <span className="bg-graph__drag-card-emoji">{dragOutside.emoji}</span>
+          <span className="bg-graph__drag-card-name">{dragOutside.name}</span>
+        </div>
+      )}
     </div>
   );
 }
