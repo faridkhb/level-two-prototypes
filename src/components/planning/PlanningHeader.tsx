@@ -1,5 +1,5 @@
 import type { GameSettings, MedicationModifiers } from '../../core/types';
-import { getKcalAssessment, DEFAULT_MEDICATION_MODIFIERS, OVEREATING_PENALTY_KCAL, OVEREATING_PENALTY_WP } from '../../core/types';
+import { getKcalAssessment, getOvereatingPenalty, DEFAULT_MEDICATION_MODIFIERS, OVEREATING_PENALTY_KCAL, OVEREATING_PENALTY_WP } from '../../core/types';
 import { Tooltip } from '../ui/Tooltip';
 import './PlanningHeader.css';
 
@@ -47,6 +47,11 @@ export function PlanningHeader({
   const hasWpMod = medicationModifiers.wpBonus !== 0;
   const hasPenalty = wpPenalty > 0;
   const hasOvereating = overeatingPenalty > 0;
+
+  // Live forecast: penalty being built up on current day
+  const liveOvereatingSteps = getOvereatingPenalty(kcalUsed, effectiveKcalBudget);
+  const forecastWp = liveOvereatingSteps * OVEREATING_PENALTY_WP;
+  const forecastKcal = liveOvereatingSteps * OVEREATING_PENALTY_KCAL;
 
   const wpTooltip = [
     hasPenalty ? `${wpPenalty} unspent WP from previous day` : '',
@@ -97,6 +102,14 @@ export function PlanningHeader({
       >
         {assessment.label}
       </span>
+      {liveOvereatingSteps > 0 && (
+        <Tooltip text={`Overeating penalty for next day: \u2212${forecastWp} WP, +${forecastKcal} kcal budget`} position="bottom">
+          <span className="planning-header__forecast">
+            <span className="planning-header__forecast-wp">{'\u2212'}{forecastWp} WP</span>
+            <span className="planning-header__forecast-kcal">+{forecastKcal} kcal</span>
+          </span>
+        </Tooltip>
+      )}
     </div>
   );
 

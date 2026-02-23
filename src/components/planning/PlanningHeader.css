@@ -82,6 +82,28 @@
   color: #ed8936;
 }
 
+/* Live overeating forecast */
+.planning-header__forecast {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(237, 137, 54, 0.12);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+}
+
+.planning-header__forecast-wp {
+  color: #fc8181;
+}
+
+.planning-header__forecast-kcal {
+  color: #ed8936;
+}
+
 /* Kcal + Assessment */
 .planning-header__kcal {
   display: flex;
