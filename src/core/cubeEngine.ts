@@ -56,6 +56,12 @@ export function calculateCurve(
     result.push({ columnOffset: i, cubeCount: height });
   }
 
+  // Guarantee at least 1 cube at peak for any food with glucose > 0
+  // (prevents low-carb foods from being fully eaten by pancreas during ramp-up)
+  if (result.length === 0 && peakCubes > 0) {
+    result.push({ columnOffset: riseCols - 1, cubeCount: 1 });
+  }
+
   return result;
 }
 
