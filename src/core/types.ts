@@ -181,6 +181,21 @@ export function getKcalAssessment(kcalUsed: number, kcalBudget: number): KcalAss
   return { label: 'Stuffed', color: '#e53e3e' };
 }
 
+/** Overeating penalty: steps beyond Well Fed (0=none, 1=Full, 2=Overeating, 3=Stuffed) */
+export function getOvereatingPenalty(kcalUsed: number, kcalBudget: number): number {
+  if (kcalUsed === 0 || kcalBudget === 0) return 0;
+  const pct = (kcalUsed / kcalBudget) * 100;
+  if (pct < 100) return 0;  // Well Fed or below
+  if (pct < 120) return 1;  // Full
+  if (pct < 150) return 2;  // Overeating
+  return 3;                  // Stuffed
+}
+
+/** Per penalty step: +100 kcal budget, -1 WP, +1 free food */
+export const OVEREATING_PENALTY_KCAL = 100;
+export const OVEREATING_PENALTY_WP = 1;
+export const OVEREATING_PENALTY_FOOD_ID = 'icecream';
+
 export interface LevelConfig {
   id: string;
   name: string;

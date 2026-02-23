@@ -44,6 +44,9 @@ interface GameState {
   // WP carry-over tracking
   submittedWpPerDay: Record<number, { wpUsed: number; effectiveWpBudget: number }>;
 
+  // Overeating penalty (steps per submitted day)
+  overeatingPenaltyPerDay: Record<number, number>;
+
   // Settings
   settings: GameSettings;
 
@@ -65,6 +68,7 @@ interface GameState {
   lockPancreasBars: () => void;
   unlockPancreasBars: (day: number) => void;
   submitDayWp: (day: number, wpUsed: number, effectiveWpBudget: number) => void;
+  setOvereatingPenalty: (day: number, steps: number) => void;
 }
 
 export const useGameStore = create<GameState>()(
@@ -79,6 +83,7 @@ export const useGameStore = create<GameState>()(
       pancreasTierPerDay: {},
       lockedBarsPerDay: {},
       submittedWpPerDay: {},
+      overeatingPenaltyPerDay: {},
       settings: DEFAULT_SETTINGS,
 
       // Actions
@@ -92,6 +97,7 @@ export const useGameStore = create<GameState>()(
           pancreasTierPerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
+          overeatingPenaltyPerDay: {},
         }),
 
       placeFood: (shipId, dropColumn) =>
@@ -168,6 +174,7 @@ export const useGameStore = create<GameState>()(
           pancreasTierPerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
+          overeatingPenaltyPerDay: {},
         }),
 
       updateSettings: (newSettings) =>
@@ -205,6 +212,14 @@ export const useGameStore = create<GameState>()(
             [day]: { wpUsed, effectiveWpBudget },
           },
         })),
+
+      setOvereatingPenalty: (day, steps) =>
+        set((state) => ({
+          overeatingPenaltyPerDay: {
+            ...state.overeatingPenaltyPerDay,
+            [day]: steps,
+          },
+        })),
     }),
     {
       name: 'bg-graph-save',
@@ -215,6 +230,7 @@ export const useGameStore = create<GameState>()(
         pancreasTierPerDay: state.pancreasTierPerDay,
         lockedBarsPerDay: state.lockedBarsPerDay,
         submittedWpPerDay: state.submittedWpPerDay,
+        overeatingPenaltyPerDay: state.overeatingPenaltyPerDay,
       }),
     }
   )
@@ -250,6 +266,15 @@ export function selectWpUsed(
     if (intervention) total += intervention.wpCost;
   }
   return total;
+}
+
+// Selector: overeating penalty steps from previous day
+export function selectOvereatingPenalty(
+  currentDay: number,
+  overeatingPenaltyPerDay: Record<number, number>,
+): number {
+  if (currentDay <= 1) return 0;
+  return overeatingPenaltyPerDay[currentDay - 1] ?? 0;
 }
 
 // Selector: compute WP penalty from previous day's unspent WP
