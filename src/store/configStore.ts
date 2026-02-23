@@ -10,6 +10,7 @@ export interface FoodOverride {
   duration: number;
   kcal: number;
   wpCost: number;
+  gi: number;
 }
 
 export interface InterventionOverride {

@@ -15,6 +15,8 @@ interface RawFoodConfig {
   kcal: number;
   description?: string;
   wpCost?: number;
+  portion?: string;
+  gi?: number;
 }
 
 interface RawLevelConfig {
@@ -50,6 +52,8 @@ function transformFood(raw: RawFoodConfig): Ship {
     targetContainer: 'bg',
     description: raw.description,
     wpCost: raw.wpCost ?? 0,
+    portion: raw.portion,
+    gi: raw.gi,
   };
 }
 
@@ -191,6 +195,7 @@ function applyFoodOverrides(ships: Ship[]): Ship[] {
       duration: overrides.duration ?? ship.duration,
       kcal: overrides.kcal ?? ship.kcal,
       wpCost: overrides.wpCost ?? ship.wpCost,
+      gi: overrides.gi ?? ship.gi,
     };
   });
 }

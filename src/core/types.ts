@@ -77,6 +77,8 @@ export interface Ship {
   targetContainer: string;
   description?: string;
   wpCost?: number;        // Willpower cost (preserved for future use)
+  portion?: string;       // Serving size description (e.g. "1 medium (120g)")
+  gi?: number;            // Glycemic Index (0-100)
 }
 
 // === Placed Food on Graph ===

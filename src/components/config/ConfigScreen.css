@@ -101,6 +101,13 @@
   padding-right: 8px;
 }
 
+.config-table__td--portion {
+  font-size: 10px;
+  color: #a0aec0;
+  white-space: nowrap;
+  text-align: left !important;
+}
+
 .config-table__emoji {
   margin-right: 4px;
 }

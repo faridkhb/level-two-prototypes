@@ -23,6 +23,8 @@ interface RawFood {
   duration: number;
   kcal: number;
   wpCost: number;
+  portion: string;
+  gi: number;
 }
 
 interface RawIntervention {
@@ -93,6 +95,8 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
           duration: f.duration,
           kcal: f.kcal,
           wpCost: f.wpCost ?? 0,
+          portion: f.portion ?? '',
+          gi: f.gi ?? 0,
         })));
 
         setDefaultInterventions(intvData.interventions.map((i: RawIntervention) => ({
@@ -190,12 +194,14 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
               <thead>
                 <tr>
                   <th className="config-table__th--name">Food</th>
+                  <th>Portion</th>
                   <th>Glucose</th>
                   <th>Carbs</th>
                   <th>Protein</th>
                   <th>Fat</th>
                   <th>Duration</th>
                   <th>Kcal</th>
+                  <th>GI</th>
                   <th>WP</th>
                 </tr>
               </thead>
@@ -206,6 +212,7 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
                       <span className="config-table__emoji">{food.emoji}</span>
                       {food.name}
                     </td>
+                    <td className="config-table__td--portion">{food.portion}</td>
                     <td>
                       <input
                         type="number"
@@ -252,6 +259,14 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
                         className="config-input"
                         value={getFoodValue(food.id, 'kcal', food.kcal)}
                         onChange={e => setFoodField(food.id, 'kcal', Number(e.target.value))}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="config-input config-input--small"
+                        value={getFoodValue(food.id, 'gi', food.gi)}
+                        onChange={e => setFoodField(food.id, 'gi', Number(e.target.value))}
                       />
                     </td>
                     <td>
