@@ -29,9 +29,9 @@ export function PancreasButton({
     >
       <span className="pancreas-btn__emoji">{'\uD83E\uDEC1'}</span>
       <span className="pancreas-btn__text">
-        {isBoosted ? 'BOOST' : 'ON'}
+        {isBoosted ? 'BOOST OFF' : 'BOOST'}
       </span>
-      {isBoosted && (
+      {!isBoosted && canAffordBoost && (
         <span className="pancreas-btn__cost">{boostCost}</span>
       )}
       {!isBoosted && !canAffordBoost && (
