@@ -198,6 +198,13 @@ export function PlanningPhase() {
     const { delta, activatorEvent } = _event;
     if (activatorEvent && 'clientX' in activatorEvent) {
       const pointerX = (activatorEvent as PointerEvent).clientX + delta.x;
+      const pointerY = (activatorEvent as PointerEvent).clientY + delta.y;
+      const graphRect = graphEl.getBoundingClientRect();
+      // Only show preview when cursor is within the graph element bounds
+      if (pointerY < graphRect.top || pointerY > graphRect.bottom) {
+        setPreviewColumn(null);
+        return;
+      }
       const col = pointerToColumn(graphEl, pointerX);
       setPreviewColumn(col);
     }
