@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.40.3 | Graph-based food planning with cubes, interventions, medications, decay, wave animations, main menu, config screen |
+| `main` | BG Planner | v0.40.6 | Graph-based food planning with cubes, interventions, medications, decay, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -109,8 +109,8 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.40.3)
-- `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG)
+- `src/version.ts` — version number (v0.40.6)
+- `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
 #### App Navigation
@@ -132,7 +132,8 @@ CONFIG:
 
 #### Planning Phase (`src/components/planning/`)
 - `PlanningPhase.tsx` — single-screen orchestrator with DnD context, submit/reveal/results flow
-- `PlanningHeader.tsx` — header with day label, WP budget, kcal assessment, settings toggles (time format, BG unit)
+- `PlanningHeader.tsx` — header with day label, WP budget, kcal assessment, overeating penalty indicators, settings toggles (time format, BG unit)
+- `PancreasButton.tsx` — compact ON/BOOST toggle overlay on graph
 - `ShipCard.tsx` — draggable food cards with emoji, kcal, carbs, duration, WP badge
 - `ShipInventory.tsx` — food card list from level config
 - `InterventionCard.tsx` — draggable intervention cards (green) with emoji, duration, depth, WP badge
@@ -142,7 +143,7 @@ CONFIG:
 - `ResultPanel.tsx` — star rating, penalty breakdown, retry/next buttons
 
 #### State Management
-- `src/store/gameStore.ts` — Zustand store: placedFoods, placedInterventions, settings, combined kcal/WP tracking
+- `src/store/gameStore.ts` — Zustand store: placedFoods, placedInterventions, settings, combined kcal/WP tracking, overeating penalty per day
 - `src/store/configStore.ts` — Zustand store: config overrides (food, pancreas, interventions, medications) persisted in localStorage
 
 #### Configuration
@@ -155,7 +156,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.40.3) — Main Menu, Config Screen, Phased Reveal Animation
+### Current State (v0.40.6) — Dynamic Y-axis, Pancreas ON/BOOST, Overeating Penalties
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -189,14 +190,23 @@ CONFIG:
   - Graph on top, food inventory + Actions panel below (horizontal card layout)
   - No phase transitions within test mode — everything on one screen
 
+- **Dynamic Y-axis Expansion** ✅ (v0.40.4)
+  - When cubes exceed 400 mg/dL, graph auto-expands in +100 mg/dL sections
+  - `GRAPH_H = 306px` stays fixed — cell height compresses to fit more rows
+  - `effectiveRows = TOTAL_ROWS + ceil((maxRow - TOTAL_ROWS) / 5) * 5`
+  - `cellHeight = GRAPH_H / effectiveRows` (replaces fixed CELL_SIZE for Y)
+  - Cubes become rectangular (width = CELL_SIZE-1, height = cellHeight-1)
+  - Zone backgrounds, grid lines, Y-axis labels, markers all scale dynamically
+  - Y-axis labels expand: 500, 600, 700... as needed
+  - Removing food returns graph to normal size (effectiveRows=17)
+
 - **BG Graph** ✅
   - SVG graph with X axis (8 AM to 8 PM, 48 columns × 15 min)
-  - Y axis (60 to 400 mg/dL, 17 rows × 20 mg/dL)
+  - Y axis (60 to 400+ mg/dL, dynamic rows × 20 mg/dL)
   - Grid lines: major every hour, minor every 15 min
-  - Zone colors: green (60-140), yellow (140-200), orange (200-300), red (300-400)
+  - Zone colors: green (60-140), yellow (140-200), orange (200-300), red (300+)
   - X axis labels: 8 AM, 11 AM, 2 PM, 5 PM, 8 PM
-  - Y axis labels: 100, 200, 300, 400 (60 mg/dL label removed)
-  - BG line and food emoji on graph — disabled
+  - Y axis labels: 100, 200, 300, 400 (+ 500, 600... when expanded)
   - Droppable zone for @dnd-kit (accepts both food and interventions)
 
 - **Cube Engine** ✅
@@ -253,11 +263,14 @@ CONFIG:
   - Wave delay: 20ms per column offset from drop point
 
 - **WP Budget** ✅
-  - Per-day wpBudget from level config (16 for all days)
+  - Per-day wpBudget from level config (Day 1: 7, Day 2-3: 10)
   - Header shows wpUsed/wpBudget with ☀️ icon
   - **Combined tracking**: food wpCost + intervention wpCost share same pool
   - **Hard limit**: cards disabled (grayed out, non-draggable) when WP insufficient
   - Drop rejected if wpCost exceeds remaining WP
+  - **WP carry-over penalty**: unspent WP from previous day reduces next day's budget
+  - **Overeating penalty**: −1 WP per overeating step from previous day
+  - Floor: WP cannot drop below 50% of base budget
 
 - **Food Cards** ✅
   - Display: emoji, name, kcal, carbs (g), duration (m)
@@ -268,9 +281,8 @@ CONFIG:
   - Inventory below graph, cards arranged horizontally (flex-wrap)
 
 - **Kcal Assessment** ✅
-  - No hard calorie limit — kcal is informational
-  - All food kcal values multiplied by 2.5 (from original USDA per-serving)
-  - Header shows total kcal + text assessment based on % of kcalBudget:
+  - No hard calorie limit — kcal is informational but overeating has penalties
+  - Header shows total kcal + text assessment based on % of effectiveKcalBudget:
     - 0%: Fasting (gray)
     - <25%: Starving (red)
     - 25-50%: Hungry (orange)
@@ -281,7 +293,7 @@ CONFIG:
     - >150%: Stuffed (red)
 
 - **Food Nutritional Data** ✅
-  - All 24 foods have: carbs, protein, fat, kcal (from USDA × 2.5)
+  - All 24 foods have: carbs, protein, fat, kcal
   - protein/fat stored for future use, not displayed on cards yet
 
 - **Food Cube Colors** ✅
@@ -321,11 +333,25 @@ CONFIG:
   - Star rating: 3★ Perfect (≤12.5), 2★ Good (≤50), 1★ Pass (≤100), 0★ Defeat (>100)
   - Penalty highlight overlays (pulsing orange/red) on cubes above threshold
 
-- **Pancreas Tier System** ✅
-  - 4 tiers: OFF (0), I (0.25), II (0.5), III (0.75) — controls decayRate
-  - Tier selection UI with WP costs (Tier I free, Tier II = 1 WP, Tier III = 2 WP)
-  - Higher tier = faster glucose processing = shorter food curves
-  - 3 visual bars showing current tier level
+- **Pancreas System** ✅ (simplified v0.40.5)
+  - 2-state compact toggle: ON (Tier I, decayRate 0.25) ↔ BOOST (Tier III, decayRate 0.75)
+  - Button overlaid on graph top-left corner with absolute positioning
+  - Default label "BOOST", active label "BOOST OFF"
+  - 1 use per level — uses-remaining indicator (orange circle)
+  - Locked state when no uses remain (muted, non-interactive)
+  - Activating BOOST consumes 1 use permanently for the level
+
+- **Overeating Penalty System** ✅ (v0.40.6)
+  - Each satiety level beyond Well Fed penalizes the next day:
+    - Full (100-120%): +100 kcal budget, −1 WP, +1 free 🍦
+    - Overeating (120-150%): +200 kcal budget, −2 WP, +2 free 🍦
+    - Stuffed (>150%): +300 kcal budget, −3 WP, +3 free 🍦
+  - Penalty stored per-day in Zustand (`overeatingPenaltyPerDay`)
+  - Kcal budget increases (must eat more next day)
+  - WP budget decreases (less willpower)
+  - Free Ice Cream (0 WP) injected into inventory via `effectiveAvailableFoods`
+  - Header shows penalty badges: red `−N` near WP, orange `+N00` near kcal
+  - Tooltips explain penalty source on hover
 
 - **Day Navigation** ✅
   - Cheat buttons at bottom: "Day 1", "Day 2", "Day 3" for quick switching
@@ -342,12 +368,12 @@ CONFIG:
   "id": "banana",
   "name": "Banana",
   "emoji": "🍌",
-  "glucose": 270,
-  "carbs": 27,
+  "glucose": 230,
+  "carbs": 23,
   "protein": 1,
   "fat": 0,
   "duration": 45,
-  "kcal": 302,
+  "kcal": 300,
   "wpCost": 1,
   "description": "Natural energy, potassium rich."
 }
@@ -389,36 +415,36 @@ CONFIG:
 
 ### Food Parameters Table
 
-Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration from GI + macronutrient composition. Kcal = USDA per-serving × 2.5 × 1.15.
+Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration from GI + macronutrient composition.
 
 | # | Food | Emoji | Carbs | Protein | Fat | Kcal | WP | Duration | Cubes | Cols |
 |---|------|-------|------:|--------:|----:|-----:|---:|---------:|------:|-----:|
-| 1 | Banana | 🍌 | 23g | 1g | 0g | 272 | 1 | 45m | 12 | 3 |
-| 2 | Apple | 🍎 | 21g | 1g | 0g | 247 | 1 | 45m | 11 | 3 |
-| 3 | Ice Cream | 🍦 | 20g | 4g | 11g | 536 | 0 | 60m | 10 | 4 |
-| 4 | Popcorn | 🍿 | 19g | 3g | 2g | 293 | 1 | 45m | 10 | 3 |
-| 5 | Cookie | 🍪 | 14g | 2g | 7g | 378 | 2 | 60m | 7 | 4 |
-| 6 | Caesar Salad | 🥗 | 8g | 9g | 12g | 491 | 3 | 120m | 4 | 8 |
-| 7 | Choco Muffin | 🧁 | 44g | 6g | 18g | 1028 | 0 | 60m | 22 | 4 |
-| 8 | Sandwich | 🥪 | 34g | 22g | 28g | 1294 | 2 | 150m | 17 | 10 |
-| 9 | Chicken Meal | 🍗 | 3g | 35g | 12g | 725 | 3 | 120m | 2 | 8 |
-| 10 | Bowl of Rice | 🍚 | 38g | 4g | 0g | 531 | 4 | 150m | 19 | 10 |
-| 11 | Hamburger | 🍔 | 20g | 17g | 14g | 764 | 3 | 180m | 10 | 12 |
-| 12 | Oatmeal | 🥣 | 24g | 6g | 4g | 429 | 4 | 120m | 12 | 8 |
-| 13 | Pizza | 🍕 | 29g | 12g | 12g | 777 | 3 | 90m | 15 | 6 |
-| 14 | Boiled Eggs | 🥚 | 0g | 13g | 10g | 401 | 4 | 150m | 0 | 10 |
-| 15 | Mixed Berries | 🫐 | 18g | 2g | 1g | 221 | 2 | 45m | 9 | 3 |
-| 16 | Greek Yogurt | 🥛 | 6g | 11g | 11g | 505 | 3 | 90m | 3 | 6 |
-| 17 | Milk 2% | 🥛 | 10g | 8g | 5g | 316 | 3 | 45m | 5 | 3 |
-| 18 | Vegetable Stew | 🥘 | 17g | 5g | 5g | 435 | 4 | 150m | 9 | 10 |
-| 19 | Boiled Carrots | 🥕 | 6g | 1g | 0g | 138 | 4 | 45m | 3 | 3 |
-| 20 | Chickpeas | 🫘 | 23g | 9g | 3g | 425 | 3 | 90m | 12 | 6 |
-| 21 | Cottage Cheese | 🧀 | 3g | 25g | 9g | 533 | 4 | 120m | 2 | 8 |
-| 22 | Hard Cheese | 🧀 | 0g | 7g | 9g | 311 | 3 | 150m | 0 | 10 |
-| 23 | Avocado | 🥑 | 7g | 2g | 15g | 414 | 3 | 150m | 4 | 10 |
-| 24 | Mixed Nuts | 🥜 | 2g | 5g | 16g | 471 | 2 | 150m | 1 | 10 |
+| 1 | Banana | 🍌 | 23g | 1g | 0g | 300 | 1 | 45m | 12 | 3 |
+| 2 | Apple | 🍎 | 21g | 1g | 0g | 270 | 1 | 45m | 11 | 3 |
+| 3 | Ice Cream | 🍦 | 20g | 4g | 11g | 590 | 0 | 60m | 10 | 4 |
+| 4 | Popcorn | 🍿 | 19g | 3g | 2g | 320 | 1 | 45m | 10 | 3 |
+| 5 | Cookie | 🍪 | 14g | 2g | 7g | 415 | 2 | 60m | 7 | 4 |
+| 6 | Caesar Salad | 🥗 | 8g | 9g | 12g | 540 | 3 | 120m | 4 | 8 |
+| 7 | Choco Muffin | 🧁 | 44g | 6g | 18g | 1130 | 0 | 60m | 22 | 4 |
+| 8 | Sandwich | 🥪 | 34g | 22g | 28g | 1425 | 2 | 150m | 17 | 10 |
+| 9 | Chicken Meal | 🍗 | 3g | 35g | 12g | 800 | 3 | 120m | 2 | 8 |
+| 10 | Bowl of Rice | 🍚 | 38g | 4g | 0g | 585 | 4 | 150m | 19 | 10 |
+| 11 | Hamburger | 🍔 | 20g | 17g | 14g | 840 | 3 | 180m | 10 | 12 |
+| 12 | Oatmeal | 🥣 | 24g | 6g | 4g | 470 | 4 | 120m | 12 | 8 |
+| 13 | Pizza | 🍕 | 29g | 12g | 12g | 855 | 3 | 90m | 15 | 6 |
+| 14 | Boiled Eggs | 🥚 | 0g | 13g | 10g | 440 | 4 | 150m | 0 | 10 |
+| 15 | Mixed Berries | 🫐 | 18g | 2g | 1g | 245 | 2 | 45m | 9 | 3 |
+| 16 | Greek Yogurt | 🥛 | 6g | 11g | 11g | 555 | 3 | 90m | 3 | 6 |
+| 17 | Milk 2% | 🥛 | 10g | 8g | 5g | 350 | 3 | 45m | 5 | 3 |
+| 18 | Vegetable Stew | 🥘 | 17g | 5g | 5g | 480 | 4 | 150m | 9 | 10 |
+| 19 | Boiled Carrots | 🥕 | 6g | 1g | 0g | 150 | 4 | 45m | 3 | 3 |
+| 20 | Chickpeas | 🫘 | 23g | 9g | 3g | 470 | 3 | 90m | 12 | 6 |
+| 21 | Cottage Cheese | 🧀 | 3g | 25g | 9g | 585 | 4 | 120m | 2 | 8 |
+| 22 | Hard Cheese | 🧀 | 0g | 7g | 9g | 340 | 3 | 150m | 0 | 10 |
+| 23 | Avocado | 🥑 | 7g | 2g | 15g | 455 | 3 | 150m | 4 | 10 |
+| 24 | Mixed Nuts | 🥜 | 2g | 5g | 16g | 520 | 2 | 150m | 1 | 10 |
 
-**Derived:** Cubes = glucose / 20 (glucose = carbs × 10), Cols = duration / 15. Kcal = USDA per-serving × 2.5 × 1.15 × 0.9. Sources: USDA FoodData Central, glycemic-index.net
+**Derived:** Cubes = glucose / 20 (glucose = carbs × 10), Cols = duration / 15. Sources: USDA FoodData Central, glycemic-index.net
 
 ### Intervention Parameters
 
@@ -436,9 +462,10 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 2000,
-      "wpBudget": 16,
+      "kcalBudget": 1800,
+      "wpBudget": 7,
       "availableFoods": [
+        { "id": "burger", "count": 1 },
         { "id": "banana", "count": 1 }
       ],
       "availableInterventions": [
@@ -521,7 +548,7 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 
 ### Milestones
 - `alpha-1-stable` (v0.40.0) — Core gameplay: cubes, interventions, medications, markers, decay-based stacking
-- `alpha-2-stable` (v0.40.3) — Main menu, config screen, merged Actions panel, phased reveal animation
+- `alpha-2-stable` (v0.40.4) — Main menu, config screen, merged Actions panel, phased reveal animation, dynamic Y-axis
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
