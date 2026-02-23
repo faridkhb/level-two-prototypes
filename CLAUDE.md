@@ -102,7 +102,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.39.3)
+- `src/version.ts` — version number (v0.39.4)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -137,7 +137,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - `src/App.tsx` — root app component (single screen, no phase routing)
 - `src/App.css` — app layout styles
 
-### Current State (v0.39.3) — Stable Markers + Kcal Reduction + Per-Source Burn Coloring
+### Current State (v0.39.4) — Stable Markers + Food-Boundary Skylines
 
 - **Single-Screen Design** ✅
   - Graph on top, food inventory + intervention inventory below (horizontal card layout)
@@ -261,10 +261,12 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
   - **Stable marker positioning** (v0.39.3): markers use `aliveTop` (unclamped) for horizontal position, `skylineRow` for tail Y — prevents marker jumping when interventions affect peak columns
 
 - **Individual Food Skylines** ✅
-  - White outlined step-paths between each food's alive zone (when 2+ foods placed)
-  - Trace the boundary between food N and food N+1's alive cubes
+  - White outlined step-paths showing food BOUNDARIES (when 2+ foods placed)
+  - Trace the boundary between food N and food N+1 using `aliveTop` (unclamped)
   - Shadow underneath for visibility over cubes
-  - **Clamped by columnCaps** (v0.38.6): skylines descend when interventions remove cubes
+  - **Food-boundary mode** (v0.39.4): skylines show which food owns cubes, independent of interventions
+    - Skylines pass through burned zones, clearly separating food ownership
+    - Burn coloring shows alive/burned status; skylines show food identity
   - Rendered AFTER all cube layers (Z-order: cubes → med cubes → individual skylines → main skyline)
 
 - **Penalty / Rating System** ✅
@@ -440,7 +442,7 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 #### Food Colors
 Progressive blue palette by placement order: 7-color Tailwind sky shades from `#7dd3fc` (lightest) to `#0c4a6e` (darkest). First food placed = lightest, each subsequent food = darker shade.
 
-#### Cube Stacking Model (Decay-Based, v0.39.2)
+#### Cube Stacking Model (Decay-Based, v0.39.4)
 Cubes are stacked using ACTUAL decay curves (not plateau curves):
 1. Each food's alive cubes are positioned by cumulative decay heights (contiguous stacking)
 2. Pancreas-eaten cubes — thin visual layer (1-3 cubes matching tier) stacked above ALL alive cubes

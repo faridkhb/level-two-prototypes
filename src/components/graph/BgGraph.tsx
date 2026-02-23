@@ -401,9 +401,9 @@ export function BgGraph({
         marker = { peakCenterX, tailRow };
       }
 
-      // Skyline path: trace boundary between this food's alive zone and the next
-      // Vertical edges stop at the food's own baseRow (not graph bottom)
-      // so skylines don't cross through lower foods' zones
+      // Skyline path: trace FOOD BOUNDARY between this food's zone and the next
+      // Uses aliveTop (unclamped) so skylines show food identity, not alive/burned boundary
+      // The burn coloring already shows alive/burned status — skylines show which food owns the cubes
       let skylinePath: string | null = null;
       if (hasMultipleFoods) {
         const parts: string[] = [];
@@ -412,12 +412,12 @@ export function BgGraph({
         let lastBaseY = bottomY;
         for (const cs of colSummary) {
           const baseY = PAD_TOP + GRAPH_H - cs.baseRow * CELL_SIZE;
-          if (cs.skylineRow <= cs.baseRow) {
+          if (cs.aliveTop <= cs.baseRow) {
             if (inSeg) { parts.push(`V ${lastBaseY}`); inSeg = false; }
             prevCol = cs.col;
             continue;
           }
-          const y = PAD_TOP + GRAPH_H - cs.skylineRow * CELL_SIZE;
+          const y = PAD_TOP + GRAPH_H - cs.aliveTop * CELL_SIZE;
           const x = colToX(cs.col);
           if (!inSeg || cs.col !== prevCol + 1) {
             if (inSeg) parts.push(`V ${lastBaseY}`);
