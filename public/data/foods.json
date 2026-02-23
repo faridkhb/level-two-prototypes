@@ -10,7 +10,7 @@
       "fat": 0,
       "duration": 45,
       "kcal": 395,
-      "wpCost": 1,
+      "wpCost": 0,
       "description": "Natural energy, potassium rich."
     },
     {
@@ -23,7 +23,7 @@
       "fat": 0,
       "duration": 45,
       "kcal": 355,
-      "wpCost": 1,
+      "wpCost": 0,
       "description": "Light snack with fiber."
     },
     {
@@ -36,7 +36,7 @@
       "fat": 11,
       "duration": 60,
       "kcal": 780,
-      "wpCost": 0,
+      "wpCost": -1,
       "description": "Sweet treat, fat slows absorption."
     },
     {
@@ -49,7 +49,7 @@
       "fat": 2,
       "duration": 45,
       "kcal": 420,
-      "wpCost": 1,
+      "wpCost": 0,
       "description": "Light snack, quick energy."
     },
     {
@@ -62,7 +62,7 @@
       "fat": 7,
       "duration": 60,
       "kcal": 545,
-      "wpCost": 2,
+      "wpCost": 1,
       "description": "Sweet treat, fast sugar spike."
     },
     {
@@ -75,7 +75,7 @@
       "fat": 12,
       "duration": 120,
       "kcal": 715,
-      "wpCost": 3,
+      "wpCost": 2,
       "description": "Fresh and healthy, mostly from croutons."
     },
     {
@@ -88,7 +88,7 @@
       "fat": 18,
       "duration": 60,
       "kcal": 1495,
-      "wpCost": 0,
+      "wpCost": -1,
       "description": "Decadent dessert, huge carb load."
     },
     {
@@ -101,7 +101,7 @@
       "fat": 28,
       "duration": 150,
       "kcal": 1885,
-      "wpCost": 2,
+      "wpCost": 1,
       "description": "Balanced meal, bread + protein + fat."
     },
     {
@@ -114,7 +114,7 @@
       "fat": 12,
       "duration": 120,
       "kcal": 1055,
-      "wpCost": 3,
+      "wpCost": 2,
       "description": "Protein-rich, minimal carbs."
     },
     {
@@ -127,7 +127,7 @@
       "fat": 0,
       "duration": 150,
       "kcal": 775,
-      "wpCost": 4,
+      "wpCost": 3,
       "description": "High GI staple, fast glucose spike."
     },
     {
@@ -140,7 +140,7 @@
       "fat": 14,
       "duration": 180,
       "kcal": 1110,
-      "wpCost": 3,
+      "wpCost": 2,
       "description": "Bun carbs slowed by fat and protein."
     },
     {
@@ -153,7 +153,7 @@
       "fat": 4,
       "duration": 120,
       "kcal": 620,
-      "wpCost": 4,
+      "wpCost": 3,
       "description": "Complex starch with fiber."
     },
     {
@@ -166,7 +166,7 @@
       "fat": 12,
       "duration": 90,
       "kcal": 1130,
-      "wpCost": 3,
+      "wpCost": 2,
       "description": "White flour crust, cheese slows absorption."
     },
     {
@@ -179,7 +179,7 @@
       "fat": 10,
       "duration": 150,
       "kcal": 580,
-      "wpCost": 4,
+      "wpCost": 3,
       "description": "Pure protein + fat, negligible carbs."
     },
     {
@@ -192,7 +192,7 @@
       "fat": 1,
       "duration": 45,
       "kcal": 325,
-      "wpCost": 2,
+      "wpCost": 1,
       "description": "Natural sugars with high fiber."
     },
     {
@@ -205,7 +205,7 @@
       "fat": 11,
       "duration": 90,
       "kcal": 730,
-      "wpCost": 3,
+      "wpCost": 2,
       "description": "Protein + fat slow carb absorption."
     },
     {
@@ -218,7 +218,7 @@
       "fat": 5,
       "duration": 45,
       "kcal": 460,
-      "wpCost": 3,
+      "wpCost": 2,
       "description": "Lactose, moderate-speed sugar."
     },
     {
@@ -231,7 +231,7 @@
       "fat": 5,
       "duration": 150,
       "kcal": 635,
-      "wpCost": 4,
+      "wpCost": 3,
       "description": "Mixed vegetables with fiber."
     },
     {
@@ -244,7 +244,7 @@
       "fat": 0,
       "duration": 45,
       "kcal": 200,
-      "wpCost": 4,
+      "wpCost": 3,
       "description": "Low carb, naturally sweet."
     },
     {
@@ -257,7 +257,7 @@
       "fat": 3,
       "duration": 90,
       "kcal": 620,
-      "wpCost": 3,
+      "wpCost": 2,
       "description": "High fiber + protein slow absorption."
     },
     {
@@ -270,7 +270,7 @@
       "fat": 9,
       "duration": 120,
       "kcal": 775,
-      "wpCost": 4,
+      "wpCost": 3,
       "description": "High protein, minimal carbs."
     },
     {
@@ -283,7 +283,7 @@
       "fat": 9,
       "duration": 150,
       "kcal": 450,
-      "wpCost": 3,
+      "wpCost": 2,
       "description": "Almost no carbs, pure fat + protein."
     },
     {
@@ -296,7 +296,7 @@
       "fat": 15,
       "duration": 150,
       "kcal": 600,
-      "wpCost": 3,
+      "wpCost": 2,
       "description": "Healthy fats, very slow digestion."
     },
     {
@@ -309,7 +309,7 @@
       "fat": 16,
       "duration": 150,
       "kcal": 685,
-      "wpCost": 2,
+      "wpCost": 1,
       "description": "High fat + protein, minimal carbs."
     }
   ]
