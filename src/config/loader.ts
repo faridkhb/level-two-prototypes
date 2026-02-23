@@ -1,4 +1,5 @@
-import type { Ship, LevelConfig, LoadType, AvailableFood, Intervention, Medication, MedicationType } from '../core/types';
+import type { Ship, LevelConfig, LoadType, AvailableFood, Intervention, Medication, MedicationType, PancreasTier } from '../core/types';
+import { PANCREAS_TIERS } from '../core/types';
 import { useConfigStore } from '../store/configStore';
 
 // Raw JSON types (before transformation)
@@ -147,39 +148,22 @@ function transformMedication(raw: RawMedicationConfig): Medication {
   };
 }
 
-// Cache for loaded configs
-let foodsCache: Ship[] | null = null;
-let interventionsCache: Intervention[] | null = null;
-let medicationsCache: Medication[] | null = null;
-
 export async function loadFoods(): Promise<Ship[]> {
-  if (foodsCache) return foodsCache;
-
   const response = await fetch('/data/foods.json', { cache: 'no-store' });
   const data = await response.json();
-  const ships = applyFoodOverrides(data.foods.map(transformFood));
-  foodsCache = ships;
-  return ships;
+  return applyFoodOverrides(data.foods.map(transformFood));
 }
 
 export async function loadInterventions(): Promise<Intervention[]> {
-  if (interventionsCache) return interventionsCache;
-
   const response = await fetch('/data/interventions.json', { cache: 'no-store' });
   const data = await response.json();
-  const interventions = applyInterventionOverrides(data.interventions.map(transformIntervention));
-  interventionsCache = interventions;
-  return interventions;
+  return applyInterventionOverrides(data.interventions.map(transformIntervention));
 }
 
 export async function loadMedications(): Promise<Medication[]> {
-  if (medicationsCache) return medicationsCache;
-
   const response = await fetch('/data/medications.json', { cache: 'no-store' });
   const data = await response.json();
-  const medications = applyMedicationOverrides(data.medications.map(transformMedication));
-  medicationsCache = medications;
-  return medications;
+  return applyMedicationOverrides(data.medications.map(transformMedication));
 }
 
 export async function loadLevel(levelId: string): Promise<LevelConfig> {
@@ -252,9 +236,22 @@ export function getShipById(ships: Ship[], id: string): Ship | undefined {
   return ships.find(s => s.id === id);
 }
 
-// Clear cache (useful for testing or applying config changes)
-export function clearConfigCache(): void {
-  foodsCache = null;
-  interventionsCache = null;
-  medicationsCache = null;
+// Get pancreas tiers with config overrides applied
+export function getPancreasTiers(): Record<PancreasTier, { decayRate: number; cost: number; label: string }> {
+  const { pancreasTiers: overrides } = useConfigStore.getState();
+  if (Object.keys(overrides).length === 0) return PANCREAS_TIERS;
+
+  const result = { ...PANCREAS_TIERS };
+  for (const key of Object.keys(overrides)) {
+    const tier = Number(key) as PancreasTier;
+    const ov = overrides[key];
+    if (ov && result[tier]) {
+      result[tier] = {
+        ...result[tier],
+        decayRate: ov.decayRate ?? result[tier].decayRate,
+        cost: ov.cost ?? result[tier].cost,
+      };
+    }
+  }
+  return result;
 }

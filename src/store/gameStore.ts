@@ -11,7 +11,8 @@ import type {
   GameSettings,
   PancreasTier,
 } from '../core/types';
-import { DEFAULT_SETTINGS, PANCREAS_TIERS } from '../core/types';
+import { DEFAULT_SETTINGS } from '../core/types';
+import { getPancreasTiers } from '../config/loader';
 
 // Helper to get day config
 function getDayConfig(level: LevelConfig, day: number): DayConfig | null {
@@ -193,7 +194,7 @@ export const useGameStore = create<GameState>()(
           return {
             lockedBarsPerDay: {
               ...state.lockedBarsPerDay,
-              [state.currentDay]: PANCREAS_TIERS[tier].cost,
+              [state.currentDay]: getPancreasTiers()[tier].cost,
             },
           };
         }),

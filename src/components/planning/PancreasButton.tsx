@@ -1,5 +1,5 @@
 import type { PancreasTier } from '../../core/types';
-import { PANCREAS_TIERS } from '../../core/types';
+import { getPancreasTiers } from '../../config/loader';
 import './PancreasButton.css';
 
 interface PancreasButtonProps {
@@ -16,7 +16,7 @@ export function PancreasButton({
   disabled = false,
 }: PancreasButtonProps) {
   const isBoosted = currentTier === 3;
-  const boostCost = PANCREAS_TIERS[3].cost;
+  const boostCost = getPancreasTiers()[3].cost;
   const canAffordBoost = !isBoosted && usesRemaining >= boostCost;
 
   return (

@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { PANCREAS_TIERS } from '../../core/types';
 import { useConfigStore } from '../../store/configStore';
 import type { FoodOverride, InterventionOverride, PancreasTierOverride, MedicationOverride } from '../../store/configStore';
-import { clearConfigCache } from '../../config/loader';
 import './ConfigScreen.css';
 
 type Tab = 'food' | 'pancreas' | 'interventions';
@@ -135,8 +134,6 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
   };
 
   const handleApply = () => {
-    // Clear loader cache so next loadFoods/loadInterventions picks up overrides
-    clearConfigCache();
     onBack();
   };
 

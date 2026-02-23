@@ -12,7 +12,8 @@ import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, Pancreas
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectOvereatingPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
-import { DEFAULT_MEDICATION_MODIFIERS, getKcalAssessment, getOvereatingPenalty, OVEREATING_PENALTY_KCAL, OVEREATING_PENALTY_WP, OVEREATING_PENALTY_FOOD_ID, PANCREAS_TIERS, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
+import { DEFAULT_MEDICATION_MODIFIERS, getKcalAssessment, getOvereatingPenalty, OVEREATING_PENALTY_KCAL, OVEREATING_PENALTY_WP, OVEREATING_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
+import { getPancreasTiers } from '../../config/loader';
 import { BgGraph, pointerToColumn } from '../graph';
 import { PlanningHeader } from './PlanningHeader';
 import { ShipInventory } from './ShipInventory';
@@ -36,7 +37,7 @@ const REVEAL_HOLD: Record<number, number> = {
 function togglePancreasTier(current: PancreasTier, maxBars: number): PancreasTier {
   if (current === 3) return 1; // BOOST → ON
   // ON → BOOST (if affordable)
-  if (PANCREAS_TIERS[3].cost <= maxBars) return 3;
+  if (getPancreasTiers()[3].cost <= maxBars) return 3;
   return 1; // can't afford boost, stay ON
 }
 
@@ -150,7 +151,7 @@ export function PlanningPhase() {
 
   // Pancreas tier system
   const currentPancreasTier = (pancreasTierPerDay[currentDay] ?? 1) as PancreasTier;
-  const currentDecayRate = PANCREAS_TIERS[currentPancreasTier].decayRate;
+  const currentDecayRate = getPancreasTiers()[currentPancreasTier].decayRate;
   const totalLockedBars = Object.values(lockedBarsPerDay).reduce((a, b) => a + b, 0);
   const barsAvailable = PANCREAS_TOTAL_BARS - totalLockedBars;
 
