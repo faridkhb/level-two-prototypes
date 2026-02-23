@@ -355,9 +355,8 @@ export function BgGraph({
           cubes.push({ col: c.col, row, status, burnColor });
         }
 
-        // Pancreas cubes — thin visual layer matching pancreas tier (1/2/3 cubes)
-        const pancreasTierHeight = Math.max(1, Math.round(decayRate * 4));
-        const visibleEaten = Math.min(c.pancreasExtra, pancreasTierHeight);
+        // Pancreas cubes — full difference between plateau and decay curves
+        const visibleEaten = c.pancreasExtra;
         const pBase = pancreasCaps[c.col] + pancreasOffset[c.col];
         for (let i = 0; i < visibleEaten; i++) {
           const row = pBase + i;
