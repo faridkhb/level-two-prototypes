@@ -1,0 +1,187 @@
+.config-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.config-screen--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  color: #a0aec0;
+  font-size: 16px;
+}
+
+/* Tabs */
+.config-screen__tabs {
+  display: flex;
+  gap: 4px;
+  background: #2d3748;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.config-screen__tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #a0aec0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.config-screen__tab:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.config-screen__tab--active {
+  background: #4a5568;
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Content area */
+.config-screen__content {
+  background: #2d3748;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+/* Table wrapper for horizontal scroll */
+.config-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Table */
+.config-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.config-table th {
+  text-align: center;
+  padding: 6px 4px;
+  color: #a0aec0;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid #4a5568;
+  white-space: nowrap;
+}
+
+.config-table__th--name {
+  text-align: left !important;
+  min-width: 120px;
+}
+
+.config-table td {
+  padding: 4px;
+  text-align: center;
+  border-bottom: 1px solid rgba(74, 85, 104, 0.3);
+}
+
+.config-table__td--name {
+  text-align: left !important;
+  white-space: nowrap;
+  font-size: 12px;
+  color: #e2e8f0;
+  padding-right: 8px;
+}
+
+.config-table__emoji {
+  margin-right: 4px;
+}
+
+.config-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Input fields */
+.config-input {
+  width: 64px;
+  padding: 4px 6px;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  background: #1a202c;
+  color: #e2e8f0;
+  font-size: 12px;
+  text-align: center;
+  font-family: monospace;
+  transition: border-color 0.15s ease;
+}
+
+.config-input:focus {
+  outline: none;
+  border-color: #805ad5;
+  box-shadow: 0 0 0 1px rgba(128, 90, 213, 0.3);
+}
+
+.config-input--small {
+  width: 48px;
+}
+
+/* Remove spinner arrows on number inputs */
+.config-input::-webkit-inner-spin-button,
+.config-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.config-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* Action buttons */
+.config-screen__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.config-screen__btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  color: white;
+}
+
+.config-screen__btn:hover {
+  transform: scale(1.02);
+}
+
+.config-screen__btn--reset {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  border-color: #718096;
+}
+
+.config-screen__btn--reset:hover {
+  border-color: #a0aec0;
+}
+
+.config-screen__btn--apply {
+  background: linear-gradient(135deg, #553c9a 0%, #44337a 100%);
+  border-color: #805ad5;
+  box-shadow: 0 0 10px rgba(128, 90, 213, 0.3);
+}
+
+.config-screen__btn--apply:hover {
+  box-shadow: 0 0 16px rgba(128, 90, 213, 0.5);
+}

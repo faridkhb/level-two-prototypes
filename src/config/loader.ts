@@ -1,4 +1,5 @@
 import type { Ship, LevelConfig, LoadType, AvailableFood, Intervention, Medication, MedicationType } from '../core/types';
+import { useConfigStore } from '../store/configStore';
 
 // Raw JSON types (before transformation)
 interface RawFoodConfig {
@@ -156,7 +157,7 @@ export async function loadFoods(): Promise<Ship[]> {
 
   const response = await fetch('/data/foods.json', { cache: 'no-store' });
   const data = await response.json();
-  const ships = data.foods.map(transformFood);
+  const ships = applyFoodOverrides(data.foods.map(transformFood));
   foodsCache = ships;
   return ships;
 }
@@ -166,7 +167,7 @@ export async function loadInterventions(): Promise<Intervention[]> {
 
   const response = await fetch('/data/interventions.json', { cache: 'no-store' });
   const data = await response.json();
-  const interventions = data.interventions.map(transformIntervention);
+  const interventions = applyInterventionOverrides(data.interventions.map(transformIntervention));
   interventionsCache = interventions;
   return interventions;
 }
@@ -187,12 +188,51 @@ export async function loadLevel(levelId: string): Promise<LevelConfig> {
   return transformLevel(data);
 }
 
+// Apply config overrides from configStore to loaded data
+function applyFoodOverrides(ships: Ship[]): Ship[] {
+  const { foods } = useConfigStore.getState();
+  if (Object.keys(foods).length === 0) return ships;
+
+  return ships.map(ship => {
+    const overrides = foods[ship.id];
+    if (!overrides) return ship;
+    return {
+      ...ship,
+      load: overrides.glucose ?? ship.load,
+      carbs: overrides.carbs ?? ship.carbs,
+      protein: overrides.protein ?? ship.protein,
+      fat: overrides.fat ?? ship.fat,
+      duration: overrides.duration ?? ship.duration,
+      kcal: overrides.kcal ?? ship.kcal,
+      wpCost: overrides.wpCost ?? ship.wpCost,
+    };
+  });
+}
+
+function applyInterventionOverrides(interventions: Intervention[]): Intervention[] {
+  const { interventions: overrides } = useConfigStore.getState();
+  if (Object.keys(overrides).length === 0) return interventions;
+
+  return interventions.map(intv => {
+    const ov = overrides[intv.id];
+    if (!ov) return intv;
+    return {
+      ...intv,
+      depth: ov.depth ?? intv.depth,
+      duration: ov.duration ?? intv.duration,
+      wpCost: ov.wpCost ?? intv.wpCost,
+      boostCols: ov.boostCols ?? intv.boostCols,
+      boostExtra: ov.boostExtra ?? intv.boostExtra,
+    };
+  });
+}
+
 // Get ship by ID from cache
 export function getShipById(ships: Ship[], id: string): Ship | undefined {
   return ships.find(s => s.id === id);
 }
 
-// Clear cache (useful for testing)
+// Clear cache (useful for testing or applying config changes)
 export function clearConfigCache(): void {
   foodsCache = null;
   interventionsCache = null;

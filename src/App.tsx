@@ -1,16 +1,35 @@
+import { useState } from 'react';
 import { PlanningPhase } from './components/planning';
+import { MainMenu } from './components/menu';
+import { ConfigScreen } from './components/config';
 import { VERSION } from './version';
 import './App.css';
 
+type Screen = 'menu' | 'testMode' | 'config';
+
 function App() {
+  const [screen, setScreen] = useState<Screen>('menu');
+
   return (
     <div className="app">
       <header className="app-header">
+        {screen !== 'menu' && (
+          <button className="app-header__back" onClick={() => setScreen('menu')}>
+            Back
+          </button>
+        )}
         <h1>BG Planner</h1>
       </header>
 
       <main className="app-main">
-        <PlanningPhase />
+        {screen === 'menu' && (
+          <MainMenu
+            onTestMode={() => setScreen('testMode')}
+            onConfig={() => setScreen('config')}
+          />
+        )}
+        {screen === 'testMode' && <PlanningPhase />}
+        {screen === 'config' && <ConfigScreen onBack={() => setScreen('menu')} />}
       </main>
 
       <div className="version-badge">{VERSION}</div>
