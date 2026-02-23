@@ -376,23 +376,29 @@ export function BgGraph({
         });
       }
 
-      // Marker: centered on food's effective peak (skylineRow = alive clamped by interventions)
-      let maxPeak = 0;
+      // Marker: centered on food's NATURAL peak (aliveTop = unclamped by interventions)
+      // Prevents marker from jumping horizontally when interventions affect peak columns
+      let maxAlive = 0;
       for (const cs of colSummary) {
-        if (cs.skylineRow > maxPeak) maxPeak = cs.skylineRow;
+        if (cs.aliveTop > maxAlive) maxAlive = cs.aliveTop;
       }
       const peakCols: number[] = [];
       for (const cs of colSummary) {
-        if (cs.skylineRow === maxPeak && maxPeak > cs.baseRow) {
+        if (cs.aliveTop === maxAlive && maxAlive > cs.baseRow) {
           peakCols.push(cs.col);
         }
       }
 
       let marker: FoodMarkerInfo | null = null;
       if (peakCols.length > 0) {
+        // Tail points to the visible top (skylineRow) at the natural peak column
+        // so the tail touches the actual visible cubes, not floating above burned zone
+        const anchorCol = peakCols[Math.floor(peakCols.length / 2)];
+        const anchorSummary = colSummary.find(cs => cs.col === anchorCol);
+        const tailRow = anchorSummary ? anchorSummary.skylineRow : maxAlive;
         const peakCenterX = PAD_LEFT +
           ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
-        marker = { peakCenterX, tailRow: maxPeak };
+        marker = { peakCenterX, tailRow };
       }
 
       // Skyline path: trace boundary between this food's alive zone and the next

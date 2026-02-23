@@ -102,7 +102,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.39.2)
+- `src/version.ts` — version number (v0.39.3)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -137,7 +137,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - `src/App.tsx` — root app component (single screen, no phase routing)
 - `src/App.css` — app layout styles
 
-### Current State (v0.39.2) — Per-Source Burn Coloring + Medication Cubes + Intervention Markers
+### Current State (v0.39.3) — Stable Markers + Kcal Reduction + Per-Source Burn Coloring
 
 - **Single-Screen Design** ✅
   - Graph on top, food inventory + intervention inventory below (horizontal card layout)
@@ -258,6 +258,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
   - Markers are draggable — drag to move food, drag off graph to remove
   - Centered over columns where the food's `skylineRow` is maximum
   - **skylineRow vs aliveTop** (v0.38.7): `aliveTop` = unclamped per-food boundary; `skylineRow` = clamped by `columnCaps` (responds to interventions)
+  - **Stable marker positioning** (v0.39.3): markers use `aliveTop` (unclamped) for horizontal position, `skylineRow` for tail Y — prevents marker jumping when interventions affect peak columns
 
 - **Individual Food Skylines** ✅
   - White outlined step-paths between each food's alive zone (when 2+ foods placed)
@@ -346,32 +347,32 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 
 | # | Food | Emoji | Carbs | Protein | Fat | Kcal | WP | Duration | Cubes | Cols |
 |---|------|-------|------:|--------:|----:|-----:|---:|---------:|------:|-----:|
-| 1 | Banana | 🍌 | 27g | 1g | 0g | 302 | 1 | 45m | 14 | 3 |
-| 2 | Apple | 🍎 | 25g | 1g | 0g | 274 | 1 | 45m | 13 | 3 |
-| 3 | Ice Cream | 🍦 | 24g | 4g | 11g | 596 | 0 | 60m | 12 | 4 |
-| 4 | Popcorn | 🍿 | 22g | 3g | 2g | 325 | 1 | 45m | 11 | 3 |
-| 5 | Cookie | 🍪 | 17g | 2g | 7g | 420 | 2 | 60m | 9 | 4 |
-| 6 | Caesar Salad | 🥗 | 10g | 9g | 12g | 546 | 3 | 120m | 5 | 8 |
-| 7 | Choco Muffin | 🧁 | 52g | 6g | 18g | 1142 | 0 | 60m | 26 | 4 |
-| 8 | Sandwich | 🥪 | 40g | 22g | 28g | 1438 | 2 | 150m | 20 | 10 |
-| 9 | Chicken Meal | 🍗 | 5g | 35g | 12g | 805 | 3 | 120m | 3 | 8 |
-| 10 | Bowl of Rice | 🍚 | 45g | 4g | 0g | 590 | 4 | 150m | 23 | 10 |
-| 11 | Hamburger | 🍔 | 24g | 17g | 14g | 849 | 3 | 180m | 12 | 12 |
-| 12 | Oatmeal | 🥣 | 28g | 6g | 4g | 477 | 4 | 120m | 14 | 8 |
-| 13 | Pizza | 🍕 | 34g | 12g | 12g | 863 | 3 | 90m | 17 | 6 |
-| 14 | Boiled Eggs | 🥚 | 1g | 13g | 10g | 446 | 4 | 150m | 1 | 10 |
-| 15 | Mixed Berries | 🫐 | 21g | 2g | 1g | 245 | 2 | 45m | 11 | 3 |
-| 16 | Greek Yogurt | 🥛 | 8g | 11g | 11g | 561 | 3 | 90m | 4 | 6 |
-| 17 | Milk 2% | 🥛 | 12g | 8g | 5g | 351 | 3 | 45m | 6 | 3 |
-| 18 | Vegetable Stew | 🥘 | 20g | 5g | 5g | 483 | 4 | 150m | 10 | 10 |
-| 19 | Boiled Carrots | 🥕 | 8g | 1g | 0g | 153 | 4 | 45m | 4 | 3 |
-| 20 | Chickpeas | 🫘 | 27g | 9g | 3g | 472 | 3 | 90m | 14 | 6 |
-| 21 | Cottage Cheese | 🧀 | 5g | 25g | 9g | 592 | 4 | 120m | 3 | 8 |
-| 22 | Hard Cheese | 🧀 | 1g | 7g | 9g | 345 | 3 | 150m | 1 | 10 |
-| 23 | Avocado | 🥑 | 9g | 2g | 15g | 460 | 3 | 150m | 5 | 10 |
-| 24 | Mixed Nuts | 🥜 | 4g | 5g | 16g | 523 | 2 | 150m | 2 | 10 |
+| 1 | Banana | 🍌 | 23g | 1g | 0g | 272 | 1 | 45m | 12 | 3 |
+| 2 | Apple | 🍎 | 21g | 1g | 0g | 247 | 1 | 45m | 11 | 3 |
+| 3 | Ice Cream | 🍦 | 20g | 4g | 11g | 536 | 0 | 60m | 10 | 4 |
+| 4 | Popcorn | 🍿 | 19g | 3g | 2g | 293 | 1 | 45m | 10 | 3 |
+| 5 | Cookie | 🍪 | 14g | 2g | 7g | 378 | 2 | 60m | 7 | 4 |
+| 6 | Caesar Salad | 🥗 | 8g | 9g | 12g | 491 | 3 | 120m | 4 | 8 |
+| 7 | Choco Muffin | 🧁 | 44g | 6g | 18g | 1028 | 0 | 60m | 22 | 4 |
+| 8 | Sandwich | 🥪 | 34g | 22g | 28g | 1294 | 2 | 150m | 17 | 10 |
+| 9 | Chicken Meal | 🍗 | 3g | 35g | 12g | 725 | 3 | 120m | 2 | 8 |
+| 10 | Bowl of Rice | 🍚 | 38g | 4g | 0g | 531 | 4 | 150m | 19 | 10 |
+| 11 | Hamburger | 🍔 | 20g | 17g | 14g | 764 | 3 | 180m | 10 | 12 |
+| 12 | Oatmeal | 🥣 | 24g | 6g | 4g | 429 | 4 | 120m | 12 | 8 |
+| 13 | Pizza | 🍕 | 29g | 12g | 12g | 777 | 3 | 90m | 15 | 6 |
+| 14 | Boiled Eggs | 🥚 | 0g | 13g | 10g | 401 | 4 | 150m | 0 | 10 |
+| 15 | Mixed Berries | 🫐 | 18g | 2g | 1g | 221 | 2 | 45m | 9 | 3 |
+| 16 | Greek Yogurt | 🥛 | 6g | 11g | 11g | 505 | 3 | 90m | 3 | 6 |
+| 17 | Milk 2% | 🥛 | 10g | 8g | 5g | 316 | 3 | 45m | 5 | 3 |
+| 18 | Vegetable Stew | 🥘 | 17g | 5g | 5g | 435 | 4 | 150m | 9 | 10 |
+| 19 | Boiled Carrots | 🥕 | 6g | 1g | 0g | 138 | 4 | 45m | 3 | 3 |
+| 20 | Chickpeas | 🫘 | 23g | 9g | 3g | 425 | 3 | 90m | 12 | 6 |
+| 21 | Cottage Cheese | 🧀 | 3g | 25g | 9g | 533 | 4 | 120m | 2 | 8 |
+| 22 | Hard Cheese | 🧀 | 0g | 7g | 9g | 311 | 3 | 150m | 0 | 10 |
+| 23 | Avocado | 🥑 | 7g | 2g | 15g | 414 | 3 | 150m | 4 | 10 |
+| 24 | Mixed Nuts | 🥜 | 2g | 5g | 16g | 471 | 2 | 150m | 1 | 10 |
 
-**Derived:** Cubes = glucose / 20 (glucose = carbs × 10), Cols = duration / 15. Sources: USDA FoodData Central, glycemic-index.net
+**Derived:** Cubes = glucose / 20 (glucose = carbs × 10), Cols = duration / 15. Kcal = USDA per-serving × 2.5 × 1.15 × 0.9. Sources: USDA FoodData Central, glycemic-index.net
 
 ### Intervention Parameters
 
