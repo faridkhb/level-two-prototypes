@@ -376,28 +376,27 @@ export function BgGraph({
         });
       }
 
-      // Marker: centered on food's OWN peak (where aliveCount is maximum)
-      // Uses food's own height (aliveCount = aliveTop - baseRow), NOT cumulative aliveTop,
-      // so the marker stays at the food's actual peak regardless of stack height below
-      let maxOwnHeight = 0;
+      // Marker: centered on food's OWN VISIBLE peak (skylineRow - baseRow)
+      // Uses visible height (alive cubes after interventions), matching the individual skyline
+      let maxVisibleHeight = 0;
       for (const cs of colSummary) {
-        const ownHeight = cs.aliveTop - cs.baseRow;
-        if (ownHeight > maxOwnHeight) maxOwnHeight = ownHeight;
+        const visibleHeight = Math.max(0, cs.skylineRow - cs.baseRow);
+        if (visibleHeight > maxVisibleHeight) maxVisibleHeight = visibleHeight;
       }
       const peakCols: number[] = [];
       for (const cs of colSummary) {
-        const ownHeight = cs.aliveTop - cs.baseRow;
-        if (ownHeight === maxOwnHeight && maxOwnHeight > 0) {
+        const visibleHeight = Math.max(0, cs.skylineRow - cs.baseRow);
+        if (visibleHeight === maxVisibleHeight && maxVisibleHeight > 0) {
           peakCols.push(cs.col);
         }
       }
 
       let marker: FoodMarkerInfo | null = null;
       if (peakCols.length > 0) {
-        // Tail points to the food's aliveTop at the peak column (actual Y on graph)
+        // Tail points to skylineRow (top of visible alive cubes) — matches the skyline path
         const anchorCol = peakCols[Math.floor(peakCols.length / 2)];
         const anchorSummary = colSummary.find(cs => cs.col === anchorCol);
-        const tailRow = anchorSummary ? anchorSummary.aliveTop : 0;
+        const tailRow = anchorSummary ? anchorSummary.skylineRow : 0;
         const peakCenterX = PAD_LEFT +
           ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
         marker = { peakCenterX, tailRow };
