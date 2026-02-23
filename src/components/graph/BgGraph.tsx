@@ -122,6 +122,7 @@ interface BgGraphProps {
   previewIntervention?: Intervention | null;
   previewColumn?: number | null;
   showPenaltyHighlight?: boolean;
+  revealPhase?: number; // undefined = all visible, 0-4 = progressive layer reveal
   interactive?: boolean;
   onFoodClick?: (placementId: string) => void;
   onFoodMove?: (placementId: string, newColumn: number) => void;
@@ -156,6 +157,7 @@ export function BgGraph({
   previewIntervention,
   previewColumn,
   showPenaltyHighlight = false,
+  revealPhase,
   interactive = true,
   onFoodClick,
   onFoodMove,
@@ -813,7 +815,7 @@ export function BgGraph({
         })}
 
         {/* SGLT2 drain threshold line */}
-        {medicationModifiers.sglt2 && (
+        {medicationModifiers.sglt2 && (revealPhase === undefined || revealPhase >= 4) && (
           <line
             x1={PAD_LEFT}
             y1={rowToY(medicationModifiers.sglt2.floorRow - 1)}
@@ -829,7 +831,19 @@ export function BgGraph({
         {/* Per-food cube layers: last placed rendered first (bottom), first placed last (top) */}
         {[...graphRenderData.layers].reverse().map(layer => (
           <g key={`food-layer-${layer.placementId}`} className="bg-graph__food-group">
-            {layer.cubes.map(cube => {
+            {layer.cubes
+              .filter(cube => {
+                // During reveal, progressively show cube layers
+                if (revealPhase === undefined) return true;
+                if (cube.status === 'normal') return revealPhase >= 1;
+                if (cube.status === 'pancreas') return revealPhase >= 2;
+                if (cube.status === 'burned') {
+                  const isExercise = cube.burnColor === '#86efac' || cube.burnColor === '#22c55e';
+                  return isExercise ? revealPhase >= 3 : revealPhase >= 4;
+                }
+                return false;
+              })
+              .map(cube => {
               const waveDelay = (cube.col - layer.dropColumn) * 20;
               const cubeClass = cube.status === 'pancreas'
                 ? 'bg-graph__cube--pancreas'
@@ -869,25 +883,30 @@ export function BgGraph({
         ))}
 
         {/* Medication-prevented cubes (above pancreas zone) */}
-        {graphRenderData.medCubes.length > 0 && (
+        {graphRenderData.medCubes.length > 0 && (revealPhase === undefined || revealPhase >= 4) && (
           <g className="bg-graph__med-cubes" pointerEvents="none">
-            {graphRenderData.medCubes.map(mc => (
-              <rect
-                key={`med-${mc.col}-${mc.row}`}
-                x={colToX(mc.col) + 0.5}
-                y={rowToY(mc.row) + 0.5}
-                width={CELL_SIZE - 1}
-                height={CELL_SIZE - 1}
-                fill={mc.color}
-                rx={2}
-                opacity={0.45}
-              />
-            ))}
+            {graphRenderData.medCubes.map(mc => {
+              const waveDelay = mc.col * 15;
+              return (
+                <rect
+                  key={`med-${mc.col}-${mc.row}`}
+                  x={colToX(mc.col) + 0.5}
+                  y={rowToY(mc.row) + 0.5}
+                  width={CELL_SIZE - 1}
+                  height={CELL_SIZE - 1}
+                  fill={mc.color}
+                  rx={2}
+                  className={revealPhase !== undefined ? 'bg-graph__cube--med-reveal' : undefined}
+                  opacity={revealPhase !== undefined ? undefined : 0.45}
+                  style={revealPhase !== undefined ? { animationDelay: `${waveDelay}ms` } : undefined}
+                />
+              );
+            })}
           </g>
         )}
 
         {/* Individual skylines — AFTER all cube layers so they're not hidden by upper food cubes */}
-        {[...graphRenderData.layers].reverse().map(layer => (
+        {(revealPhase === undefined || revealPhase >= 1) && [...graphRenderData.layers].reverse().map(layer => (
           layer.skylinePath ? (
             <g key={`skyline-${layer.placementId}`} pointerEvents="none">
               <path
@@ -912,7 +931,7 @@ export function BgGraph({
         ))}
 
         {/* BG skyline — single path with rounded corners + shadow line below */}
-        {graphRenderData.mainSkylinePath && (
+        {graphRenderData.mainSkylinePath && (revealPhase === undefined || revealPhase >= 1) && (
           <g className="bg-graph__skyline" pointerEvents="none">
             {/* Shadow line — offset 2px below, wider, semi-transparent */}
             <path
@@ -1111,6 +1130,31 @@ export function BgGraph({
             opacity={0.8}
           />
         )}
+
+        {/* Reveal phase label overlay */}
+        {revealPhase !== undefined && revealPhase >= 1 && (() => {
+          const labels: Record<number, { emoji: string; text: string }> = {
+            1: { emoji: '🍽️', text: 'Food Cubes' },
+            2: { emoji: '🟠', text: 'Pancreas' },
+            3: { emoji: '🏃', text: 'Exercise' },
+            4: { emoji: '💊', text: 'Medications' },
+          };
+          const label = labels[revealPhase];
+          if (!label) return null;
+          return (
+            <foreignObject
+              x={PAD_LEFT + GRAPH_W - 175}
+              y={PAD_TOP + 6}
+              width={170}
+              height={36}
+            >
+              <div key={revealPhase} className="bg-graph__reveal-label">
+                <span className="reveal-label__emoji">{label.emoji}</span>
+                <span className="reveal-label__text">{label.text}</span>
+              </div>
+            </foreignObject>
+          );
+        })()}
       </svg>
     </div>
   );

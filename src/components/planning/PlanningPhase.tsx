@@ -24,14 +24,8 @@ import { ShipCardOverlay } from './ShipCard';
 import { InterventionCardOverlay } from './InterventionCard';
 import './PlanningPhase.css';
 
-const REPLAY_DELAY_MS = 800;
-
-interface ReplayData {
-  foods: Array<{ shipId: string; dropColumn: number }>;
-  interventions: Array<{ interventionId: string; dropColumn: number }>;
-  medications: string[];
-  decayRate: number;
-}
+// Reveal phase delays (ms): phase 0→1, 1→2, 2→3, 3→4, 4→results
+const REVEAL_DELAYS = [300, 1500, 1200, 1200, 1200];
 
 function getNextPancreasTier(current: PancreasTier, maxBars: number): PancreasTier {
   const sequence: PancreasTier[] = [1, 2, 3];
@@ -81,11 +75,11 @@ export function PlanningPhase() {
   const [isLoading, setIsLoading] = useState(true);
   const graphRef = useRef<HTMLDivElement>(null);
 
-  // Submit / replay state
+  // Submit / reveal state
   const [gamePhase, setGamePhase] = useState<GamePhase>('planning');
   const [penaltyResult, setPenaltyResult] = useState<PenaltyResult | null>(null);
-  const replayDataRef = useRef<ReplayData | null>(null);
-  const replayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [revealPhase, setRevealPhase] = useState<number | undefined>(undefined);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load configs on mount
   useEffect(() => {
@@ -293,7 +287,7 @@ export function PlanningPhase() {
     setPancreasTier(currentDay, nextTier);
   }, [currentPancreasTier, barsAvailable, currentDay, setPancreasTier]);
 
-  // === Submit handler: save state, clear graph, start replay ===
+  // === Submit handler: start reveal animation (no graph clear) ===
   const handleSubmit = useCallback(() => {
     if (!submitEnabled) return;
 
@@ -303,128 +297,90 @@ export function PlanningPhase() {
     // Save WP state for carry-over penalty
     submitDayWp(currentDay, wpUsed, effectiveWpBudget);
 
-    // Save current placements for replay
-    replayDataRef.current = {
-      foods: placedFoods.map(f => ({ shipId: f.shipId, dropColumn: f.dropColumn })),
-      interventions: placedInterventions.map(i => ({ interventionId: i.interventionId, dropColumn: i.dropColumn })),
-      medications: [...activeMedications],
-      decayRate: currentDecayRate,
-    };
-
-    // Clear graph
-    clearFoods();
+    // Start reveal — graph stays populated, revealPhase controls layer visibility
     setGamePhase('replaying');
+    setRevealPhase(0);
     setPenaltyResult(null);
-  }, [submitEnabled, placedFoods, placedInterventions, activeMedications, clearFoods, lockPancreasBars, currentDecayRate, submitDayWp, currentDay, wpUsed, effectiveWpBudget]);
+  }, [submitEnabled, lockPancreasBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget]);
 
-  // === Replay animation effect ===
+  // === Reveal animation effect — progressive layer reveal ===
   useEffect(() => {
-    if (gamePhase !== 'replaying' || !replayDataRef.current) return;
+    if (gamePhase !== 'replaying') return;
 
-    const data = replayDataRef.current;
+    let currentPhase = 0;
 
-    // Re-activate medications first (instant)
-    for (const medId of data.medications) {
-      if (!activeMedications.includes(medId)) {
-        toggleMedication(medId);
-      }
-    }
+    function advancePhase() {
+      currentPhase++;
+      if (currentPhase <= 4) {
+        setRevealPhase(currentPhase);
+        revealTimerRef.current = setTimeout(advancePhase, REVEAL_DELAYS[currentPhase]);
+      } else {
+        // All phases done — calculate penalty and show results
+        const penalty = calculatePenaltyFromState(
+          placedFoods,
+          allShips,
+          placedInterventions,
+          allInterventions,
+          medicationModifiers,
+          currentDecayRate,
+        );
 
-    const allItems: Array<{ type: 'food' | 'intervention'; id: string; col: number }> = [
-      ...data.foods.map(f => ({ type: 'food' as const, id: f.shipId, col: f.dropColumn })),
-      ...data.interventions.map(i => ({ type: 'intervention' as const, id: i.interventionId, col: i.dropColumn })),
-    ];
-
-    let index = 0;
-
-    function placeNext() {
-      if (index >= allItems.length) {
-        // All items replayed — calculate penalty and show results
-        // Use a small delay for the last wave animation to finish
-        replayTimerRef.current = setTimeout(() => {
-          const data = replayDataRef.current;
-          if (!data) return;
-
-          // We need to read current state from the store
+        // Last day: add WP penalty for unspent WP
+        const isLastDay = currentLevel && currentDay >= currentLevel.days;
+        if (isLastDay) {
           const state = useGameStore.getState();
-          const replayDecayRate = replayDataRef.current?.decayRate ?? currentDecayRate;
-          // Recompute medication modifiers from replay data (closure's medicationModifiers
-          // is stale because clearFoods() resets activeMedications before the effect fires)
-          const replayMedMods = data.medications.length > 0
-            ? computeMedicationModifiers(data.medications, allMedications)
-            : DEFAULT_MEDICATION_MODIFIERS;
-          const penalty = calculatePenaltyFromState(
-            state.placedFoods,
-            allShips,
-            state.placedInterventions,
-            allInterventions,
-            replayMedMods,
-            replayDecayRate,
-          );
-
-          // Last day: add WP penalty for unspent WP
-          const isLastDay = currentLevel && currentDay >= currentLevel.days;
-          if (isLastDay) {
-            const submittedWp = state.submittedWpPerDay[currentDay];
-            if (submittedWp) {
-              const unspent = submittedWp.effectiveWpBudget - submittedWp.wpUsed;
-              if (unspent > 0) {
-                const wpPenaltyPoints = unspent * WP_PENALTY_WEIGHT;
-                penalty.totalPenalty = Math.round((penalty.totalPenalty + wpPenaltyPoints) * 10) / 10;
-                const { stars, label } = calculateStars(penalty.totalPenalty);
-                penalty.stars = stars;
-                penalty.label = label;
-              }
+          const submittedWp = state.submittedWpPerDay[currentDay];
+          if (submittedWp) {
+            const unspent = submittedWp.effectiveWpBudget - submittedWp.wpUsed;
+            if (unspent > 0) {
+              const wpPenaltyPoints = unspent * WP_PENALTY_WEIGHT;
+              penalty.totalPenalty = Math.round((penalty.totalPenalty + wpPenaltyPoints) * 10) / 10;
+              const { stars, label } = calculateStars(penalty.totalPenalty);
+              penalty.stars = stars;
+              penalty.label = label;
             }
           }
+        }
 
-          setPenaltyResult(penalty);
-          setGamePhase('results');
-        }, 600);
-        return;
+        setPenaltyResult(penalty);
+        setRevealPhase(undefined);
+        setGamePhase('results');
       }
-
-      const item = allItems[index];
-      if (item.type === 'food') {
-        placeFood(item.id, item.col);
-      } else {
-        placeIntervention(item.id, item.col);
-      }
-      index++;
-      replayTimerRef.current = setTimeout(placeNext, REPLAY_DELAY_MS);
     }
 
-    // Start replay after a short pause
-    replayTimerRef.current = setTimeout(placeNext, 300);
+    revealTimerRef.current = setTimeout(advancePhase, REVEAL_DELAYS[0]);
 
     return () => {
-      if (replayTimerRef.current) clearTimeout(replayTimerRef.current);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gamePhase]);
 
   // === Result actions ===
   const handleRetry = useCallback(() => {
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     unlockPancreasBars(currentDay);
     clearFoods();
     setGamePhase('planning');
+    setRevealPhase(undefined);
     setPenaltyResult(null);
-    replayDataRef.current = null;
   }, [clearFoods, unlockPancreasBars, currentDay]);
 
   const handleNextDay = useCallback(() => {
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     startNextDay();
     setGamePhase('planning');
+    setRevealPhase(undefined);
     setPenaltyResult(null);
-    replayDataRef.current = null;
   }, [startNextDay]);
 
   // Reset phase when day changes (e.g., via cheat buttons)
   const handleGoToDay = useCallback((day: number) => {
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     goToDay(day);
     setGamePhase('planning');
+    setRevealPhase(undefined);
     setPenaltyResult(null);
-    replayDataRef.current = null;
   }, [goToDay]);
 
   // Suppress unused variable warning
@@ -471,7 +427,7 @@ export function PlanningPhase() {
         )}
         {gamePhase === 'replaying' && (
           <div className="planning-phase__hint planning-phase__hint--replay">
-            Replaying your meal plan...
+            Reviewing your meal plan...
           </div>
         )}
 
@@ -488,6 +444,7 @@ export function PlanningPhase() {
             previewIntervention={isPlanning ? activeIntervention : null}
             previewColumn={isPlanning ? previewColumn : null}
             showPenaltyHighlight={showResults}
+            revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
             interactive={isPlanning}
             onFoodClick={handleFoodClick}
             onFoodMove={handleFoodMove}
