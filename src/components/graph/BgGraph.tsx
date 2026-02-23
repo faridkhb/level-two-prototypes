@@ -1015,12 +1015,15 @@ export function BgGraph({
         {/* Food markers — emoji labels above each food's own peak */}
         {(interactive || (revealPhase !== undefined && revealPhase >= 1)) && graphRenderData.layers.map(layer => {
           if (!layer.marker) return null;
-          const cx = layer.marker.peakCenterX;
-          const tailBottomY = PAD_TOP + GRAPH_H - layer.marker.tailRow * cellHeight;
-          const tailH = 11;
-          const tailTopY = tailBottomY - tailH;
           const mW = 50;
           const mH = 44;
+          const tailH = 11;
+          // Clamp horizontal: marker stays within graph bounds
+          const cx = Math.max(PAD_LEFT + mW / 2, Math.min(PAD_LEFT + GRAPH_W - mW / 2, layer.marker.peakCenterX));
+          // Clamp vertical: tail ≥ 60 mg/dL (row 0), marker body doesn't exceed graph top
+          const rawTailBottomY = PAD_TOP + GRAPH_H - Math.max(0, layer.marker.tailRow) * cellHeight;
+          const tailBottomY = Math.max(PAD_TOP + mH + tailH, Math.min(PAD_TOP + GRAPH_H, rawTailBottomY));
+          const tailTopY = tailBottomY - tailH;
           const mY = tailTopY - mH;
           return (
             <g
@@ -1064,12 +1067,15 @@ export function BgGraph({
 
         {/* Intervention markers — emoji labels at each intervention's peak */}
         {(interactive || (revealPhase !== undefined && revealPhase >= 3)) && interventionMarkers.map(im => {
-          const cx = im.peakCenterX;
-          const tailBottomY = PAD_TOP + GRAPH_H - im.tailRow * cellHeight;
-          const tailH = 11;
-          const tailTopY = tailBottomY - tailH;
           const mW = 50;
           const mH = 44;
+          const tailH = 11;
+          // Clamp horizontal: marker stays within graph bounds
+          const cx = Math.max(PAD_LEFT + mW / 2, Math.min(PAD_LEFT + GRAPH_W - mW / 2, im.peakCenterX));
+          // Clamp vertical: tail ≥ 60 mg/dL (row 0), marker body doesn't exceed graph top
+          const rawTailBottomY = PAD_TOP + GRAPH_H - Math.max(0, im.tailRow) * cellHeight;
+          const tailBottomY = Math.max(PAD_TOP + mH + tailH, Math.min(PAD_TOP + GRAPH_H, rawTailBottomY));
+          const tailTopY = tailBottomY - tailH;
           const mY = tailTopY - mH;
           return (
             <g
