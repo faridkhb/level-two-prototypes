@@ -25,14 +25,26 @@ export interface PancreasTierOverride {
   cost: number;
 }
 
+export interface MedicationOverride {
+  multiplier: number;
+  depth: number;
+  floorMgDl: number;
+  durationMultiplier: number;
+  glucoseMultiplier: number;
+  kcalMultiplier: number;
+  wpBonus: number;
+}
+
 interface ConfigState {
   foods: Record<string, Partial<FoodOverride>>;
   pancreasTiers: Record<string, Partial<PancreasTierOverride>>;
   interventions: Record<string, Partial<InterventionOverride>>;
+  medications: Record<string, Partial<MedicationOverride>>;
 
   setFoodField: (foodId: string, field: keyof FoodOverride, value: number) => void;
   setPancreasField: (tier: string, field: keyof PancreasTierOverride, value: number) => void;
   setInterventionField: (id: string, field: keyof InterventionOverride, value: number) => void;
+  setMedicationField: (id: string, field: keyof MedicationOverride, value: number) => void;
   resetAll: () => void;
 }
 
@@ -42,6 +54,7 @@ export const useConfigStore = create<ConfigState>()(
       foods: {},
       pancreasTiers: {},
       interventions: {},
+      medications: {},
 
       setFoodField: (foodId, field, value) =>
         set((state) => ({
@@ -67,7 +80,15 @@ export const useConfigStore = create<ConfigState>()(
           },
         })),
 
-      resetAll: () => set({ foods: {}, pancreasTiers: {}, interventions: {} }),
+      setMedicationField: (id, field, value) =>
+        set((state) => ({
+          medications: {
+            ...state.medications,
+            [id]: { ...state.medications[id], [field]: value },
+          },
+        })),
+
+      resetAll: () => set({ foods: {}, pancreasTiers: {}, interventions: {}, medications: {} }),
     }),
     {
       name: 'bg-config-overrides',
@@ -76,6 +97,7 @@ export const useConfigStore = create<ConfigState>()(
         foods: state.foods,
         pancreasTiers: state.pancreasTiers,
         interventions: state.interventions,
+        medications: state.medications,
       }),
     }
   )

@@ -177,7 +177,7 @@ export async function loadMedications(): Promise<Medication[]> {
 
   const response = await fetch('/data/medications.json', { cache: 'no-store' });
   const data = await response.json();
-  const medications = data.medications.map(transformMedication);
+  const medications = applyMedicationOverrides(data.medications.map(transformMedication));
   medicationsCache = medications;
   return medications;
 }
@@ -223,6 +223,26 @@ function applyInterventionOverrides(interventions: Intervention[]): Intervention
       wpCost: ov.wpCost ?? intv.wpCost,
       boostCols: ov.boostCols ?? intv.boostCols,
       boostExtra: ov.boostExtra ?? intv.boostExtra,
+    };
+  });
+}
+
+function applyMedicationOverrides(medications: Medication[]): Medication[] {
+  const { medications: overrides } = useConfigStore.getState();
+  if (Object.keys(overrides).length === 0) return medications;
+
+  return medications.map(med => {
+    const ov = overrides[med.id];
+    if (!ov) return med;
+    return {
+      ...med,
+      multiplier: ov.multiplier ?? med.multiplier,
+      depth: ov.depth ?? med.depth,
+      floorMgDl: ov.floorMgDl ?? med.floorMgDl,
+      durationMultiplier: ov.durationMultiplier ?? med.durationMultiplier,
+      glucoseMultiplier: ov.glucoseMultiplier ?? med.glucoseMultiplier,
+      kcalMultiplier: ov.kcalMultiplier ?? med.kcalMultiplier,
+      wpBonus: ov.wpBonus ?? med.wpBonus,
     };
   });
 }

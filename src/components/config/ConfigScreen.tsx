@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 // Types loaded from JSON directly, not from core/types
 import { PANCREAS_TIERS } from '../../core/types';
 import { useConfigStore } from '../../store/configStore';
-import type { FoodOverride, InterventionOverride, PancreasTierOverride } from '../../store/configStore';
+import type { FoodOverride, InterventionOverride, PancreasTierOverride, MedicationOverride } from '../../store/configStore';
 import { clearConfigCache } from '../../config/loader';
 import './ConfigScreen.css';
 
@@ -37,19 +37,36 @@ interface RawIntervention {
   boostExtra: number;
 }
 
+interface RawMedication {
+  id: string;
+  name: string;
+  emoji: string;
+  type: string;
+  multiplier?: number;
+  depth?: number;
+  floorMgDl?: number;
+  durationMultiplier?: number;
+  glucoseMultiplier?: number;
+  kcalMultiplier?: number;
+  wpBonus?: number;
+}
+
 export function ConfigScreen({ onBack }: ConfigScreenProps) {
   const [tab, setTab] = useState<Tab>('food');
   const [defaultFoods, setDefaultFoods] = useState<RawFood[]>([]);
   const [defaultInterventions, setDefaultInterventions] = useState<RawIntervention[]>([]);
+  const [defaultMedications, setDefaultMedications] = useState<RawMedication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const {
     foods: foodOverrides,
     pancreasTiers: pancreasOverrides,
     interventions: interventionOverrides,
+    medications: medicationOverrides,
     setFoodField,
     setPancreasField,
     setInterventionField,
+    setMedicationField,
     resetAll,
   } = useConfigStore();
 
@@ -57,12 +74,14 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
   useEffect(() => {
     async function loadDefaults() {
       try {
-        const [foodRes, intvRes] = await Promise.all([
+        const [foodRes, intvRes, medRes] = await Promise.all([
           fetch('/data/foods.json', { cache: 'no-store' }),
           fetch('/data/interventions.json', { cache: 'no-store' }),
+          fetch('/data/medications.json', { cache: 'no-store' }),
         ]);
         const foodData = await foodRes.json();
         const intvData = await intvRes.json();
+        const medData = await medRes.json();
 
         setDefaultFoods(foodData.foods.map((f: RawFood) => ({
           id: f.id,
@@ -86,6 +105,20 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
           wpCost: i.wpCost,
           boostCols: i.boostCols ?? 0,
           boostExtra: i.boostExtra ?? 0,
+        })));
+
+        setDefaultMedications(medData.medications.map((m: RawMedication) => ({
+          id: m.id,
+          name: m.name,
+          emoji: m.emoji,
+          type: m.type,
+          multiplier: m.multiplier,
+          depth: m.depth,
+          floorMgDl: m.floorMgDl,
+          durationMultiplier: m.durationMultiplier,
+          glucoseMultiplier: m.glucoseMultiplier,
+          kcalMultiplier: m.kcalMultiplier,
+          wpBonus: m.wpBonus,
         })));
 
         setIsLoading(false);
@@ -117,6 +150,13 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
 
   const getPancreasValue = (tier: string, field: keyof PancreasTierOverride, defaultVal: number): number => {
     return pancreasOverrides[tier]?.[field] ?? defaultVal;
+  };
+
+  const getMedicationValue = (id: string, field: keyof MedicationOverride, defaultVal: number | undefined): number | string => {
+    const ov = medicationOverrides[id]?.[field];
+    if (ov !== undefined) return ov;
+    if (defaultVal !== undefined) return defaultVal;
+    return '';
   };
 
   if (isLoading) {
@@ -274,70 +314,162 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
         )}
 
         {tab === 'interventions' && (
-          <div className="config-table-wrap">
-            <table className="config-table">
-              <thead>
-                <tr>
-                  <th className="config-table__th--name">Intervention</th>
-                  <th>Depth</th>
-                  <th>Duration</th>
-                  <th>WP</th>
-                  <th>Boost Cols</th>
-                  <th>Boost Extra</th>
-                </tr>
-              </thead>
-              <tbody>
-                {defaultInterventions.map(intv => (
-                  <tr key={intv.id}>
-                    <td className="config-table__td--name">
-                      <span className="config-table__emoji">{intv.emoji}</span>
-                      {intv.name}
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="config-input config-input--small"
-                        value={getInterventionValue(intv.id, 'depth', intv.depth)}
-                        onChange={e => setInterventionField(intv.id, 'depth', Number(e.target.value))}
-                      />
-                    </td>
-                    <td>
+          <>
+            <div className="config-table-wrap">
+              <table className="config-table">
+                <thead>
+                  <tr>
+                    <th className="config-table__th--name">Intervention</th>
+                    <th>Depth</th>
+                    <th>Duration</th>
+                    <th>WP</th>
+                    <th>Boost Cols</th>
+                    <th>Boost Extra</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {defaultInterventions.map(intv => (
+                    <tr key={intv.id}>
+                      <td className="config-table__td--name">
+                        <span className="config-table__emoji">{intv.emoji}</span>
+                        {intv.name}
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="config-input config-input--small"
+                          value={getInterventionValue(intv.id, 'depth', intv.depth)}
+                          onChange={e => setInterventionField(intv.id, 'depth', Number(e.target.value))}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="config-input"
+                          value={getInterventionValue(intv.id, 'duration', intv.duration)}
+                          onChange={e => setInterventionField(intv.id, 'duration', Number(e.target.value))}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="config-input config-input--small"
+                          value={getInterventionValue(intv.id, 'wpCost', intv.wpCost)}
+                          onChange={e => setInterventionField(intv.id, 'wpCost', Number(e.target.value))}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="config-input config-input--small"
+                          value={getInterventionValue(intv.id, 'boostCols', intv.boostCols)}
+                          onChange={e => setInterventionField(intv.id, 'boostCols', Number(e.target.value))}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="config-input config-input--small"
+                          value={getInterventionValue(intv.id, 'boostExtra', intv.boostExtra)}
+                          onChange={e => setInterventionField(intv.id, 'boostExtra', Number(e.target.value))}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="config-section-label">Medications</div>
+            {defaultMedications.map(med => (
+              <div key={med.id} className="config-med-card">
+                <div className="config-med-card__header">
+                  <span className="config-table__emoji">{med.emoji}</span>
+                  <span className="config-med-card__name">{med.name}</span>
+                  <span className="config-med-card__type">{med.type}</span>
+                </div>
+                <div className="config-med-card__fields">
+                  {med.type === 'peakReduction' && (
+                    <label className="config-med-field">
+                      <span>Multiplier</span>
                       <input
                         type="number"
                         className="config-input"
-                        value={getInterventionValue(intv.id, 'duration', intv.duration)}
-                        onChange={e => setInterventionField(intv.id, 'duration', Number(e.target.value))}
+                        step={0.05}
+                        value={getMedicationValue(med.id, 'multiplier', med.multiplier)}
+                        onChange={e => setMedicationField(med.id, 'multiplier', Number(e.target.value))}
                       />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="config-input config-input--small"
-                        value={getInterventionValue(intv.id, 'wpCost', intv.wpCost)}
-                        onChange={e => setInterventionField(intv.id, 'wpCost', Number(e.target.value))}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="config-input config-input--small"
-                        value={getInterventionValue(intv.id, 'boostCols', intv.boostCols)}
-                        onChange={e => setInterventionField(intv.id, 'boostCols', Number(e.target.value))}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="config-input config-input--small"
-                        value={getInterventionValue(intv.id, 'boostExtra', intv.boostExtra)}
-                        onChange={e => setInterventionField(intv.id, 'boostExtra', Number(e.target.value))}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </label>
+                  )}
+                  {med.type === 'thresholdDrain' && (
+                    <>
+                      <label className="config-med-field">
+                        <span>Depth</span>
+                        <input
+                          type="number"
+                          className="config-input config-input--small"
+                          value={getMedicationValue(med.id, 'depth', med.depth)}
+                          onChange={e => setMedicationField(med.id, 'depth', Number(e.target.value))}
+                        />
+                      </label>
+                      <label className="config-med-field">
+                        <span>Floor (mg/dL)</span>
+                        <input
+                          type="number"
+                          className="config-input"
+                          value={getMedicationValue(med.id, 'floorMgDl', med.floorMgDl)}
+                          onChange={e => setMedicationField(med.id, 'floorMgDl', Number(e.target.value))}
+                        />
+                      </label>
+                    </>
+                  )}
+                  {med.type === 'slowAbsorption' && (
+                    <>
+                      <label className="config-med-field">
+                        <span>Duration ×</span>
+                        <input
+                          type="number"
+                          className="config-input"
+                          step={0.1}
+                          value={getMedicationValue(med.id, 'durationMultiplier', med.durationMultiplier)}
+                          onChange={e => setMedicationField(med.id, 'durationMultiplier', Number(e.target.value))}
+                        />
+                      </label>
+                      <label className="config-med-field">
+                        <span>Glucose ×</span>
+                        <input
+                          type="number"
+                          className="config-input"
+                          step={0.05}
+                          value={getMedicationValue(med.id, 'glucoseMultiplier', med.glucoseMultiplier)}
+                          onChange={e => setMedicationField(med.id, 'glucoseMultiplier', Number(e.target.value))}
+                        />
+                      </label>
+                      <label className="config-med-field">
+                        <span>Kcal ×</span>
+                        <input
+                          type="number"
+                          className="config-input"
+                          step={0.1}
+                          value={getMedicationValue(med.id, 'kcalMultiplier', med.kcalMultiplier)}
+                          onChange={e => setMedicationField(med.id, 'kcalMultiplier', Number(e.target.value))}
+                        />
+                      </label>
+                      <label className="config-med-field">
+                        <span>WP Bonus</span>
+                        <input
+                          type="number"
+                          className="config-input config-input--small"
+                          value={getMedicationValue(med.id, 'wpBonus', med.wpBonus)}
+                          onChange={e => setMedicationField(med.id, 'wpBonus', Number(e.target.value))}
+                        />
+                      </label>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </>
         )}
       </div>
 
