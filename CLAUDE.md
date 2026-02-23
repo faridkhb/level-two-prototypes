@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.39.2 | Graph-based food planning with cubes, interventions, medications, decay, wave animations |
+| `main` | BG Planner | v0.40.0 | Graph-based food planning with cubes, interventions, medications, decay, wave animations |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -102,7 +102,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.39.4)
+- `src/version.ts` — version number (v0.40.0)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -137,7 +137,7 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - `src/App.tsx` — root app component (single screen, no phase routing)
 - `src/App.css` — app layout styles
 
-### Current State (v0.39.4) — Stable Markers + Food-Boundary Skylines
+### Current State (v0.40.0) — Two-Phase Interventions + Stable Markers
 
 - **Single-Screen Design** ✅
   - Graph on top, food inventory + intervention inventory below (horizontal card layout)
@@ -164,11 +164,12 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
   - Decay toggle: ON/OFF button in header (toggling restarts game)
 
 - **Intervention System** ✅
-  - Two interventions: Light Walk (🚶 60m, 2 WP, -3 cubes) and Heavy Run (🏃 30m, 4 WP, -5 cubes)
-  - Intervention curve: ramp up during duration, then flat to end of graph
-  - **Boost zones**: first N columns get extra depth (burst effect)
-    - Light Walk: first 3 cols at -4 cubes (base 3 + boost 1)
-    - Heavy Run: first 5 cols at -7 cubes (base 5 + boost 2)
+  - Two interventions: Light Walk (🚶 60m, 2 WP, -3 cubes) and Heavy Run (🏃 180m, 4 WP, -5 cubes)
+  - **Two-phase curve** (v0.40.0): main phase at full depth, then tail at reduced depth
+    - Main phase: `duration / 15` columns at full `depth` (no ramp, immediate full power)
+    - Tail phase: remaining columns at `boostExtra` depth (residual burn)
+    - Light Walk: 4 cols at 3 cubes, then 1 cube to end
+    - Heavy Run: 12 cols at 5 cubes, then 2 cubes to end
   - **Drag preview**: when dragging an intervention over the graph, per-cube green overlays show exactly which food cubes would be burned (pulsing animation)
   - Cubes are removed from the **top** of the food stack at each column
   - **Per-source burn coloring** (v0.39.0): burned cubes colored by source, not food color
@@ -256,17 +257,15 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
   - Each food gets an emoji label marker above its peak on the graph
   - White bubble with tail pointing to the food's highest alive cubes
   - Markers are draggable — drag to move food, drag off graph to remove
-  - Centered over columns where the food's `skylineRow` is maximum
-  - **skylineRow vs aliveTop** (v0.38.7): `aliveTop` = unclamped per-food boundary; `skylineRow` = clamped by `columnCaps` (responds to interventions)
-  - **Stable marker positioning** (v0.39.3): markers use `aliveTop` (unclamped) for horizontal position, `skylineRow` for tail Y — prevents marker jumping when interventions affect peak columns
+  - Centered over columns where the food's visible height (`skylineRow - baseRow`) is maximum
+  - **skylineRow vs aliveTop**: `aliveTop` = unclamped per-food boundary; `skylineRow` = clamped by `columnCaps` (responds to interventions)
+  - **Stable marker positioning** (v0.39.7): markers use food's OWN visible height (skylineRow - baseRow) for peak finding, skylineRow for tail Y — prevents displacement for 4th+ foods
 
 - **Individual Food Skylines** ✅
-  - White outlined step-paths showing food BOUNDARIES (when 2+ foods placed)
-  - Trace the boundary between food N and food N+1 using `aliveTop` (unclamped)
+  - White outlined step-paths between each food's alive zone (when 2+ foods placed)
+  - Trace the boundary of food's ALIVE cubes using `skylineRow` (clamped by columnCaps)
   - Shadow underneath for visibility over cubes
-  - **Food-boundary mode** (v0.39.4): skylines show which food owns cubes, independent of interventions
-    - Skylines pass through burned zones, clearly separating food ownership
-    - Burn coloring shows alive/burned status; skylines show food identity
+  - Skylines descend when interventions burn cubes — wrap only unburned cells
   - Rendered AFTER all cube layers (Z-order: cubes → med cubes → individual skylines → main skyline)
 
 - **Penalty / Rating System** ✅
@@ -378,10 +377,10 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 
 ### Intervention Parameters
 
-| Intervention | Emoji | Depth | Duration | WP | Boost | Effect |
-|-------------|-------|------:|---------:|---:|-------|--------|
-| Light Walk | 🚶 | 3 cubes | 60m | 2 | +1 for 3 cols | Removes 3 cubes (4 in burst zone), ramp 60m then flat |
-| Heavy Run | 🏃 | 5 cubes | 30m | 4 | +2 for 5 cols | Removes 5 cubes (7 in burst zone), ramp 30m then flat |
+| Intervention | Emoji | Depth | Duration | WP | Tail | Effect |
+|-------------|-------|------:|---------:|---:|-----:|--------|
+| Light Walk | 🚶 | 3 cubes | 60m (4 cols) | 2 | 1 cube | Main: 3 cubes for 4 cols, tail: 1 cube to end |
+| Heavy Run | 🏃 | 5 cubes | 180m (12 cols) | 4 | 2 cubes | Main: 5 cubes for 12 cols, tail: 2 cubes to end |
 
 ### Level Config Structure
 ```json
@@ -430,14 +429,13 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 5. If decay OFF: flat plateau at peakCubes to right edge
 6. Drop column = left edge (start of food absorption)
 
-#### Intervention Algorithm
-1. `depth` = cubes to remove at peak
-2. `riseCols = Math.round(duration / 15)`
-3. Rise phase: linear from 1 to depth
-4. Plateau: flat at depth from peak to right edge of graph
-5. **Boost zone**: first `boostCols` columns get `+boostExtra` depth on top of normal curve
-6. Multiple interventions stack (reductions add up)
-7. Cubes removed from top — bottom cubes stay visible
+#### Intervention Algorithm (v0.40.0)
+1. `depth` = cubes to remove during main phase
+2. `mainCols = Math.round(duration / 15)` = main phase length
+3. Main phase: flat at `depth` for `mainCols` columns (no ramp)
+4. Tail phase: flat at `boostExtra` from mainCols to right edge of graph
+5. Multiple interventions stack (reductions add up)
+6. Cubes removed from top — bottom cubes stay visible
 
 #### Food Colors
 Progressive blue palette by placement order: 7-color Tailwind sky shades from `#7dd3fc` (lightest) to `#0c4a6e` (darkest). First food placed = lightest, each subsequent food = darker shade.

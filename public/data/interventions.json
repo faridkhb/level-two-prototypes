@@ -15,7 +15,7 @@
       "name": "Heavy Run",
       "emoji": "🏃",
       "depth": 5,
-      "duration": 30,
+      "duration": 180,
       "wpCost": 4,
       "boostCols": 5,
       "boostExtra": 2

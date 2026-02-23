@@ -106,36 +106,27 @@ export function buildFoodPyramids(
 }
 
 /**
- * Calculate intervention curve: ramp up during duration, then flat to end.
+ * Calculate intervention curve: main phase at full depth, then tail at reduced depth.
  * Returns cubes to REMOVE per column.
  *
- * Boost zone: first `boostCols` columns get `boostExtra` additional cubes
- * on top of the normal ramp/plateau value.
+ * Main phase: `duration / 15` columns at full `depth` (no ramp).
+ * Tail phase: remaining columns at `boostExtra` depth (residual burn).
  */
 export function calculateInterventionCurve(
   depth: number,
   durationMinutes: number,
   dropColumn: number,
-  boostCols: number = 0,
+  _boostCols: number = 0,
   boostExtra: number = 0,
 ): CubeColumn[] {
-  const riseCols = Math.max(1, Math.round(durationMinutes / GRAPH_CONFIG.cellWidthMin));
+  const mainCols = Math.max(1, Math.round(durationMinutes / GRAPH_CONFIG.cellWidthMin));
   if (depth <= 0) return [];
 
   const result: CubeColumn[] = [];
   const totalCols = TOTAL_COLUMNS - dropColumn;
 
   for (let i = 0; i < totalCols; i++) {
-    let height: number;
-    if (i < riseCols) {
-      height = Math.round(depth * (i + 1) / riseCols);
-    } else {
-      height = depth;
-    }
-    // Apply boost in first N columns
-    if (i < boostCols && boostExtra > 0) {
-      height += boostExtra;
-    }
+    const height = i < mainCols ? depth : boostExtra;
     if (height <= 0) continue;
     result.push({ columnOffset: i, cubeCount: height });
   }
