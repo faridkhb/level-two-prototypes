@@ -25,7 +25,7 @@
     {
       "day": 2,
       "kcalBudget": 2000,
-      "wpBudget": 14,
+      "wpBudget": 10,
       "availableFoods": [
         { "id": "pizza", "count": 1 },
         { "id": "chickpeas", "count": 1 },
