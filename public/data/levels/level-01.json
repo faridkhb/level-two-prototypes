@@ -16,6 +16,8 @@
         { "id": "apple", "count": 1 },
         { "id": "popcorn", "count": 1 },
         { "id": "berriesmixed", "count": 1 },
+        { "id": "sandwich", "count": 1 },
+        { "id": "nutsmixed", "count": 1 },
         { "id": "chicken", "count": 1 }
       ],
       "availableInterventions": [
@@ -35,7 +37,9 @@
         { "id": "cookie", "count": 1 },
         { "id": "berriesmixed", "count": 1 },
         { "id": "nutsmixed", "count": 1 },
+        { "id": "sandwich", "count": 1 },
         { "id": "banana", "count": 1 },
+        { "id": "apple", "count": 1 },
         { "id": "popcorn", "count": 1 }
       ],
       "availableInterventions": [
@@ -55,7 +59,10 @@
         { "id": "chickpeas", "count": 1 },
         { "id": "greekyogurt", "count": 1 },
         { "id": "oatmeal", "count": 1 },
-        { "id": "banana", "count": 1 }
+        { "id": "nutsmixed", "count": 1 },
+        { "id": "banana", "count": 1 },
+        { "id": "apple", "count": 1 },
+        { "id": "popcorn", "count": 1 }
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 }
