@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.40.0 | Graph-based food planning with cubes, interventions, medications, decay, wave animations |
+| `main` | BG Planner | v0.40.3 | Graph-based food planning with cubes, interventions, medications, decay, wave animations, main menu, config screen |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -91,42 +91,62 @@ What counts as "significant":
 ### Game Flow
 
 ```
-Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
-→ Drag food card onto graph → cubes appear with wave animation
-→ Drag intervention onto graph → top cubes fade out with wave animation
-→ Track WP budget (food + interventions share same pool)
-→ Track kcal with assessment labels
-→ Click cubes to remove placed food/intervention
+Main Menu → TEST MODE / STORY MODE (coming soon) / CONFIG
+TEST MODE:
+  Single screen: BG Graph (top) + Food Inventory + Actions panel (bottom)
+  → Drag food card onto graph → cubes appear with wave animation
+  → Drag intervention onto graph → top cubes fade out with wave animation
+  → Toggle medications (ON/OFF) in Actions panel
+  → Track WP budget (food + interventions share same pool)
+  → Track kcal with assessment labels
+  → Click cubes to remove placed food/intervention
+  → Submit → phased layer reveal animation → penalty → results
+CONFIG:
+  Editable tables for food, pancreas tiers, interventions, medications
+  → Overrides persist in localStorage
 ```
 
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.40.0)
+- `src/version.ts` — version number (v0.40.3)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
+#### App Navigation
+- `src/App.tsx` — screen routing (menu / testMode / config) with back button
+- `src/App.css` — app layout styles, back button
+
+#### Main Menu (`src/components/menu/`)
+- `MainMenu.tsx` — 3 buttons: TEST MODE, STORY MODE (disabled), CONFIG
+- `MainMenu.css` — menu button styles
+
+#### Config Screen (`src/components/config/`)
+- `ConfigScreen.tsx` — 3-tab editor (Food / Pancreas / Interventions+Medications)
+- `ConfigScreen.css` — table, input, medication card styles
+
 #### Graph Component (`src/components/graph/`)
-- `BgGraph.tsx` — SVG-based BG graph with grid, cubes, zones, intervention burn rendering, wave animations, drag-and-drop target
-- `BgGraph.css` — graph styles, cubeAppear/cubeBurn keyframe animations
+- `BgGraph.tsx` — SVG-based BG graph with grid, cubes, zones, intervention burn rendering, wave animations, drag-and-drop target, reveal phase animation
+- `BgGraph.css` — graph styles, cubeAppear/cubeBurn/medAppear/revealLabel keyframe animations
 - `index.ts` — exports
 
 #### Planning Phase (`src/components/planning/`)
-- `PlanningPhase.tsx` — single-screen orchestrator with DnD context for food + interventions
-- `PlanningHeader.tsx` — header with day label, WP budget, kcal assessment, settings toggles (time format, BG unit, decay ON/OFF)
+- `PlanningPhase.tsx` — single-screen orchestrator with DnD context, submit/reveal/results flow
+- `PlanningHeader.tsx` — header with day label, WP budget, kcal assessment, settings toggles (time format, BG unit)
 - `ShipCard.tsx` — draggable food cards with emoji, kcal, carbs, duration, WP badge
 - `ShipInventory.tsx` — food card list from level config
 - `InterventionCard.tsx` — draggable intervention cards (green) with emoji, duration, depth, WP badge
 - `InterventionCard.css` — intervention card styles
-- `InterventionInventory.tsx` — intervention card list from level config
-- `MedicationPanel.tsx` — medication toggle panel (ON/OFF buttons)
-- `MedicationPanel.css` — medication panel styles (purple theme)
+- `InterventionInventory.tsx` — combined Actions panel: medication toggles + intervention cards
+- `MedicationPanel.css` — medication toggle styles (purple theme)
+- `ResultPanel.tsx` — star rating, penalty breakdown, retry/next buttons
 
 #### State Management
 - `src/store/gameStore.ts` — Zustand store: placedFoods, placedInterventions, settings, combined kcal/WP tracking
+- `src/store/configStore.ts` — Zustand store: config overrides (food, pancreas, interventions, medications) persisted in localStorage
 
 #### Configuration
-- `src/config/loader.ts` — loads and transforms foods.json, interventions.json, level configs
+- `src/config/loader.ts` — loads and transforms foods.json, interventions.json, level configs; applies config overrides
 - `public/data/foods.json` — 24 food items with glucose, carbs, protein, fat, duration, kcal, wpCost
 - `public/data/interventions.json` — 2 interventions: Light Walk, Heavy Run
 - `public/data/medications.json` — 3 medications: Metformin, SGLT2 Inhibitor, GLP-1 Agonist
@@ -134,14 +154,40 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
-- `src/App.tsx` — root app component (single screen, no phase routing)
-- `src/App.css` — app layout styles
 
-### Current State (v0.40.0) — Two-Phase Interventions + Stable Markers
+### Current State (v0.40.3) — Main Menu, Config Screen, Phased Reveal Animation
+
+- **Main Menu** ✅
+  - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
+  - Back button on all sub-screens returns to menu
+
+- **Config Screen** ✅
+  - 3 tabs: Food, Pancreas, Interventions (+ Medications)
+  - Food tab: table of 24 foods with all numeric fields editable
+  - Pancreas tab: 4 tiers (OFF/I/II/III) with decayRate and cost
+  - Interventions tab: 2 interventions + 3 medications with type-specific params
+  - Config overrides persist in localStorage (`bg-config-overrides`)
+  - Reset Defaults / Apply & Back buttons
+  - Dynamic medication tooltips reflect actual parameter values
+
+- **Combined Actions Panel** ✅
+  - Medications and interventions merged into single "Actions" section
+  - Purple toggle buttons for medications (ON/OFF)
+  - Green draggable cards for interventions (walk/run)
+
+- **Phased Layer Reveal Animation** ✅
+  - Submit triggers progressive layer-by-layer reveal (replaces old per-food replay)
+  - Phase 1: Food cubes appear with wave animation + food emoji markers + label "🍽️ Food Cubes"
+  - Phase 2: Pancreas drain cubes appear + label "🟠 Pancreas"
+  - Phase 3: Exercise burns (walk/run) + intervention markers + label "🏃 Exercise"
+  - Phase 4: Medication effects (SGLT2 burns + Metformin/GLP-1 prevented cubes) + label "💊 Medications"
+  - Empty phases auto-skipped (no pancreas/exercise/meds if not used)
+  - Floating label badge in graph upper-right corner during each phase
+  - After all phases → penalty overlay + ResultPanel
 
 - **Single-Screen Design** ✅
-  - Graph on top, food inventory + intervention inventory below (horizontal card layout)
-  - No phase transitions — everything on one screen
+  - Graph on top, food inventory + Actions panel below (horizontal card layout)
+  - No phase transitions within test mode — everything on one screen
 
 - **BG Graph** ✅
   - SVG graph with X axis (8 AM to 8 PM, 48 columns × 15 min)
@@ -288,7 +334,6 @@ Single screen: BG Graph (top) + Food Inventory + Intervention Inventory (bottom)
 - **Game Settings** ✅
   - Time format toggle: 12h ↔ 24h
   - BG unit toggle: mg/dL ↔ mmol/L
-  - Decay toggle: ON ↔ OFF (restarts game)
   - Persisted in localStorage
 
 ### Food Data Structure
@@ -473,6 +518,10 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 - Phase transitions (Planning/Simulation/Results)
 - Degradation circles
 - Metformin, fiber system
+
+### Milestones
+- `alpha-1-stable` (v0.40.0) — Core gameplay: cubes, interventions, medications, markers, decay-based stacking
+- `alpha-2-stable` (v0.40.3) — Main menu, config screen, merged Actions panel, phased reveal animation
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
