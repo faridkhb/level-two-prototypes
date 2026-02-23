@@ -373,7 +373,7 @@ CONFIG:
   "protein": 1,
   "fat": 0,
   "duration": 45,
-  "kcal": 300,
+  "kcal": 395,
   "wpCost": 1,
   "description": "Natural energy, potassium rich."
 }
@@ -419,30 +419,30 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 
 | # | Food | Emoji | Carbs | Protein | Fat | Kcal | WP | Duration | Cubes | Cols |
 |---|------|-------|------:|--------:|----:|-----:|---:|---------:|------:|-----:|
-| 1 | Banana | 🍌 | 23g | 1g | 0g | 300 | 1 | 45m | 12 | 3 |
-| 2 | Apple | 🍎 | 21g | 1g | 0g | 270 | 1 | 45m | 11 | 3 |
-| 3 | Ice Cream | 🍦 | 20g | 4g | 11g | 590 | 0 | 60m | 10 | 4 |
-| 4 | Popcorn | 🍿 | 19g | 3g | 2g | 320 | 1 | 45m | 10 | 3 |
-| 5 | Cookie | 🍪 | 14g | 2g | 7g | 415 | 2 | 60m | 7 | 4 |
-| 6 | Caesar Salad | 🥗 | 8g | 9g | 12g | 540 | 3 | 120m | 4 | 8 |
-| 7 | Choco Muffin | 🧁 | 44g | 6g | 18g | 1130 | 0 | 60m | 22 | 4 |
-| 8 | Sandwich | 🥪 | 34g | 22g | 28g | 1425 | 2 | 150m | 17 | 10 |
-| 9 | Chicken Meal | 🍗 | 3g | 35g | 12g | 800 | 3 | 120m | 2 | 8 |
-| 10 | Bowl of Rice | 🍚 | 38g | 4g | 0g | 585 | 4 | 150m | 19 | 10 |
-| 11 | Hamburger | 🍔 | 20g | 17g | 14g | 840 | 3 | 180m | 10 | 12 |
-| 12 | Oatmeal | 🥣 | 24g | 6g | 4g | 470 | 4 | 120m | 12 | 8 |
-| 13 | Pizza | 🍕 | 29g | 12g | 12g | 855 | 3 | 90m | 15 | 6 |
-| 14 | Boiled Eggs | 🥚 | 0g | 13g | 10g | 440 | 4 | 150m | 0 | 10 |
-| 15 | Mixed Berries | 🫐 | 18g | 2g | 1g | 245 | 2 | 45m | 9 | 3 |
-| 16 | Greek Yogurt | 🥛 | 6g | 11g | 11g | 555 | 3 | 90m | 3 | 6 |
-| 17 | Milk 2% | 🥛 | 10g | 8g | 5g | 350 | 3 | 45m | 5 | 3 |
-| 18 | Vegetable Stew | 🥘 | 17g | 5g | 5g | 480 | 4 | 150m | 9 | 10 |
-| 19 | Boiled Carrots | 🥕 | 6g | 1g | 0g | 150 | 4 | 45m | 3 | 3 |
-| 20 | Chickpeas | 🫘 | 23g | 9g | 3g | 470 | 3 | 90m | 12 | 6 |
-| 21 | Cottage Cheese | 🧀 | 3g | 25g | 9g | 585 | 4 | 120m | 2 | 8 |
-| 22 | Hard Cheese | 🧀 | 0g | 7g | 9g | 340 | 3 | 150m | 0 | 10 |
-| 23 | Avocado | 🥑 | 7g | 2g | 15g | 455 | 3 | 150m | 4 | 10 |
-| 24 | Mixed Nuts | 🥜 | 2g | 5g | 16g | 520 | 2 | 150m | 1 | 10 |
+| 1 | Banana | 🍌 | 23g | 1g | 0g | 395 | 1 | 45m | 12 | 3 |
+| 2 | Apple | 🍎 | 21g | 1g | 0g | 355 | 1 | 45m | 11 | 3 |
+| 3 | Ice Cream | 🍦 | 20g | 4g | 11g | 780 | 0 | 60m | 10 | 4 |
+| 4 | Popcorn | 🍿 | 19g | 3g | 2g | 420 | 1 | 45m | 10 | 3 |
+| 5 | Cookie | 🍪 | 14g | 2g | 7g | 545 | 2 | 60m | 7 | 4 |
+| 6 | Caesar Salad | 🥗 | 8g | 9g | 12g | 715 | 3 | 120m | 4 | 8 |
+| 7 | Choco Muffin | 🧁 | 44g | 6g | 18g | 1495 | 0 | 60m | 22 | 4 |
+| 8 | Sandwich | 🥪 | 34g | 22g | 28g | 1885 | 2 | 150m | 17 | 10 |
+| 9 | Chicken Meal | 🍗 | 3g | 35g | 12g | 1055 | 3 | 120m | 2 | 8 |
+| 10 | Bowl of Rice | 🍚 | 38g | 4g | 0g | 775 | 4 | 150m | 19 | 10 |
+| 11 | Hamburger | 🍔 | 20g | 17g | 14g | 1110 | 3 | 180m | 10 | 12 |
+| 12 | Oatmeal | 🥣 | 24g | 6g | 4g | 620 | 4 | 120m | 12 | 8 |
+| 13 | Pizza | 🍕 | 29g | 12g | 12g | 1130 | 3 | 90m | 15 | 6 |
+| 14 | Boiled Eggs | 🥚 | 0g | 13g | 10g | 580 | 4 | 150m | 0 | 10 |
+| 15 | Mixed Berries | 🫐 | 18g | 2g | 1g | 325 | 2 | 45m | 9 | 3 |
+| 16 | Greek Yogurt | 🥛 | 6g | 11g | 11g | 730 | 3 | 90m | 3 | 6 |
+| 17 | Milk 2% | 🥛 | 10g | 8g | 5g | 460 | 3 | 45m | 5 | 3 |
+| 18 | Vegetable Stew | 🥘 | 17g | 5g | 5g | 635 | 4 | 150m | 9 | 10 |
+| 19 | Boiled Carrots | 🥕 | 6g | 1g | 0g | 200 | 4 | 45m | 3 | 3 |
+| 20 | Chickpeas | 🫘 | 23g | 9g | 3g | 620 | 3 | 90m | 12 | 6 |
+| 21 | Cottage Cheese | 🧀 | 3g | 25g | 9g | 775 | 4 | 120m | 2 | 8 |
+| 22 | Hard Cheese | 🧀 | 0g | 7g | 9g | 450 | 3 | 150m | 0 | 10 |
+| 23 | Avocado | 🥑 | 7g | 2g | 15g | 600 | 3 | 150m | 4 | 10 |
+| 24 | Mixed Nuts | 🥜 | 2g | 5g | 16g | 685 | 2 | 150m | 1 | 10 |
 
 **Derived:** Cubes = glucose / 20 (glucose = carbs × 10), Cols = duration / 15. Sources: USDA FoodData Central, glycemic-index.net
 
