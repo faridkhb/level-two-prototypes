@@ -3,6 +3,15 @@ import { getKcalAssessment, getOvereatingPenalty, DEFAULT_MEDICATION_MODIFIERS, 
 import { Tooltip } from '../ui/Tooltip';
 import './PlanningHeader.css';
 
+const KCAL_TICKS = [
+  { pct: 25, label: 'Starving' },
+  { pct: 50, label: 'Hungry' },
+  { pct: 75, label: 'Light' },
+  { pct: 100, label: 'Well Fed' },
+  { pct: 120, label: 'Full' },
+  { pct: 150, label: 'Overeating' },
+];
+
 interface PlanningHeaderProps {
   dayLabel: string;
   kcalUsed: number;
@@ -83,35 +92,76 @@ export function PlanningHeader({
     </div>
   );
 
+  const pct = effectiveKcalBudget > 0 ? (kcalUsed / effectiveKcalBudget) * 100 : 0;
+  const barMaxPct = 150;
+  const fillPct = Math.min(pct / barMaxPct * 100, 100);
+  const activeTickPct = pct === 0 ? 0
+    : pct < 25 ? 25
+    : pct < 50 ? 50
+    : pct < 75 ? 75
+    : pct < 100 ? 100
+    : pct < 120 ? 120
+    : 150;
+
   const kcalSection = (
-    <div className="planning-header__kcal">
-      <span className="planning-header__kcal-value">{kcalUsed}</span>
-      <span className="planning-header__kcal-unit">
-        /{effectiveKcalBudget} kcal
-        {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
-      </span>
-      {hasOvereating && (
-        <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
-          +{overeatingPenalty * OVEREATING_PENALTY_KCAL}
+    <div className="planning-header__kcal-bar-wrap">
+      <div className="planning-header__kcal-bar-header">
+        <span className="planning-header__kcal-value">{kcalUsed}</span>
+        <span className="planning-header__kcal-unit">
+          /{effectiveKcalBudget} kcal
+          {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
         </span>
-      )}
-      <span className="planning-header__kcal-dash">{'\u2014'}</span>
-      {liveOvereatingSteps > 0 ? (
-        <Tooltip text={`Overeating penalty for next day: \u2212${forecastWp} WP, +${forecastKcal} kcal budget`} position="bottom">
-          <span className="planning-header__assessment-badge" style={{ background: `${assessment.color}22`, borderColor: `${assessment.color}44` }}>
-            <span style={{ color: assessment.color }}>{assessment.label}</span>
-            <span className="planning-header__forecast-wp">{'\u2212'}{forecastWp} WP</span>
-            <span className="planning-header__forecast-kcal">+{forecastKcal} kcal</span>
+        {hasOvereating && (
+          <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
+            +{overeatingPenalty * OVEREATING_PENALTY_KCAL}
           </span>
-        </Tooltip>
-      ) : (
-        <span
-          className="planning-header__kcal-assessment"
-          style={{ color: assessment.color }}
-        >
-          {assessment.label}
-        </span>
-      )}
+        )}
+        {liveOvereatingSteps > 0 && (
+          <Tooltip text={`Overeating penalty for next day: \u2212${forecastWp} WP, +${forecastKcal} kcal budget`} position="bottom">
+            <span className="planning-header__assessment-badge" style={{ background: `${assessment.color}22`, borderColor: `${assessment.color}44` }}>
+              <span className="planning-header__forecast-wp">{'\u2212'}{forecastWp} WP</span>
+              <span className="planning-header__forecast-kcal">+{forecastKcal} kcal</span>
+            </span>
+          </Tooltip>
+        )}
+      </div>
+      <div className="planning-header__kcal-bar">
+        <div
+          className="planning-header__kcal-bar-fill"
+          style={{ width: `${fillPct}%`, background: assessment.color }}
+        />
+        {KCAL_TICKS.map(tick => {
+          const xPct = (tick.pct / barMaxPct) * 100;
+          const isActive = tick.pct === activeTickPct;
+          return (
+            <div key={tick.pct} className="planning-header__kcal-tick" style={{ left: `${xPct}%` }}>
+              <div
+                className={`planning-header__kcal-tick-line${isActive ? ' planning-header__kcal-tick-line--active' : ''}`}
+                style={isActive ? { background: assessment.color } : undefined}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="planning-header__kcal-bar-labels">
+        {pct === 0 && (
+          <span className="planning-header__kcal-bar-fasting">Fasting</span>
+        )}
+        {KCAL_TICKS.map(tick => {
+          const xPct = (tick.pct / barMaxPct) * 100;
+          const isActive = tick.pct === activeTickPct;
+          if (!isActive) return null;
+          return (
+            <span
+              key={tick.pct}
+              className="planning-header__kcal-bar-label planning-header__kcal-bar-label--active"
+              style={{ left: `${xPct}%`, color: assessment.color }}
+            >
+              {tick.label}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 

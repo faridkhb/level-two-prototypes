@@ -105,8 +105,15 @@
   color: #ed8936;
 }
 
-/* Kcal + Assessment */
-.planning-header__kcal {
+/* Kcal progress bar */
+.planning-header__kcal-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+}
+
+.planning-header__kcal-bar-header {
   display: flex;
   align-items: baseline;
   gap: 4px;
@@ -114,24 +121,76 @@
 
 .planning-header__kcal-value {
   font-weight: 700;
-  font-size: 18px;
+  font-size: 14px;
   color: #e2e8f0;
 }
 
 .planning-header__kcal-unit {
   color: #718096;
-  font-size: 12px;
+  font-size: 11px;
 }
 
-.planning-header__kcal-dash {
-  color: #4a5568;
-  margin: 0 2px;
+.planning-header__kcal-bar {
+  position: relative;
+  height: 10px;
+  background: #1a202c;
+  border-radius: 5px;
+  border: 1px solid #4a5568;
 }
 
-.planning-header__kcal-assessment {
-  font-size: 14px;
+.planning-header__kcal-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.planning-header__kcal-tick {
+  position: absolute;
+  top: -2px;
+  transform: translateX(-50%);
+  height: 14px;
+  pointer-events: none;
+}
+
+.planning-header__kcal-tick-line {
+  width: 2px;
+  height: 100%;
+  background: #4a5568;
+  border-radius: 1px;
+}
+
+.planning-header__kcal-tick-line--active {
+  width: 3px;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.planning-header__kcal-bar-labels {
+  position: relative;
+  height: 12px;
+}
+
+.planning-header__kcal-bar-label {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 9px;
   font-weight: 600;
-  transition: color 0.3s ease;
+  color: #4a5568;
+  white-space: nowrap;
+}
+
+.planning-header__kcal-bar-label--active {
+  font-weight: 800;
+  font-size: 10px;
+}
+
+.planning-header__kcal-bar-fasting {
+  font-size: 10px;
+  font-weight: 700;
+  color: #718096;
+  align-self: center;
 }
 
 /* Submit button */
