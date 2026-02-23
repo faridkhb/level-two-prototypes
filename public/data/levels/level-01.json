@@ -12,7 +12,6 @@
         { "id": "burger", "count": 1 },
         { "id": "icecream", "count": 1 },
         { "id": "cookie", "count": 1 },
-        { "id": "banana", "count": 1 },
         { "id": "apple", "count": 1 },
         { "id": "popcorn", "count": 1 },
         { "id": "berriesmixed", "count": 1 },
@@ -45,7 +44,6 @@
         { "id": "banana", "count": 1 },
         { "id": "popcorn", "count": 1 },
         { "id": "sandwich", "count": 1 },
-        { "id": "burger", "count": 1 },
         { "id": "greekyogurt", "count": 1 },
         { "id": "rice", "count": 1 }
       ],
