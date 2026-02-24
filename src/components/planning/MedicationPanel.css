@@ -1,16 +1,16 @@
 .medication-panel {
   background: #2d3748;
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 6px 10px;
 }
 
 .medication-panel__title {
   color: #a0aec0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .medication-panel__grid {
@@ -32,8 +32,8 @@
   cursor: pointer;
   user-select: none;
   transition: all 0.2s ease;
-  width: 180px;
-  height: 60px;
+  width: 160px;
+  height: 50px;
   opacity: 0.55;
   position: relative;
   text-align: left;

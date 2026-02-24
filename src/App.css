@@ -10,7 +10,7 @@
 }
 
 .app-header {
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 1rem;
   background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
@@ -21,7 +21,7 @@
 
 .app-header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   text-align: center;
 }
 
@@ -140,7 +140,7 @@ button:active {
   }
 
   .app-main {
-    padding: 2rem;
+    padding: 0.25rem 0.75rem;
   }
 
   .phase-placeholder {

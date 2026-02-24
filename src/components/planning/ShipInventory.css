@@ -1,15 +1,15 @@
 .ship-inventory {
   background: #2d3748;
   border-radius: 12px;
-  padding: 12px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .ship-inventory__title {
   color: #a0aec0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -18,7 +18,7 @@
 .ship-inventory__grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ship-inventory__empty {

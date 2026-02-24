@@ -1,10 +1,10 @@
 .planning-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 16px;
+  gap: 12px;
+  padding: 6px 12px;
   background: #2d3748;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .planning-header__day {
