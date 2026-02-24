@@ -125,6 +125,16 @@
   border: 1px solid rgba(72, 187, 120, 0.4);
 }
 
+/* Satiety zone result */
+.result-panel__satiety {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 15%, transparent);
+}
+
 /* WP carry-over warning */
 .result-panel__wp-warning {
   padding: 6px 14px;

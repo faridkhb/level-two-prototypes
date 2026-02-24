@@ -1,5 +1,5 @@
-import type { PenaltyResult } from '../../core/types';
-import { WP_PENALTY_WEIGHT } from '../../core/types';
+import type { PenaltyResult, SatietyPenalty } from '../../core/types';
+import { WP_PENALTY_WEIGHT, DEFAULT_SATIETY_PENALTY } from '../../core/types';
 import './ResultPanel.css';
 
 interface ResultPanelProps {
@@ -7,6 +7,7 @@ interface ResultPanelProps {
   currentDay: number;
   totalDays: number;
   unspentWp?: number;
+  satietyResult?: SatietyPenalty;
   onRetry: () => void;
   onNextDay: () => void;
 }
@@ -26,11 +27,24 @@ function StarDisplay({ count }: { count: number }) {
   );
 }
 
-export function ResultPanel({ result, currentDay, totalDays, unspentWp = 0, onRetry, onNextDay }: ResultPanelProps) {
+export function ResultPanel({ result, currentDay, totalDays, unspentWp = 0, satietyResult = DEFAULT_SATIETY_PENALTY, onRetry, onNextDay }: ResultPanelProps) {
   const isDefeat = result.stars === 0;
   const isPerfect = result.stars === 3;
   const isLastDay = currentDay >= totalDays;
   const hasUnspentWp = unspentWp > 0;
+
+  // Satiety zone result message
+  const satietyMessage = (() => {
+    if (isLastDay) return null;
+    switch (satietyResult.zone) {
+      case 'optimal':
+        return { text: `Optimal! Day ${currentDay + 1}: +1 WP`, color: '#48bb78', icon: '\u2728' };
+      case 'malnourished':
+        return { text: `Malnourished! Day ${currentDay + 1}: \u22121 WP, +1 \ud83c\udf66`, color: '#e53e3e', icon: '\u26a0\ufe0f' };
+      case 'overeating':
+        return { text: `Overeating! Day ${currentDay + 1}: \u22121 WP, +1 \ud83c\udf66, +100 kcal`, color: '#ed8936', icon: '\u26a0\ufe0f' };
+    }
+  })();
 
   return (
     <div className={`result-panel result-panel--${result.label.toLowerCase()}`}>
@@ -60,6 +74,12 @@ export function ResultPanel({ result, currentDay, totalDays, unspentWp = 0, onRe
           </span>
         )}
       </div>
+
+      {satietyMessage && (
+        <div className="result-panel__satiety" style={{ color: satietyMessage.color }}>
+          {satietyMessage.icon} {satietyMessage.text}
+        </div>
+      )}
 
       {hasUnspentWp && (
         <div className="result-panel__wp-warning">

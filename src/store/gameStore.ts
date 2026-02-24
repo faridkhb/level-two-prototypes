@@ -10,8 +10,9 @@ import type {
   Intervention,
   GameSettings,
   PancreasTier,
+  SatietyPenalty,
 } from '../core/types';
-import { DEFAULT_SETTINGS } from '../core/types';
+import { DEFAULT_SETTINGS, DEFAULT_SATIETY_PENALTY } from '../core/types';
 import { getPancreasTiers } from '../config/loader';
 
 // Helper to get day config
@@ -45,8 +46,8 @@ interface GameState {
   // WP carry-over tracking
   submittedWpPerDay: Record<number, { wpUsed: number; effectiveWpBudget: number }>;
 
-  // Overeating penalty (steps per submitted day)
-  overeatingPenaltyPerDay: Record<number, number>;
+  // Satiety penalty per submitted day
+  satietyPenaltyPerDay: Record<number, SatietyPenalty>;
 
   // Settings
   settings: GameSettings;
@@ -69,7 +70,7 @@ interface GameState {
   lockPancreasBars: () => void;
   unlockPancreasBars: (day: number) => void;
   submitDayWp: (day: number, wpUsed: number, effectiveWpBudget: number) => void;
-  setOvereatingPenalty: (day: number, steps: number) => void;
+  setSatietyPenalty: (day: number, penalty: SatietyPenalty) => void;
 }
 
 export const useGameStore = create<GameState>()(
@@ -84,7 +85,7 @@ export const useGameStore = create<GameState>()(
       pancreasTierPerDay: {},
       lockedBarsPerDay: {},
       submittedWpPerDay: {},
-      overeatingPenaltyPerDay: {},
+      satietyPenaltyPerDay: {},
       settings: DEFAULT_SETTINGS,
 
       // Actions
@@ -98,7 +99,7 @@ export const useGameStore = create<GameState>()(
           pancreasTierPerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
-          overeatingPenaltyPerDay: {},
+          satietyPenaltyPerDay: {},
         }),
 
       placeFood: (shipId, dropColumn) =>
@@ -175,7 +176,7 @@ export const useGameStore = create<GameState>()(
           pancreasTierPerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
-          overeatingPenaltyPerDay: {},
+          satietyPenaltyPerDay: {},
         }),
 
       updateSettings: (newSettings) =>
@@ -214,24 +215,24 @@ export const useGameStore = create<GameState>()(
           },
         })),
 
-      setOvereatingPenalty: (day, steps) =>
+      setSatietyPenalty: (day, penalty) =>
         set((state) => ({
-          overeatingPenaltyPerDay: {
-            ...state.overeatingPenaltyPerDay,
-            [day]: steps,
+          satietyPenaltyPerDay: {
+            ...state.satietyPenaltyPerDay,
+            [day]: penalty,
           },
         })),
     }),
     {
       name: 'bg-graph-save',
-      version: 7,
+      version: 8,
       partialize: (state) => ({
         currentDay: state.currentDay,
         settings: state.settings,
         pancreasTierPerDay: state.pancreasTierPerDay,
         lockedBarsPerDay: state.lockedBarsPerDay,
         submittedWpPerDay: state.submittedWpPerDay,
-        overeatingPenaltyPerDay: state.overeatingPenaltyPerDay,
+        satietyPenaltyPerDay: state.satietyPenaltyPerDay,
       }),
     }
   )
@@ -269,13 +270,13 @@ export function selectWpUsed(
   return total;
 }
 
-// Selector: overeating penalty steps from previous day
-export function selectOvereatingPenalty(
+// Selector: satiety penalty from previous day
+export function selectSatietyPenalty(
   currentDay: number,
-  overeatingPenaltyPerDay: Record<number, number>,
-): number {
-  if (currentDay <= 1) return 0;
-  return overeatingPenaltyPerDay[currentDay - 1] ?? 0;
+  satietyPenaltyPerDay: Record<number, SatietyPenalty>,
+): SatietyPenalty {
+  if (currentDay <= 1) return DEFAULT_SATIETY_PENALTY;
+  return satietyPenaltyPerDay[currentDay - 1] ?? DEFAULT_SATIETY_PENALTY;
 }
 
 // Selector: compute WP penalty from previous day's unspent WP

@@ -46,8 +46,8 @@ export type PancreasTier = 0 | 1 | 2 | 3;
 
 export const PANCREAS_TIERS: Record<PancreasTier, { decayRate: number; cost: number; label: string }> = {
   0: { decayRate: 0, cost: 0, label: 'OFF' },
-  1: { decayRate: 0.25, cost: 0, label: 'I' },
-  2: { decayRate: 0.5, cost: 1, label: 'II' },
+  1: { decayRate: 0.5, cost: 0, label: 'I' },
+  2: { decayRate: 0.65, cost: 1, label: 'II' },
   3: { decayRate: 0.75, cost: 1, label: 'III' },
 };
 
@@ -165,39 +165,53 @@ export interface DayConfig {
   availableMedications?: string[];
 }
 
-// === Kcal Assessment ===
+// === Kcal Assessment (3-zone satiety system) ===
+
+export type SatietyZone = 'malnourished' | 'optimal' | 'overeating';
 
 export interface KcalAssessment {
   label: string;
   color: string;
+  zone: SatietyZone;
 }
 
 export function getKcalAssessment(kcalUsed: number, kcalBudget: number): KcalAssessment {
-  if (kcalUsed === 0) return { label: 'Fasting', color: '#718096' };
+  if (kcalBudget === 0) return { label: 'Malnourished', color: '#e53e3e', zone: 'malnourished' };
   const pct = (kcalUsed / kcalBudget) * 100;
-  if (pct < 25) return { label: 'Starving', color: '#e53e3e' };
-  if (pct < 50) return { label: 'Hungry', color: '#ed8936' };
-  if (pct < 75) return { label: 'Light', color: '#ecc94b' };
-  if (pct < 100) return { label: 'Well Fed', color: '#48bb78' };
-  if (pct < 120) return { label: 'Full', color: '#38a169' };
-  if (pct < 150) return { label: 'Overeating', color: '#ed8936' };
-  return { label: 'Stuffed', color: '#e53e3e' };
+  if (pct < 50) return { label: 'Malnourished', color: '#e53e3e', zone: 'malnourished' };
+  if (pct <= 100) return { label: 'Optimal', color: '#48bb78', zone: 'optimal' };
+  return { label: 'Overeating', color: '#ed8936', zone: 'overeating' };
 }
 
-/** Overeating penalty: steps beyond Well Fed (0=none, 1=Full, 2=Overeating, 3=Stuffed) */
-export function getOvereatingPenalty(kcalUsed: number, kcalBudget: number): number {
-  if (kcalUsed === 0 || kcalBudget === 0) return 0;
-  const pct = (kcalUsed / kcalBudget) * 100;
-  if (pct < 100) return 0;  // Well Fed or below
-  if (pct < 120) return 1;  // Full
-  if (pct < 150) return 2;  // Overeating
-  return 3;                  // Stuffed
+// === Satiety Penalty ===
+
+export interface SatietyPenalty {
+  zone: SatietyZone;
+  wpDelta: number;    // +1 for optimal, -1 for malnourished/overeating
+  kcalDelta: number;  // +100 for overeating, 0 otherwise
+  freeFood: number;   // 1 for malnourished/overeating, 0 for optimal
 }
 
-/** Per penalty step: +100 kcal budget, -1 WP, +1 free food */
-export const OVEREATING_PENALTY_KCAL = 100;
-export const OVEREATING_PENALTY_WP = 1;
-export const OVEREATING_PENALTY_FOOD_ID = 'icecream';
+export const DEFAULT_SATIETY_PENALTY: SatietyPenalty = {
+  zone: 'optimal',
+  wpDelta: 0,
+  kcalDelta: 0,
+  freeFood: 0,
+};
+
+export function getSatietyPenalty(kcalUsed: number, kcalBudget: number): SatietyPenalty {
+  const assessment = getKcalAssessment(kcalUsed, kcalBudget);
+  switch (assessment.zone) {
+    case 'malnourished':
+      return { zone: 'malnourished', wpDelta: -1, kcalDelta: 0, freeFood: 1 };
+    case 'optimal':
+      return { zone: 'optimal', wpDelta: 1, kcalDelta: 0, freeFood: 0 };
+    case 'overeating':
+      return { zone: 'overeating', wpDelta: -1, kcalDelta: 100, freeFood: 1 };
+  }
+}
+
+export const SATIETY_PENALTY_FOOD_ID = 'icecream';
 
 export interface LevelConfig {
   id: string;

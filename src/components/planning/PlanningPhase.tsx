@@ -8,11 +8,11 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, PancreasTier, PlacedFood, PlacedIntervention } from '../../core/types';
-import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectOvereatingPenalty } from '../../store/gameStore';
+import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, PancreasTier, PlacedFood, PlacedIntervention, SatietyPenalty } from '../../core/types';
+import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
-import { DEFAULT_MEDICATION_MODIFIERS, getKcalAssessment, getOvereatingPenalty, OVEREATING_PENALTY_KCAL, OVEREATING_PENALTY_WP, OVEREATING_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
+import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
 import { getPancreasTiers } from '../../config/loader';
 import { BgGraph, pointerToColumn } from '../graph';
 import { PlanningHeader } from './PlanningHeader';
@@ -123,8 +123,8 @@ export function PlanningPhase() {
     unlockPancreasBars,
     submittedWpPerDay,
     submitDayWp,
-    overeatingPenaltyPerDay,
-    setOvereatingPenalty,
+    satietyPenaltyPerDay,
+    setSatietyPenalty,
   } = useGameStore();
 
   const [allShips, setAllShips] = useState<Ship[]>([]);
@@ -139,6 +139,7 @@ export function PlanningPhase() {
   // Submit / reveal state
   const [gamePhase, setGamePhase] = useState<GamePhase>('planning');
   const [penaltyResult, setPenaltyResult] = useState<PenaltyResult | null>(null);
+  const [satietyResult, setSatietyResult] = useState<SatietyPenalty>(DEFAULT_SATIETY_PENALTY);
   const [revealPhase, setRevealPhase] = useState<number | undefined>(undefined);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealSequenceRef = useRef<number[]>([]);
@@ -198,10 +199,10 @@ export function PlanningPhase() {
   const kcalBudget = dayConfig?.kcalBudget ?? 2000;
   const wpBudget = dayConfig?.wpBudget ?? 16;
   const wpPenalty = selectWpPenalty(currentDay, submittedWpPerDay);
-  const overeatingSteps = selectOvereatingPenalty(currentDay, overeatingPenaltyPerDay);
+  const satietyPenalty = selectSatietyPenalty(currentDay, satietyPenaltyPerDay);
   const rawWpBudget = wpBudget + medicationModifiers.wpBonus;
   const wpFloor = Math.ceil(wpBudget * 0.5);
-  const effectiveWpBudget = Math.max(rawWpBudget - wpPenalty - overeatingSteps * OVEREATING_PENALTY_WP, wpFloor);
+  const effectiveWpBudget = Math.max(rawWpBudget - wpPenalty + satietyPenalty.wpDelta, wpFloor);
   const wpRemaining = effectiveWpBudget - wpUsed;
 
   // Pancreas tier system
@@ -210,27 +211,27 @@ export function PlanningPhase() {
   const totalLockedBars = Object.values(lockedBarsPerDay).reduce((a, b) => a + b, 0);
   const barsAvailable = PANCREAS_TOTAL_BARS - totalLockedBars;
 
-  // Submit button enabled when kcal >= Light (50%) and in planning phase
-  const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier) + overeatingSteps * OVEREATING_PENALTY_KCAL;
-  const assessment = getKcalAssessment(kcalUsed, effectiveKcalBudget);
+  // Submit button enabled when kcal >= 50% (Optimal zone) and in planning phase
+  const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier) + satietyPenalty.kcalDelta;
   const kcalPct = effectiveKcalBudget > 0 ? (kcalUsed / effectiveKcalBudget) * 100 : 0;
   const submitEnabled = gamePhase === 'planning' && kcalPct >= 50 && placedFoods.length > 0;
 
-  // Effective available foods: base + overeating penalty foods (0 WP cost)
+  // Effective available foods: base + satiety penalty foods (0 WP cost)
   const effectiveAvailableFoods = useMemo(() => {
     const base = dayConfig?.availableFoods || [];
-    if (overeatingSteps <= 0) return base;
+    const freeCount = satietyPenalty.freeFood;
+    if (freeCount <= 0) return base;
     // Add penalty food copies
-    const existing = base.find(f => f.id === OVEREATING_PENALTY_FOOD_ID);
+    const existing = base.find(f => f.id === SATIETY_PENALTY_FOOD_ID);
     if (existing) {
       return base.map(f =>
-        f.id === OVEREATING_PENALTY_FOOD_ID
-          ? { ...f, count: f.count + overeatingSteps }
+        f.id === SATIETY_PENALTY_FOOD_ID
+          ? { ...f, count: f.count + freeCount }
           : f
       );
     }
-    return [...base, { id: OVEREATING_PENALTY_FOOD_ID, count: overeatingSteps }];
-  }, [dayConfig, overeatingSteps]);
+    return [...base, { id: SATIETY_PENALTY_FOOD_ID, count: freeCount }];
+  }, [dayConfig, satietyPenalty.freeFood]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -395,9 +396,10 @@ export function PlanningPhase() {
     // Save WP state for carry-over penalty
     submitDayWp(currentDay, wpUsed, effectiveWpBudget);
 
-    // Calculate and store overeating penalty for next day
-    const overeatingPenaltySteps = getOvereatingPenalty(kcalUsed, effectiveKcalBudget);
-    setOvereatingPenalty(currentDay, overeatingPenaltySteps);
+    // Calculate and store satiety penalty for next day
+    const penalty = getSatietyPenalty(kcalUsed, effectiveKcalBudget);
+    setSatietyPenalty(currentDay, penalty);
+    setSatietyResult(penalty);
 
     // Build reveal sequence — only phases that have content
     const phases: number[] = [1]; // food cubes always present
@@ -410,7 +412,7 @@ export function PlanningPhase() {
     setGamePhase('replaying');
     setRevealPhase(0);
     setPenaltyResult(null);
-  }, [submitEnabled, lockPancreasBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, kcalUsed, effectiveKcalBudget, setOvereatingPenalty, currentDecayRate, placedInterventions.length, activeMedications.length]);
+  }, [submitEnabled, lockPancreasBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, kcalUsed, effectiveKcalBudget, setSatietyPenalty, currentDecayRate, placedInterventions.length, activeMedications.length]);
 
   // === Reveal animation effect — progressive layer reveal (skips empty phases) ===
   useEffect(() => {
@@ -495,9 +497,6 @@ export function PlanningPhase() {
     setPenaltyResult(null);
   }, [goToDay]);
 
-  // Suppress unused variable warning
-  void assessment;
-
   if (isLoading || !currentLevel) {
     return (
       <div className="planning-phase planning-phase--loading">
@@ -522,7 +521,7 @@ export function PlanningPhase() {
           kcalUsed={kcalUsed}
           kcalBudget={kcalBudget}
           wpRemaining={wpRemaining}
-          overeatingPenalty={overeatingSteps}
+          satietyPenalty={satietyPenalty}
           settings={settings}
           medicationModifiers={medicationModifiers}
           submitEnabled={submitEnabled}
@@ -605,6 +604,7 @@ export function PlanningPhase() {
               currentDay={currentDay}
               totalDays={currentLevel.days}
               unspentWp={effectiveWpBudget - wpUsed}
+              satietyResult={satietyResult}
               onRetry={handleRetry}
               onNextDay={handleNextDay}
             />
