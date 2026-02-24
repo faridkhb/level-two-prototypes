@@ -12,7 +12,7 @@ import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, Pancreas
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
-import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
+import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars, GRAPH_CONFIG } from '../../core/types';
 import { getPancreasTiers } from '../../config/loader';
 import { BgGraph, pointerToColumn } from '../graph';
 import { PlanningHeader } from './PlanningHeader';
@@ -45,7 +45,7 @@ function togglePancreasTier(current: PancreasTier, maxBars: number): PancreasTie
 // === Break blocking helpers ===
 
 function getOccupiedColumns(dropColumn: number, durationMinutes: number): [number, number] {
-  const cols = Math.max(1, Math.ceil(durationMinutes / 15));
+  const cols = Math.max(1, Math.ceil(durationMinutes / GRAPH_CONFIG.cellWidthMin));
   return [dropColumn, dropColumn + cols - 1];
 }
 

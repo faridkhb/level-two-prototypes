@@ -540,21 +540,24 @@ export function BgGraph({
   const rowToY = (row: number) => PAD_TOP + GRAPH_H - (row + 1) * cellHeight;
 
   // Dynamic zone clip bands (Y-positions depend on cellHeight)
+  const normalRow = mgdlToRow(ZONE_NORMAL);    // 140 mg/dL
+  const elevatedRow = mgdlToRow(ZONE_ELEVATED); // 200 mg/dL
+  const highRow = mgdlToRow(ZONE_HIGH);         // 300 mg/dL
   const zoneClipBands = [
     { id: 'zone-clip-green', color: '#48bb78',
-      yTop: PAD_TOP + GRAPH_H - 4 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H + 3 },
+      yTop: PAD_TOP + GRAPH_H - normalRow * cellHeight - 3, yBot: PAD_TOP + GRAPH_H + 3 },
     { id: 'zone-clip-yellow', color: '#ecc94b',
-      yTop: PAD_TOP + GRAPH_H - 7 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - 4 * cellHeight + 3 },
+      yTop: PAD_TOP + GRAPH_H - elevatedRow * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - normalRow * cellHeight + 3 },
     { id: 'zone-clip-orange', color: '#ed8936',
-      yTop: PAD_TOP + GRAPH_H - 12 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - 7 * cellHeight + 3 },
+      yTop: PAD_TOP + GRAPH_H - highRow * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - elevatedRow * cellHeight + 3 },
     { id: 'zone-clip-red', color: '#fc8181',
-      yTop: PAD_TOP - 3, yBot: PAD_TOP + GRAPH_H - 12 * cellHeight + 3 },
+      yTop: PAD_TOP - 3, yBot: PAD_TOP + GRAPH_H - highRow * cellHeight + 3 },
   ];
 
-  // Dynamic Y-axis tick labels (extend beyond 400 when graph expands)
+  // Dynamic Y-axis tick labels (extend beyond bgMax when graph expands)
   const yTicks = [...DEFAULT_Y_TICKS];
   const maxMgDl = GRAPH_CONFIG.bgMin + effectiveRows * GRAPH_CONFIG.cellHeightMgDl;
-  for (let tick = 500; tick <= maxMgDl; tick += 100) {
+  for (let tick = 400; tick <= maxMgDl; tick += 100) {
     yTicks.push(tick);
   }
 
@@ -623,7 +626,7 @@ export function BgGraph({
 
       // Break interventions: marker centered over the blocked zone
       if (intervention.isBreak) {
-        const cols = Math.max(1, Math.ceil(intervention.duration / 15));
+        const cols = Math.max(1, Math.ceil(intervention.duration / GRAPH_CONFIG.cellWidthMin));
         const startCol = placed.dropColumn;
         const endCol = startCol + cols - 1;
         const peakCenterX = PAD_LEFT + ((startCol + endCol) / 2 + 0.5) * CELL_SIZE;
@@ -930,7 +933,7 @@ export function BgGraph({
         {placedInterventions.map(placed => {
           const intv = allInterventions.find(i => i.id === placed.interventionId);
           if (!intv?.isBreak) return null;
-          const cols = Math.max(1, Math.ceil(intv.duration / 15));
+          const cols = Math.max(1, Math.ceil(intv.duration / GRAPH_CONFIG.cellWidthMin));
           const x = PAD_LEFT + placed.dropColumn * CELL_SIZE;
           const w = cols * CELL_SIZE;
           return (
@@ -1242,7 +1245,7 @@ export function BgGraph({
 
         {/* Break preview: purple zone overlay when dragging a break intervention */}
         {previewIntervention?.isBreak && previewColumn != null && (() => {
-          const cols = Math.max(1, Math.ceil(previewIntervention.duration / 15));
+          const cols = Math.max(1, Math.ceil(previewIntervention.duration / GRAPH_CONFIG.cellWidthMin));
           const x = PAD_LEFT + previewColumn * CELL_SIZE;
           const w = cols * CELL_SIZE;
           return (

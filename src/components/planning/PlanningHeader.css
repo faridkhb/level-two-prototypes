@@ -259,18 +259,19 @@
     padding: 8px 10px;
   }
 
-  .planning-header__day {
-    font-size: 14px;
+  .planning-header__wp {
     order: 1;
   }
 
-  .planning-header__wp {
+  .planning-header__day {
     order: 2;
+    font-size: 14px;
+    flex: 1;
+    text-align: center;
   }
 
   .planning-header__submit {
     order: 3;
-    margin-left: auto;
     padding: 5px 14px;
     font-size: 12px;
   }
@@ -281,11 +282,13 @@
     min-width: unset;
   }
 
+  .planning-header__kcal-bar-header {
+    justify-content: flex-end;
+    padding-right: 4px;
+  }
+
   .planning-header__settings {
-    order: 5;
-    margin-left: 0;
-    width: 100%;
-    justify-content: center;
+    display: none;
   }
 
   .planning-header__kcal-bar-zone-label {

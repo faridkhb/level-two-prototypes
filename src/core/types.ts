@@ -11,22 +11,22 @@ export type LoadType = 'Glucose' | 'Treatment';
 export const GRAPH_CONFIG = {
   startHour: 8,       // 8 AM
   endHour: 20,        // 8 PM
-  cellWidthMin: 15,   // minutes per column
-  cellHeightMgDl: 20, // mg/dL per row
+  cellWidthMin: 30,   // minutes per column
+  cellHeightMgDl: 40, // mg/dL per row
   bgMin: 60,          // Y axis minimum
-  bgMax: 400,         // Y axis maximum
+  bgMax: 380,         // Y axis maximum (60 + 8×40)
 } as const;
 
 // Derived constants
 export const TOTAL_MINUTES = (GRAPH_CONFIG.endHour - GRAPH_CONFIG.startHour) * 60; // 720
-export const TOTAL_COLUMNS = TOTAL_MINUTES / GRAPH_CONFIG.cellWidthMin; // 48
-export const TOTAL_ROWS = (GRAPH_CONFIG.bgMax - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl; // 17
+export const TOTAL_COLUMNS = TOTAL_MINUTES / GRAPH_CONFIG.cellWidthMin; // 24
+export const TOTAL_ROWS = (GRAPH_CONFIG.bgMax - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl; // 8
 
 // X axis tick marks (configurable)
 export const DEFAULT_X_TICKS = [8, 11, 14, 17, 20]; // hours
 
 // Y axis tick marks (configurable)
-export const DEFAULT_Y_TICKS = [100, 200, 300, 400]; // mg/dL
+export const DEFAULT_Y_TICKS = [100, 200, 300]; // mg/dL
 
 // === Game Settings ===
 
@@ -237,10 +237,10 @@ export interface PenaltyResult {
 }
 
 /** Penalty zone thresholds (in row units from bgMin) */
-export const PENALTY_ORANGE_ROW = 7;  // row 7 = 200 mg/dL
-export const PENALTY_RED_ROW = 12;    // row 12 = 300 mg/dL
-export const PENALTY_ORANGE_WEIGHT = 0.5;
-export const PENALTY_RED_WEIGHT = 1.5;
+export const PENALTY_ORANGE_ROW = 3.5; // 200 mg/dL = (200-60)/40
+export const PENALTY_RED_ROW = 6;      // 300 mg/dL = (300-60)/40
+export const PENALTY_ORANGE_WEIGHT = 2;   // 4× original (fewer cubes + fewer columns)
+export const PENALTY_RED_WEIGHT = 6;       // 4× original
 
 /** Star rating thresholds (softened 25% from original 10/40/80) */
 export function calculateStars(penalty: number): { stars: number; label: string } {

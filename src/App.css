@@ -1,3 +1,46 @@
+/* ── Phone Frame (desktop preview) ── */
+
+.phone-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #0d1117;
+}
+
+.phone-frame__bezel {
+  position: relative;
+  width: 408px;   /* 390 + 2×9 border */
+  height: 862px;  /* 844 + 2×9 border */
+  background: #1c1c1e;
+  border-radius: 44px;
+  padding: 9px;
+  box-shadow:
+    0 0 0 2px #333,
+    0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.phone-frame__notch {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 28px;
+  background: #1c1c1e;
+  border-radius: 0 0 18px 18px;
+  z-index: 10;
+}
+
+.phone-frame__screen {
+  width: 390px;
+  height: 844px;
+  border: none;
+  border-radius: 36px;
+  overflow: hidden;
+  background: #1a1a2e;
+}
+
 /* Mobile First Styles */
 
 .app {

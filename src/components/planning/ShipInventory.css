@@ -40,8 +40,28 @@
     font-size: 11px;
   }
 
-  .ship-inventory__grid {
-    flex-direction: column;
+  /* Food cards: auto-fill compact vertical grid */
+  .ship-inventory--food .ship-inventory__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
     gap: 6px;
+  }
+
+  /* Actions (interventions + medications): horizontal scroll row */
+  .ship-inventory--actions .ship-inventory__grid {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide scrollbar but keep scrolling */
+  .ship-inventory--actions .ship-inventory__grid::-webkit-scrollbar {
+    height: 3px;
+  }
+  .ship-inventory--actions .ship-inventory__grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
   }
 }

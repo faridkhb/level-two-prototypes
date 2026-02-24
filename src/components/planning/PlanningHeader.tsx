@@ -120,11 +120,7 @@ export function PlanningHeader({
             </span>
           </Tooltip>
         )}
-        {!forecastTooltip && kcalUsed === 0 && (
-          <span className="planning-header__assessment-badge planning-header__assessment-badge--fasting">
-            Fasting
-          </span>
-        )}
+        {/* No badge when no food placed */}
       </div>
       <div className="planning-header__kcal-bar">
         <div

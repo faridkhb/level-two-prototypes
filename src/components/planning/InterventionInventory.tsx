@@ -88,7 +88,7 @@ export function InterventionInventory({
   if (availableInterventions.length === 0 && !hasMedications) return null;
 
   return (
-    <div className="ship-inventory">
+    <div className="ship-inventory ship-inventory--actions">
       <div className="ship-inventory__title">Actions</div>
       <div className="ship-inventory__grid">
         {hasMedications && availableMedicationIds.map(medId => {

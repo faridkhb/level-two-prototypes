@@ -3,7 +3,7 @@ import { GRAPH_CONFIG, TOTAL_COLUMNS, DEFAULT_MEDICATION_MODIFIERS, PENALTY_ORAN
 
 export interface CubeColumn {
   columnOffset: number; // offset from drop column (0, 1, 2, ...)
-  cubeCount: number;    // number of 20 mg/dL cubes in this column
+  cubeCount: number;    // number of cubes (each = cellHeightMgDl) in this column
 }
 
 export interface FoodPyramid {
@@ -115,7 +115,7 @@ export function buildFoodPyramids(
  * Calculate intervention curve: main phase at full depth, then tail at reduced depth.
  * Returns cubes to REMOVE per column.
  *
- * Main phase: `duration / 15` columns at full `depth` (no ramp).
+ * Main phase: `duration / cellWidthMin` columns at full `depth` (no ramp).
  * Tail phase: remaining columns at `boostExtra` depth (residual burn).
  */
 export function calculateInterventionCurve(
