@@ -23,7 +23,7 @@ function getMedicationTooltip(med: Medication): string {
         const pct = Math.round((1 - med.kcalMultiplier) * 100);
         parts.push(`Kcal -${pct}%`);
       }
-      if (med.wpBonus) parts.push(`WP +${med.wpBonus}`);
+      if (med.wpBonus) parts.push(`+${med.wpBonus} ☀️`);
       return parts.join(', ');
     }
     default:

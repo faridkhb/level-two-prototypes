@@ -38,11 +38,11 @@ export function ResultPanel({ result, currentDay, totalDays, unspentWp = 0, sati
     if (isLastDay) return null;
     switch (satietyResult.zone) {
       case 'optimal':
-        return { text: `Optimal! Day ${currentDay + 1}: +1 WP`, color: '#48bb78', icon: '\u2728' };
+        return { text: `Optimal! Day ${currentDay + 1}: +1 \u2600\uFE0F`, color: '#48bb78', icon: '\u2728' };
       case 'malnourished':
-        return { text: `Malnourished! Day ${currentDay + 1}: \u22121 WP, +1 \ud83c\udf66`, color: '#e53e3e', icon: '\u26a0\ufe0f' };
+        return { text: `Malnourished! Day ${currentDay + 1}: \u22121 \u2600\uFE0F, +1 \ud83c\udf66`, color: '#e53e3e', icon: '\u26a0\ufe0f' };
       case 'overeating':
-        return { text: `Overeating! Day ${currentDay + 1}: \u22121 WP, +1 \ud83c\udf66, +100 kcal`, color: '#ed8936', icon: '\u26a0\ufe0f' };
+        return { text: `Overeating! Day ${currentDay + 1}: \u22121 \u2600\uFE0F, +1 \ud83c\udf66, +100 kcal`, color: '#ed8936', icon: '\u26a0\ufe0f' };
     }
   })();
 
@@ -85,11 +85,11 @@ export function ResultPanel({ result, currentDay, totalDays, unspentWp = 0, sati
         <div className="result-panel__wp-warning">
           {isLastDay ? (
             <span className="result-panel__wp-warning-text">
-              {unspentWp} unspent WP {'\u2192'} +{unspentWp * WP_PENALTY_WEIGHT} penalty
+              {unspentWp} unspent {'\u2600\uFE0F'} {'\u2192'} +{unspentWp * WP_PENALTY_WEIGHT} penalty
             </span>
           ) : (
             <span className="result-panel__wp-warning-text">
-              {unspentWp} unspent WP {'\u2192'} Day {currentDay + 1}: {'\u2212'}{unspentWp} WP
+              {unspentWp} unspent {'\u2600\uFE0F'} {'\u2192'} Day {currentDay + 1}: {'\u2212'}{unspentWp} {'\u2600\uFE0F'}
             </span>
           )}
         </div>
@@ -97,7 +97,7 @@ export function ResultPanel({ result, currentDay, totalDays, unspentWp = 0, sati
 
       {!hasUnspentWp && (
         <div className="result-panel__wp-perfect">
-          All WP spent {'\u2014'} Discipline!
+          All {'\u2600\uFE0F'} spent {'\u2014'} Discipline!
         </div>
       )}
 

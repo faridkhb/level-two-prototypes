@@ -5,7 +5,7 @@ import './ShipCard.css';
 
 function getCardTooltip(ship: Ship): string {
   const cost = ship.wpCost ?? 0;
-  const costText = cost > 0 ? `WP: ${cost}` : 'Free';
+  const costText = cost > 0 ? `${cost} ☀️` : 'Free';
   return `${ship.name} · ${ship.kcal} kcal · ${ship.carbs ?? 0}g carbs · ${ship.duration} min · ${costText}`;
 }
 

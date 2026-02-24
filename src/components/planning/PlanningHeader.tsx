@@ -52,18 +52,17 @@ export function PlanningHeader({
   const kcalTooltip = hasPastPenalty && satietyPenalty.kcalDelta > 0
     ? `Overeating penalty: +${satietyPenalty.kcalDelta} kcal budget (you must eat more)`
     : hasPastPenalty
-    ? `Malnourished penalty: −1 WP, +1 🍦`
+    ? `Malnourished penalty: −1 ☀️, +1 🍦`
     : hasPastBonus
-    ? `Optimal bonus: +1 WP`
+    ? `Optimal bonus: +1 ☀️`
     : '';
 
   const wpSection = (
     <div className="planning-header__wp">
-      <span className="planning-header__wp-label">WP</span>
+      <span className="planning-header__wp-icon">{'\u2600\uFE0F'}</span>
       <span className={`planning-header__wp-value ${wpOver ? 'planning-header__wp-value--over' : ''}`}>
         {wpRemaining}
       </span>
-      <span className="planning-header__wp-icon">{'\u2600\uFE0F'}</span>
       {hasPastBonus && (
         <span className="planning-header__penalty-badge planning-header__penalty-badge--bonus">
           +1
@@ -85,13 +84,13 @@ export function PlanningHeader({
   let forecastBadge = '';
   let forecastTooltip = '';
   if (livePenalty.zone === 'optimal') {
-    forecastBadge = '+1 WP';
-    forecastTooltip = 'Optimal — next day WP bonus';
+    forecastBadge = '+1 ☀️';
+    forecastTooltip = 'Optimal — next day ☀️ bonus';
   } else if (livePenalty.zone === 'overeating') {
-    forecastBadge = `−1 WP, +🍦, +${livePenalty.kcalDelta} kcal`;
+    forecastBadge = `−1 ☀️, +🍦, +${livePenalty.kcalDelta} kcal`;
     forecastTooltip = 'Overeating — next day penalty';
   } else if (livePenalty.zone === 'malnourished' && kcalUsed > 0) {
-    forecastBadge = '−1 WP, +🍦';
+    forecastBadge = '−1 ☀️, +🍦';
     forecastTooltip = 'Malnourished — next day penalty';
   }
 
