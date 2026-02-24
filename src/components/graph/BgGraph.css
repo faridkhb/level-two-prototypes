@@ -36,16 +36,22 @@
   }
 }
 
-/* Cube burn animation (wave effect on intervention) */
+/* Cube burn animation (flash + fade on intervention placement) */
 @keyframes cubeBurn {
   0% {
-    opacity: 0.85;
+    opacity: 0.9;
+    filter: brightness(1.8);
+    transform: scale(1.08);
   }
   40% {
-    opacity: 0.45;
+    opacity: 0.5;
+    filter: brightness(0.9);
+    transform: scale(0.96);
   }
   100% {
-    opacity: 0.55;
+    opacity: 0.35;
+    filter: brightness(1);
+    transform: scale(1);
   }
 }
 
@@ -65,10 +71,12 @@
 .bg-graph__cube--burned {
   animation: cubeBurn 0.4s ease-out both;
   cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .bg-graph__cube--burned:hover {
-  opacity: 0.2 !important;
+  opacity: 0.3 !important;
 }
 
 /* Pancreas-eaten cubes (orange semi-transparent) */
