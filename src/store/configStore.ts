@@ -93,7 +93,7 @@ export const useConfigStore = create<ConfigState>()(
     }),
     {
       name: 'bg-config-overrides',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         foods: state.foods,
         pancreasTiers: state.pancreasTiers,
