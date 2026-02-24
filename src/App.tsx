@@ -12,15 +12,6 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        {screen !== 'menu' && (
-          <button className="app-header__back" onClick={() => setScreen('menu')}>
-            Back
-          </button>
-        )}
-        <h1>BG Planner</h1>
-      </header>
-
       <main className="app-main">
         {screen === 'menu' && (
           <MainMenu
