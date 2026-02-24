@@ -28,3 +28,20 @@
   color: #718096;
   font-size: 14px;
 }
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .ship-inventory {
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .ship-inventory__title {
+    font-size: 11px;
+  }
+
+  .ship-inventory__grid {
+    flex-direction: column;
+    gap: 6px;
+  }
+}

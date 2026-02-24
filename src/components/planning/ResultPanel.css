@@ -201,3 +201,48 @@
 .result-panel__btn--next:hover {
   background: #3182ce;
 }
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .result-panel {
+    padding: 16px 12px;
+    gap: 10px;
+  }
+
+  .result-panel__star {
+    font-size: 28px;
+  }
+
+  .result-panel__star--empty {
+    font-size: 28px;
+  }
+
+  .result-panel__label {
+    font-size: 18px;
+  }
+
+  .result-panel__penalty-value {
+    font-size: 22px;
+  }
+
+  .result-panel__penalty-text {
+    font-size: 12px;
+  }
+
+  .result-panel__actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .result-panel__btn {
+    width: 100%;
+    text-align: center;
+    padding: 12px 16px;
+  }
+
+  .result-panel__zone {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+}

@@ -200,3 +200,31 @@
 .bg-graph__drag-card-name {
   color: #fc8181;
 }
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .bg-graph {
+    padding: 4px;
+    border-radius: 6px;
+    border-width: 1.5px;
+  }
+
+  .bg-graph__reveal-label {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .reveal-label__emoji {
+    font-size: 14px;
+  }
+
+  .bg-graph__drag-card {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .bg-graph__drag-card-emoji {
+    font-size: 18px;
+  }
+}

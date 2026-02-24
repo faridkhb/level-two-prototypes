@@ -147,3 +147,32 @@ button:active {
     padding: 3rem;
   }
 }
+
+/* Mobile portrait (iPhone 14 = 390px) */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.1rem;
+  }
+
+  .app-header__back {
+    left: 6px;
+    padding: 3px 8px;
+    font-size: 12px;
+  }
+
+  .app-main {
+    padding: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .version-badge {
+    font-size: 9px;
+    bottom: 4px;
+    right: 4px;
+    padding: 1px 4px;
+  }
+}

@@ -23,6 +23,7 @@ import { PancreasButton } from './PancreasButton';
 import { ResultPanel } from './ResultPanel';
 import { ShipCardOverlay } from './ShipCard';
 import { InterventionCardOverlay } from './InterventionCard';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import './PlanningPhase.css';
 
 // Reveal: hold time (ms) after showing each phase before advancing
@@ -97,6 +98,7 @@ function isBreakBlockedByPlacements(
 }
 
 export function PlanningPhase() {
+  const isMobile = useIsMobile();
   const {
     placedFoods,
     placeFood,
@@ -557,6 +559,7 @@ export function PlanningPhase() {
               showPenaltyHighlight={showResults}
               revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
               interactive={isPlanning}
+              isMobile={isMobile}
               onFoodClick={handleFoodClick}
               onFoodMove={handleFoodMove}
               onInterventionClick={handleInterventionClick}

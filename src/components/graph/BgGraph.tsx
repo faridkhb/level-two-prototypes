@@ -26,7 +26,6 @@ const PAD_BOTTOM = 28;
 const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
 const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
 const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
-const SVG_H = PAD_TOP + GRAPH_H + PAD_BOTTOM;
 
 // BG zone thresholds (mg/dL)
 const ZONE_NORMAL = 140;
@@ -119,6 +118,7 @@ interface BgGraphProps {
   showPenaltyHighlight?: boolean;
   revealPhase?: number; // undefined = all visible, 0-4 = progressive layer reveal
   interactive?: boolean;
+  isMobile?: boolean;
   onFoodClick?: (placementId: string) => void;
   onFoodMove?: (placementId: string, newColumn: number) => void;
   onInterventionClick?: (placementId: string) => void;
@@ -149,11 +149,25 @@ export function BgGraph({
   showPenaltyHighlight = false,
   revealPhase,
   interactive = true,
+  isMobile = false,
   onFoodClick,
   onFoodMove,
   onInterventionClick,
   onInterventionMove,
 }: BgGraphProps) {
+  // Mobile-responsive SVG layout: enlarge fonts & markers so they're readable at ~40% scale
+  const axisFontSize = isMobile ? 22 : 9;
+  const padBottom = isMobile ? 45 : PAD_BOTTOM;
+  const localSvgH = PAD_TOP + GRAPH_H + padBottom;
+  const xLabelY = PAD_TOP + GRAPH_H + (isMobile ? 30 : 16);
+  const mrkW = isMobile ? 70 : 50;
+  const mrkH = isMobile ? 72 : 52;
+  const mrkTailH = isMobile ? 14 : 11;
+  const mrkEmojiSize = isMobile ? 40 : 26;
+  const mrkCarbsSize = isMobile ? 16 : 10;
+  const intMrkH = isMobile ? 60 : 44;
+  const intMrkEmojiSize = isMobile ? 44 : 30;
+
   const svgRef = useRef<SVGSVGElement>(null);
   const markerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
   const interventionMarkerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
@@ -772,7 +786,7 @@ export function BgGraph({
     <div ref={setNodeRef} className={`bg-graph ${isOver ? 'bg-graph--drag-over' : ''}`}>
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+        viewBox={`0 0 ${SVG_W} ${localSvgH}`}
         className="bg-graph__svg"
         preserveAspectRatio="xMidYMid meet"
       >
@@ -872,7 +886,7 @@ export function BgGraph({
               y={y}
               textAnchor="end"
               dominantBaseline="middle"
-              fontSize={9}
+              fontSize={axisFontSize}
               fill="#718096"
             >
               {formatBgValue(tick, settings.bgUnit)}
@@ -888,9 +902,9 @@ export function BgGraph({
             <text
               key={`x-${hour}`}
               x={x}
-              y={PAD_TOP + GRAPH_H + 16}
+              y={xLabelY}
               textAnchor="middle"
-              fontSize={9}
+              fontSize={axisFontSize}
               fill="#718096"
             >
               {columnToTimeString(col, settings.timeFormat)}
@@ -1064,9 +1078,9 @@ export function BgGraph({
         {/* Food markers — emoji labels above each food's own peak */}
         {(interactive || (revealPhase !== undefined && revealPhase >= 1)) && graphRenderData.layers.map(layer => {
           if (!layer.marker) return null;
-          const mW = 50;
-          const mH = 52;
-          const tailH = 11;
+          const mW = mrkW;
+          const mH = mrkH;
+          const tailH = mrkTailH;
           // Clamp horizontal: marker stays within graph bounds
           const cx = Math.max(PAD_LEFT + mW / 2, Math.min(PAD_LEFT + GRAPH_W - mW / 2, layer.marker.peakCenterX));
           // Clamp vertical: tail ≥ 60 mg/dL (row 0), marker body doesn't exceed graph top
@@ -1074,6 +1088,7 @@ export function BgGraph({
           const tailBottomY = Math.max(PAD_TOP + mH + tailH, Math.min(PAD_TOP + GRAPH_H, rawTailBottomY));
           const tailTopY = tailBottomY - tailH;
           const mY = tailTopY - mH;
+          const tailW = isMobile ? 8 : 6;
           return (
             <g
               key={`marker-${layer.placementId}`}
@@ -1089,32 +1104,32 @@ export function BgGraph({
                 <rect
                   x={cx - mW / 2} y={mY}
                   width={mW} height={mH}
-                  rx={8} fill="white"
+                  rx={isMobile ? 10 : 8} fill="white"
                   stroke="#cbd5e0" strokeWidth={0.7}
                 />
                 <polygon
-                  points={`${cx - 6},${tailTopY} ${cx + 6},${tailTopY} ${cx},${tailBottomY}`}
+                  points={`${cx - tailW},${tailTopY} ${cx + tailW},${tailTopY} ${cx},${tailBottomY}`}
                   fill="white" stroke="#cbd5e0" strokeWidth={0.7}
                 />
                 {/* Cover the border between rect and tail */}
                 <line
-                  x1={cx - 5.5} y1={tailTopY} x2={cx + 5.5} y2={tailTopY}
+                  x1={cx - tailW + 0.5} y1={tailTopY} x2={cx + tailW - 0.5} y2={tailTopY}
                   stroke="white" strokeWidth={2}
                 />
               </g>
               {/* Emoji */}
               <text
-                x={cx} y={mY + 20}
+                x={cx} y={mY + mH * 0.38}
                 textAnchor="middle" dominantBaseline="central"
-                fontSize={26} style={{ pointerEvents: 'none' }}
+                fontSize={mrkEmojiSize} style={{ pointerEvents: 'none' }}
               >
                 {layer.emoji}
               </text>
               {/* Carbs label */}
               <text
-                x={cx} y={mY + mH - 7}
+                x={cx} y={mY + mH - (isMobile ? 10 : 7)}
                 textAnchor="middle" dominantBaseline="central"
-                fontSize={10} fontWeight={700} fill="#4a5568"
+                fontSize={mrkCarbsSize} fontWeight={700} fill="#4a5568"
                 style={{ pointerEvents: 'none' }}
               >
                 {layer.carbs}g
@@ -1125,9 +1140,9 @@ export function BgGraph({
 
         {/* Intervention markers — emoji labels at each intervention's peak */}
         {(interactive || (revealPhase !== undefined && revealPhase >= 3)) && interventionMarkers.map(im => {
-          const mW = 50;
-          const mH = 44;
-          const tailH = 11;
+          const mW = mrkW;
+          const mH = intMrkH;
+          const tailH = mrkTailH;
           const borderColor = im.isBreak ? '#a78bfa' : '#22c55e';
           // Clamp horizontal: marker stays within graph bounds
           const cx = Math.max(PAD_LEFT + mW / 2, Math.min(PAD_LEFT + GRAPH_W - mW / 2, im.peakCenterX));
@@ -1136,6 +1151,7 @@ export function BgGraph({
           const tailBottomY = Math.max(PAD_TOP + mH + tailH, Math.min(PAD_TOP + GRAPH_H, rawTailBottomY));
           const tailTopY = tailBottomY - tailH;
           const mY = tailTopY - mH;
+          const tailW = isMobile ? 8 : 6;
           return (
             <g
               key={`int-marker-${im.placementId}`}
@@ -1150,22 +1166,22 @@ export function BgGraph({
                 <rect
                   x={cx - mW / 2} y={mY}
                   width={mW} height={mH}
-                  rx={8} fill="white"
+                  rx={isMobile ? 10 : 8} fill="white"
                   stroke={borderColor} strokeWidth={1.2}
                 />
                 <polygon
-                  points={`${cx - 6},${tailTopY} ${cx + 6},${tailTopY} ${cx},${tailBottomY}`}
+                  points={`${cx - tailW},${tailTopY} ${cx + tailW},${tailTopY} ${cx},${tailBottomY}`}
                   fill="white" stroke={borderColor} strokeWidth={1.2}
                 />
                 <line
-                  x1={cx - 5.5} y1={tailTopY} x2={cx + 5.5} y2={tailTopY}
+                  x1={cx - tailW + 0.5} y1={tailTopY} x2={cx + tailW - 0.5} y2={tailTopY}
                   stroke="white" strokeWidth={2}
                 />
               </g>
               <text
                 x={cx} y={mY + mH / 2 + 1}
                 textAnchor="middle" dominantBaseline="central"
-                fontSize={30} style={{ pointerEvents: 'none' }}
+                fontSize={intMrkEmojiSize} style={{ pointerEvents: 'none' }}
               >
                 {im.emoji}
               </text>

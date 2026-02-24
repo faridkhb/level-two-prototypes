@@ -103,3 +103,35 @@
 .planning-phase__day-btn:disabled {
   opacity: 0.7;
 }
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .planning-phase {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .planning-phase__content {
+    gap: 8px;
+  }
+
+  .planning-phase__hint {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+
+  .planning-phase__interventions-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .planning-phase__day-nav {
+    padding: 6px 0;
+    gap: 6px;
+  }
+
+  .planning-phase__day-btn {
+    padding: 5px 12px;
+    font-size: 11px;
+  }
+}

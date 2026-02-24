@@ -141,3 +141,29 @@
 .ship-card:not(.ship-card--dragging):hover[data-tooltip]::after {
   opacity: 1;
 }
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .ship-card {
+    width: 100%;
+    height: 50px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .ship-card__emoji {
+    font-size: 20px;
+  }
+
+  .ship-card__name {
+    font-size: 10px;
+  }
+
+  .ship-card__info {
+    font-size: 9px;
+  }
+
+  .ship-card__badge--wp {
+    font-size: 11px;
+  }
+}

@@ -250,3 +250,45 @@
   border-color: #63b3ed;
   color: #e2e8f0;
 }
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .planning-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .planning-header__day {
+    font-size: 14px;
+    order: 1;
+  }
+
+  .planning-header__wp {
+    order: 2;
+  }
+
+  .planning-header__submit {
+    order: 3;
+    margin-left: auto;
+    padding: 5px 14px;
+    font-size: 12px;
+  }
+
+  .planning-header__kcal-bar-wrap {
+    order: 4;
+    width: 100%;
+    min-width: unset;
+  }
+
+  .planning-header__settings {
+    order: 5;
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .planning-header__kcal-bar-zone-label {
+    font-size: 8px;
+  }
+}
