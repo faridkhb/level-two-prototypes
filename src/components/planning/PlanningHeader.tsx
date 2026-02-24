@@ -97,30 +97,36 @@ export function PlanningHeader({
   const kcalSection = (
     <div className="planning-header__kcal-bar-wrap">
       <div className="planning-header__kcal-bar-header">
-        <span className="planning-header__kcal-value">{kcalUsed}</span>
-        <span className="planning-header__kcal-unit">
-          /{effectiveKcalBudget} kcal
-          {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
-        </span>
-        {satietyPenalty.kcalDelta > 0 && (
-          <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
-            +{satietyPenalty.kcalDelta}
+        <div className="planning-header__kcal-left">
+          <span className="planning-header__kcal-value">{kcalUsed}</span>
+          <span className="planning-header__kcal-unit">
+            /{effectiveKcalBudget} kcal
+            {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
           </span>
-        )}
-        {forecastBadge && (
-          <Tooltip text={forecastTooltip} position="bottom">
-            <span
-              className="planning-header__assessment-badge"
-              style={{
-                background: `${assessment.color}22`,
-                borderColor: `${assessment.color}44`,
-              }}
-            >
-              {forecastBadge}
+          {satietyPenalty.kcalDelta > 0 && (
+            <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
+              +{satietyPenalty.kcalDelta}
             </span>
-          </Tooltip>
-        )}
-        {/* No badge when no food placed */}
+          )}
+        </div>
+        <span className="planning-header__kcal-zone-name" style={kcalUsed > 0 ? { color: assessment.color } : undefined}>
+          {kcalUsed > 0 ? assessment.label : ''}
+        </span>
+        <div className="planning-header__kcal-right">
+          {forecastBadge && (
+            <Tooltip text={forecastTooltip} position="bottom">
+              <span
+                className="planning-header__assessment-badge"
+                style={{
+                  background: `${assessment.color}22`,
+                  borderColor: `${assessment.color}44`,
+                }}
+              >
+                {forecastBadge}
+              </span>
+            </Tooltip>
+          )}
+        </div>
       </div>
       <div className="planning-header__kcal-bar">
         <div
