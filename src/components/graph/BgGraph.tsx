@@ -116,6 +116,7 @@ interface BgGraphProps {
   previewShip?: Ship | null;
   previewIntervention?: Intervention | null;
   previewColumn?: number | null;
+  breakValidColumns?: boolean[] | null;
   showPenaltyHighlight?: boolean;
   revealPhase?: number; // undefined = all visible, 0-4 = progressive layer reveal
   interactive?: boolean;
@@ -146,6 +147,7 @@ export function BgGraph({
   previewShip,
   previewIntervention,
   previewColumn,
+  breakValidColumns,
   showPenaltyHighlight = false,
   revealPhase,
   interactive = true,
@@ -929,6 +931,20 @@ export function BgGraph({
             />
           );
         })}
+
+        {/* Break valid zone highlights — shown when dragging a break */}
+        {breakValidColumns && breakValidColumns.map((valid, col) => (
+          <rect
+            key={`break-zone-${col}`}
+            x={colToX(col)}
+            y={PAD_TOP}
+            width={CELL_SIZE}
+            height={GRAPH_H}
+            fill={valid ? '#48bb78' : '#e53e3e'}
+            opacity={valid ? 0.12 : 0.10}
+            pointerEvents="none"
+          />
+        ))}
 
         {/* Per-food cube layers: last placed rendered first (bottom), first placed last (top) */}
         {[...graphRenderData.layers].reverse().map(layer => (
