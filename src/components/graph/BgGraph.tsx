@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef, useState } from 'react';
+import { useMemo, useCallback, useRef, useState, useLayoutEffect, useEffect } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, MedicationModifiers } from '../../core/types';
 import {
@@ -105,6 +105,13 @@ interface GraphRenderData {
   effectiveRows: number;
 }
 
+interface ExitingCube {
+  col: number;
+  row: number;
+  color: string;
+  dropColumn: number;
+}
+
 interface BgGraphProps {
   placedFoods: PlacedFood[];
   allShips: Ship[];
@@ -159,6 +166,11 @@ export function BgGraph({
   const svgRef = useRef<SVGSVGElement>(null);
   const markerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
   const interventionMarkerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
+
+  // Exit animation state
+  const prevLayersRef = useRef<FoodRenderLayer[]>([]);
+  const [exitingCubes, setExitingCubes] = useState<ExitingCube[]>([]);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Floating card overlay when dragging marker outside graph
   const [dragOutside, setDragOutside] = useState<{
@@ -526,6 +538,31 @@ export function BgGraph({
   const { effectiveRows } = graphRenderData;
   const cellHeight = GRAPH_H / effectiveRows;
   const rowToY = (row: number) => PAD_TOP + GRAPH_H - (row + 1) * cellHeight;
+
+  // Detect removed food layers for exit animation
+  useLayoutEffect(() => {
+    const prev = prevLayersRef.current;
+    const currIds = new Set(graphRenderData.layers.map(l => l.placementId));
+    const removed = prev.filter(l => !currIds.has(l.placementId));
+
+    if (removed.length > 0) {
+      const cubes = removed.flatMap(l =>
+        l.cubes
+          .filter(c => c.status === 'normal')
+          .map(c => ({ col: c.col, row: c.row, color: l.color, dropColumn: l.dropColumn }))
+      );
+      setExitingCubes(cubes);
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = setTimeout(() => setExitingCubes([]), 1200);
+    }
+
+    prevLayersRef.current = graphRenderData.layers;
+  }, [graphRenderData.layers]);
+
+  // Cleanup exit timer on unmount
+  useEffect(() => () => {
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+  }, []);
 
   // Dynamic zone clip bands (Y-positions depend on cellHeight)
   const zoneClipBands = [
@@ -1017,6 +1054,28 @@ export function BgGraph({
                   className={revealPhase !== undefined ? 'bg-graph__cube--med-reveal' : undefined}
                   opacity={revealPhase !== undefined ? undefined : 0.45}
                   style={revealPhase !== undefined ? { animationDelay: `${waveDelay}ms` } : undefined}
+                />
+              );
+            })}
+          </g>
+        )}
+
+        {/* Exiting cubes — burn-out animation for removed food */}
+        {exitingCubes.length > 0 && (
+          <g className="bg-graph__exit-cubes" pointerEvents="none">
+            {exitingCubes.map((cube, i) => {
+              const waveDelay = Math.abs(cube.col - cube.dropColumn) * 15;
+              return (
+                <rect
+                  key={`exit-${i}`}
+                  x={colToX(cube.col) + 0.5}
+                  y={rowToY(cube.row) + 0.5}
+                  width={CELL_SIZE - 1}
+                  height={cellHeight - 1}
+                  fill={cube.color}
+                  rx={2}
+                  className="bg-graph__cube--exiting"
+                  style={{ animationDelay: `${waveDelay}ms` }}
                 />
               );
             })}
