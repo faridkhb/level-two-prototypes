@@ -12,7 +12,7 @@ import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, Pancreas
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
-import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars, GRAPH_CONFIG } from '../../core/types';
+import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars, GRAPH_CONFIG, TOTAL_COLUMNS } from '../../core/types';
 import { getPancreasTiers } from '../../config/loader';
 import { BgGraph, pointerToColumn } from '../graph';
 import { PlanningHeader } from './PlanningHeader';
@@ -206,6 +206,19 @@ export function PlanningPhase() {
   const wpFloor = Math.ceil(wpBudget * 0.5);
   const effectiveWpBudget = Math.max(rawWpBudget - wpPenalty + satietyPenalty.wpDelta, wpFloor);
   const wpRemaining = effectiveWpBudget - wpUsed;
+
+  // Valid drop columns for break interventions (computed during drag)
+  const breakValidColumns = useMemo(() => {
+    if (!activeIntervention?.isBreak) return null;
+    const result = new Array(TOTAL_COLUMNS).fill(false);
+    for (let col = 0; col < TOTAL_COLUMNS; col++) {
+      result[col] = !isBreakBlockedByPlacements(
+        col, activeIntervention.duration,
+        placedFoods, allShips, placedInterventions, allInterventions
+      );
+    }
+    return result;
+  }, [activeIntervention, placedFoods, allShips, placedInterventions, allInterventions]);
 
   // Pancreas tier system
   const currentPancreasTier = (pancreasTierPerDay[currentDay] ?? 1) as PancreasTier;
@@ -556,6 +569,7 @@ export function PlanningPhase() {
               previewShip={isPlanning ? activeShip : null}
               previewIntervention={isPlanning ? activeIntervention : null}
               previewColumn={isPlanning ? previewColumn : null}
+              breakValidColumns={isPlanning ? breakValidColumns : null}
               showPenaltyHighlight={showResults}
               revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
               interactive={isPlanning}
