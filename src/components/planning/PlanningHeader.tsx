@@ -81,14 +81,18 @@ export function PlanningHeader({
   const barMaxPct = 150;
   const fillPct = Math.min(pct / barMaxPct * 100, 100);
 
-  // Build forecast tooltip text
+  // Build forecast badge text (effect) and tooltip (zone name)
+  let forecastBadge = '';
   let forecastTooltip = '';
   if (livePenalty.zone === 'optimal') {
-    forecastTooltip = 'Next day: +1 WP bonus';
+    forecastBadge = '+1 WP';
+    forecastTooltip = 'Optimal — next day WP bonus';
   } else if (livePenalty.zone === 'overeating') {
-    forecastTooltip = `Next day: −1 WP, +1 🍦, +${livePenalty.kcalDelta} kcal`;
+    forecastBadge = `−1 WP, +🍦, +${livePenalty.kcalDelta} kcal`;
+    forecastTooltip = 'Overeating — next day penalty';
   } else if (livePenalty.zone === 'malnourished' && kcalUsed > 0) {
-    forecastTooltip = 'Next day: −1 WP, +1 🍦';
+    forecastBadge = '−1 WP, +🍦';
+    forecastTooltip = 'Malnourished — next day penalty';
   }
 
   const kcalSection = (
@@ -104,7 +108,7 @@ export function PlanningHeader({
             +{satietyPenalty.kcalDelta}
           </span>
         )}
-        {forecastTooltip && (
+        {forecastBadge && (
           <Tooltip text={forecastTooltip} position="bottom">
             <span
               className="planning-header__assessment-badge"
@@ -113,7 +117,7 @@ export function PlanningHeader({
                 borderColor: `${assessment.color}44`,
               }}
             >
-              {assessment.label}
+              {forecastBadge}
             </span>
           </Tooltip>
         )}
