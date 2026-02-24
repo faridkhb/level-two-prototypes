@@ -36,20 +36,35 @@
   }
 }
 
-/* Cube burn animation (flash + fade on intervention placement) */
+/* Cube burn animation (epic multi-stage flash on intervention placement) */
 @keyframes cubeBurn {
   0% {
-    opacity: 0.9;
-    filter: brightness(1.8);
-    transform: scale(1.08);
+    opacity: 1;
+    filter: brightness(2.5);
+    transform: scale(1.15);
+  }
+  20% {
+    opacity: 0.8;
+    filter: brightness(0.6);
+    transform: scale(0.92);
   }
   40% {
-    opacity: 0.5;
-    filter: brightness(0.9);
-    transform: scale(0.96);
+    opacity: 0.7;
+    filter: brightness(1.8);
+    transform: scale(1.06);
+  }
+  60% {
+    opacity: 0.4;
+    filter: brightness(0.8);
+    transform: scale(0.97);
+  }
+  80% {
+    opacity: 0.25;
+    filter: brightness(1.2);
+    transform: scale(1.02);
   }
   100% {
-    opacity: 0.35;
+    opacity: 0.20;
     filter: brightness(1);
     transform: scale(1);
   }
@@ -69,31 +84,52 @@
 }
 
 .bg-graph__cube--burned {
-  animation: cubeBurn 0.4s ease-out both;
+  animation: cubeBurn 0.8s ease-out both;
   cursor: pointer;
   transform-box: fill-box;
   transform-origin: center;
 }
 
 .bg-graph__cube--burned:hover {
-  opacity: 0.3 !important;
+  opacity: 0.5 !important;
+  filter: brightness(1.5) !important;
+  transform: scale(1.15) !important;
+  transition: all 0.15s ease-out;
 }
 
-/* Pancreas-eaten cubes (orange semi-transparent) */
+/* Pancreas-eaten cubes (orange semi-transparent, epic digest) */
 @keyframes pancreasDigest {
   0% {
-    opacity: 0.8;
+    opacity: 0.9;
+    filter: brightness(2.0);
+    transform: scale(1.12);
+  }
+  25% {
+    opacity: 0.5;
+    filter: brightness(0.7);
+    transform: scale(0.94);
   }
   50% {
-    opacity: 0.4;
+    opacity: 0.45;
+    filter: brightness(1.4);
+    transform: scale(1.04);
+  }
+  75% {
+    opacity: 0.3;
+    filter: brightness(0.9);
+    transform: scale(0.98);
   }
   100% {
-    opacity: 0.45;
+    opacity: 0.25;
+    filter: brightness(1);
+    transform: scale(1);
   }
 }
 
 .bg-graph__cube--pancreas {
-  animation: pancreasDigest 0.4s ease-out both;
+  animation: pancreasDigest 0.7s ease-out both;
+  transform-box: fill-box;
+  transform-origin: center;
   pointer-events: none;
 }
 
@@ -182,17 +218,18 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* Medication cubes reveal animation */
+/* Medication cubes reveal animation (epic flash) */
 @keyframes medAppear {
-  0% { opacity: 0; transform: scale(0.3); }
-  60% { opacity: 0.45; transform: scale(1.08); }
-  100% { opacity: 0.45; transform: scale(1); }
+  0% { opacity: 0; filter: brightness(2.5); transform: scale(0.3); }
+  30% { opacity: 0.6; filter: brightness(0.7); transform: scale(1.1); }
+  55% { opacity: 0.35; filter: brightness(1.5); transform: scale(1.04); }
+  100% { opacity: 0.25; filter: brightness(1); transform: scale(1); }
 }
 
 .bg-graph__cube--med-reveal {
   transform-box: fill-box;
   transform-origin: center;
-  animation: medAppear 0.35s ease-out both;
+  animation: medAppear 0.7s ease-out both;
 }
 
 /* Floating card when dragging marker outside graph */
