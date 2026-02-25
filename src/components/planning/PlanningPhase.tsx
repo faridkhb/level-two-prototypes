@@ -416,6 +416,18 @@ export function PlanningPhase() {
       onDragEnd={handleDragEnd}
     >
       <div className="planning-phase">
+        <PlanningHeader
+          dayLabel={`Day ${currentDay}/${currentLevel.days}`}
+          kcalUsed={kcalUsed}
+          kcalBudget={kcalBudget}
+          wpRemaining={wpRemaining}
+          satietyPenalty={satietyPenalty}
+          settings={settings}
+          medicationModifiers={medicationModifiers}
+          submitEnabled={submitEnabled}
+          onSubmit={handleSubmit}
+        />
+
         {isPlanning && (
           <div className="planning-phase__hint">
             Drag food cards into meal slots to plan your day!
@@ -460,18 +472,6 @@ export function PlanningPhase() {
             settings={settings}
             onRemoveFromSlot={removeFromSlot}
             disabled={!isPlanning}
-          />
-
-          <PlanningHeader
-            dayLabel={`Day ${currentDay}/${currentLevel.days}`}
-            kcalUsed={kcalUsed}
-            kcalBudget={kcalBudget}
-            wpRemaining={wpRemaining}
-            satietyPenalty={satietyPenalty}
-            settings={settings}
-            medicationModifiers={medicationModifiers}
-            submitEnabled={submitEnabled}
-            onSubmit={handleSubmit}
           />
 
           {isPlanning && (

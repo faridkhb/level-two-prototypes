@@ -98,8 +98,10 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 0.75;
+  flex: 1;
   min-width: 100px;
+  max-width: 50%;
+  margin: 0 auto;
 }
 
 .planning-header__kcal-bar-header {
@@ -194,6 +196,8 @@
 
 /* Submit button */
 .planning-header__submit {
+  margin-left: auto;
+  flex-shrink: 0;
   padding: 6px 18px;
   border: 2px solid #48bb78;
   border-radius: 8px;
