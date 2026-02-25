@@ -12,7 +12,7 @@ import type {
   PancreasTier,
   SatietyPenalty,
 } from '../core/types';
-import { DEFAULT_SETTINGS, DEFAULT_SATIETY_PENALTY } from '../core/types';
+import { DEFAULT_SETTINGS, DEFAULT_SATIETY_PENALTY, slotToColumn, TOTAL_SLOTS } from '../core/types';
 import { getPancreasTiers } from '../config/loader';
 
 // Helper to get day config
@@ -54,12 +54,9 @@ interface GameState {
 
   // Actions
   setLevel: (level: LevelConfig) => void;
-  placeFood: (shipId: string, dropColumn: number) => void;
-  removeFood: (placementId: string) => void;
-  moveFood: (placementId: string, newDropColumn: number) => void;
-  placeIntervention: (interventionId: string, dropColumn: number) => void;
-  removeIntervention: (placementId: string) => void;
-  moveIntervention: (placementId: string, newDropColumn: number) => void;
+  placeFoodInSlot: (shipId: string, slotIndex: number) => void;
+  placeInterventionInSlot: (interventionId: string, slotIndex: number) => void;
+  removeFromSlot: (slotIndex: number) => void;
   toggleMedication: (medicationId: string) => void;
   clearFoods: () => void;
   goToDay: (day: number) => void;
@@ -102,44 +99,38 @@ export const useGameStore = create<GameState>()(
           satietyPenaltyPerDay: {},
         }),
 
-      placeFood: (shipId, dropColumn) =>
-        set((state) => ({
-          placedFoods: [
-            ...state.placedFoods,
-            { id: uuidv4(), shipId, dropColumn },
-          ],
-        })),
+      placeFoodInSlot: (shipId, slotIndex) =>
+        set((state) => {
+          if (slotIndex < 0 || slotIndex >= TOTAL_SLOTS) return state;
+          const occupied = state.placedFoods.some(f => f.slotIndex === slotIndex)
+            || state.placedInterventions.some(i => i.slotIndex === slotIndex);
+          if (occupied) return state;
+          return {
+            placedFoods: [
+              ...state.placedFoods,
+              { id: uuidv4(), shipId, dropColumn: slotToColumn(slotIndex), slotIndex },
+            ],
+          };
+        }),
 
-      removeFood: (placementId) =>
-        set((state) => ({
-          placedFoods: state.placedFoods.filter((f) => f.id !== placementId),
-        })),
+      placeInterventionInSlot: (interventionId, slotIndex) =>
+        set((state) => {
+          if (slotIndex < 0 || slotIndex >= TOTAL_SLOTS) return state;
+          const occupied = state.placedFoods.some(f => f.slotIndex === slotIndex)
+            || state.placedInterventions.some(i => i.slotIndex === slotIndex);
+          if (occupied) return state;
+          return {
+            placedInterventions: [
+              ...state.placedInterventions,
+              { id: uuidv4(), interventionId, dropColumn: slotToColumn(slotIndex), slotIndex },
+            ],
+          };
+        }),
 
-      moveFood: (placementId, newDropColumn) =>
+      removeFromSlot: (slotIndex) =>
         set((state) => ({
-          placedFoods: state.placedFoods.map((f) =>
-            f.id === placementId ? { ...f, dropColumn: newDropColumn } : f
-          ),
-        })),
-
-      placeIntervention: (interventionId, dropColumn) =>
-        set((state) => ({
-          placedInterventions: [
-            ...state.placedInterventions,
-            { id: uuidv4(), interventionId, dropColumn },
-          ],
-        })),
-
-      removeIntervention: (placementId) =>
-        set((state) => ({
-          placedInterventions: state.placedInterventions.filter((i) => i.id !== placementId),
-        })),
-
-      moveIntervention: (placementId, newDropColumn) =>
-        set((state) => ({
-          placedInterventions: state.placedInterventions.map((i) =>
-            i.id === placementId ? { ...i, dropColumn: newDropColumn } : i
-          ),
+          placedFoods: state.placedFoods.filter(f => f.slotIndex !== slotIndex),
+          placedInterventions: state.placedInterventions.filter(i => i.slotIndex !== slotIndex),
         })),
 
       toggleMedication: (medicationId) =>

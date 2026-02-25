@@ -1,1 +1,1 @@
-export { BgGraph, pointerToColumn } from './BgGraph';
+export { BgGraph } from './BgGraph';

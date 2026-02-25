@@ -87,6 +87,7 @@ export interface PlacedFood {
   id: string;             // Unique placement ID
   shipId: string;         // Reference to Ship.id
   dropColumn: number;     // Column index where dropped (0 = start of graph)
+  slotIndex?: number;     // Meal slot index (0-11)
 }
 
 // === Interventions (exercise) ===
@@ -107,6 +108,7 @@ export interface PlacedIntervention {
   id: string;             // Unique placement ID
   interventionId: string; // Reference to Intervention.id
   dropColumn: number;
+  slotIndex?: number;     // Meal slot index (0-11)
 }
 
 // === Medications ===
@@ -291,4 +293,36 @@ export function formatBgValue(mgdl: number, unit: 'mg/dL' | 'mmol/L'): string {
     return `${mgdlToMmol(mgdl)}`;
   }
   return `${mgdl}`;
+}
+
+// === Meal Slot System ===
+
+export const SLOTS_PER_MEAL = 4;
+export const TOTAL_SLOTS = 12;
+export const COLS_PER_SLOT = 4; // 1 hour = 4 columns of 15 min
+
+export type MealSegment = 'breakfast' | 'lunch' | 'dinner';
+
+export interface MealSegmentConfig {
+  id: MealSegment;
+  label: string;
+  emoji: string;
+  startSlot: number;
+  slotCount: number;
+}
+
+export const MEAL_SEGMENTS: MealSegmentConfig[] = [
+  { id: 'breakfast', label: 'Breakfast', emoji: '🌅', startSlot: 0, slotCount: 4 },
+  { id: 'lunch',     label: 'Lunch',     emoji: '☀️', startSlot: 4, slotCount: 4 },
+  { id: 'dinner',    label: 'Dinner',    emoji: '🌙', startSlot: 8, slotCount: 4 },
+];
+
+/** Convert slot index (0-11) to graph column (0,4,8,...,44) */
+export function slotToColumn(slotIndex: number): number {
+  return slotIndex * COLS_PER_SLOT;
+}
+
+/** Get time label for a slot */
+export function slotTimeLabel(slotIndex: number, format: '12h' | '24h'): string {
+  return columnToTimeString(slotToColumn(slotIndex), format);
 }

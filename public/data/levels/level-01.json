@@ -24,9 +24,7 @@
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
-        { "id": "heavyrun", "count": 1 },
-        { "id": "takeabreak", "count": 2 },
-        { "id": "takearest", "count": 1 }
+        { "id": "heavyrun", "count": 1 }
       ]
     },
     {
@@ -49,9 +47,7 @@
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
-        { "id": "heavyrun", "count": 1 },
-        { "id": "takeabreak", "count": 2 },
-        { "id": "takearest", "count": 1 }
+        { "id": "heavyrun", "count": 1 }
       ],
       "availableMedications": ["metformin"]
     },
@@ -75,9 +71,7 @@
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
-        { "id": "heavyrun", "count": 1 },
-        { "id": "takeabreak", "count": 2 },
-        { "id": "takearest", "count": 1 }
+        { "id": "heavyrun", "count": 1 }
       ],
       "availableMedications": ["metformin", "glp1"]
     }
