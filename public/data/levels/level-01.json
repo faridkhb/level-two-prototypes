@@ -6,35 +6,24 @@
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 1800,
-      "wpBudget": 10,
+      "kcalBudget": 1200,
+      "wpBudget": 8,
       "availableFoods": [
         { "id": "burger", "count": 1 },
-        { "id": "icecream", "count": 1 },
-        { "id": "cookie", "count": 1 },
-        { "id": "apple", "count": 1 },
-        { "id": "popcorn", "count": 1 },
-        { "id": "berriesmixed", "count": 1 },
-        { "id": "chicken", "count": 1 },
         { "id": "sandwich", "count": 1 },
-        { "id": "nutsmixed", "count": 1 },
-        { "id": "milk", "count": 1 },
         { "id": "chickpeas", "count": 1 },
-        { "id": "oatmeal", "count": 1 }
+        { "id": "cookie", "count": 1 },
+        { "id": "milk", "count": 1 }
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
-        { "id": "heavyrun", "count": 1 },
-        { "id": "takeabreak", "count": 2 },
-        { "id": "takearest", "count": 1 }
+        { "id": "takeabreak", "count": 1 }
       ],
       "preplacedFoods": [
-        { "shipId": "banana", "slotIndex": 0 }
+        { "shipId": "banana", "slotIndex": 0 },
+        { "shipId": "popcorn", "slotIndex": 1 }
       ],
-      "preplacedInterventions": [
-        { "interventionId": "takeabreak", "slotIndex": 6 }
-      ],
-      "lockedSlots": [11]
+      "lockedSlots": [5, 10, 11]
     },
     {
       "day": 2,
