@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useDroppable, useDraggable, useDndContext } from '@dnd-kit/core';
 import type { Ship, Intervention, PlacedFood, PlacedIntervention, GameSettings } from '../../core/types';
-import { MEAL_SEGMENTS, slotTimeLabel } from '../../core/types';
+import { MEAL_SEGMENTS, TOTAL_SLOTS, slotTimeLabel } from '../../core/types';
 import './SlotGrid.css';
 
 interface SlotGridProps {
@@ -28,6 +28,7 @@ function SlotContainer({
   disabled,
   isParentDragging,
   isGroupHovered,
+  isDropTarget,
   onHoverEnter,
   onHoverLeave,
 }: {
@@ -38,12 +39,13 @@ function SlotContainer({
   disabled?: boolean;
   isParentDragging?: boolean;
   isGroupHovered?: boolean;
+  isDropTarget?: boolean;
   onHoverEnter: (slotIndex: number) => void;
   onHoverLeave: () => void;
 }) {
   const isContinuation = content?.type === 'continuation';
 
-  const { setNodeRef: setDropRef, isOver } = useDroppable({
+  const { setNodeRef: setDropRef } = useDroppable({
     id: `slot-${index}`,
     data: { slotIndex: index },
     disabled: disabled || isContinuation,
@@ -79,7 +81,7 @@ function SlotContainer({
         (showContent && isContinuation ? ' slot-container--continuation' : '') +
         (showContent && isMultiStart ? ' slot-container--multi-start' : '') +
         (showContent && isGroupHovered ? ' slot-container--hover' : '') +
-        (isOver ? ' slot-container--over' : '') +
+        (isDropTarget ? ' slot-container--over' : '') +
         (disabled ? ' slot-container--disabled' : '') +
         ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
       }
@@ -134,8 +136,8 @@ export function SlotGrid({
   onRemoveFromSlot,
   disabled,
 }: SlotGridProps) {
-  // Track which slots are being dragged (for multi-slot visual)
-  const { active } = useDndContext();
+  // Track which slots are being dragged and drop targets (for multi-slot visual)
+  const { active, over } = useDndContext();
   const draggingSlots = useMemo(() => {
     const slots = new Set<number>();
     if (active?.data.current?.isFromSlot) {
@@ -150,6 +152,25 @@ export function SlotGrid({
     }
     return slots;
   }, [active, placedInterventions]);
+
+  // Compute drop target slots (for multi-slot drag highlight)
+  const dropTargetSlots = useMemo(() => {
+    const slots = new Set<number>();
+    if (!active || !over) return slots;
+    const overId = String(over.id);
+    if (!overId.startsWith('slot-')) return slots;
+    const targetSlot = parseInt(overId.replace('slot-', ''), 10);
+    if (isNaN(targetSlot)) return slots;
+
+    const intervention = active.data.current?.intervention as Intervention | undefined;
+    const isIntervention = active.data.current?.isIntervention === true;
+    const slotSize = (isIntervention && intervention?.slotSize) ? intervention.slotSize : 1;
+
+    for (let s = targetSlot; s < targetSlot + slotSize && s < TOTAL_SLOTS; s++) {
+      slots.add(s);
+    }
+    return slots;
+  }, [active, over]);
 
   // Track hover group for multi-slot highlight
   const [hoveredGroup, setHoveredGroup] = useState<Set<number>>(new Set());
@@ -220,6 +241,7 @@ export function SlotGrid({
                   disabled={disabled}
                   isParentDragging={draggingSlots.has(slotIndex)}
                   isGroupHovered={hoveredGroup.has(slotIndex)}
+                  isDropTarget={dropTargetSlots.has(slotIndex)}
                   onHoverEnter={handleSlotHover}
                   onHoverLeave={handleSlotLeave}
                 />
