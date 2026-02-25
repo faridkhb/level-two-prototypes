@@ -102,6 +102,7 @@ export interface Intervention {
   boostCols?: number;     // First N columns get extra depth (burst zone)
   boostExtra?: number;    // Extra cubes removed in burst zone
   isBreak?: boolean;      // Blocks time, gives WP instead of costing
+  slotSize?: number;         // Number of meal slots occupied (default 1)
 }
 
 export interface PlacedIntervention {
@@ -109,6 +110,7 @@ export interface PlacedIntervention {
   interventionId: string; // Reference to Intervention.id
   dropColumn: number;
   slotIndex?: number;     // Meal slot index (0-11)
+  slotSize?: number;      // Number of meal slots occupied (default 1)
 }
 
 // === Medications ===

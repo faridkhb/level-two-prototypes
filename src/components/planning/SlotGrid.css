@@ -80,6 +80,23 @@
   pointer-events: none;
 }
 
+/* Multi-slot: start slot loses bottom rounding */
+.slot-container--multi-start {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-style: dashed;
+  border-bottom-color: rgba(72, 187, 120, 0.4);
+}
+
+/* Multi-slot: continuation slot connects to parent */
+.slot-container--continuation {
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  margin-top: -4px;
+  opacity: 0.75;
+}
+
 .slot-container__time {
   font-size: 10px;
   color: #718096;
@@ -132,4 +149,9 @@
   color: #4a5568;
   font-size: 16px;
   font-weight: 300;
+}
+
+.slot-container__name--dim {
+  color: #718096;
+  font-weight: 400;
 }

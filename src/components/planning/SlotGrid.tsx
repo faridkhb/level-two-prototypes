@@ -1,4 +1,5 @@
-import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { useMemo } from 'react';
+import { useDroppable, useDraggable, useDndContext } from '@dnd-kit/core';
 import type { Ship, Intervention, PlacedFood, PlacedIntervention, GameSettings } from '../../core/types';
 import { MEAL_SEGMENTS, slotTimeLabel } from '../../core/types';
 import './SlotGrid.css';
@@ -16,6 +17,7 @@ interface SlotGridProps {
 type SlotContent =
   | { type: 'food'; ship: Ship }
   | { type: 'intervention'; intervention: Intervention }
+  | { type: 'continuation'; intervention: Intervention; parentSlotIndex: number }
   | null;
 
 function SlotContainer({
@@ -24,17 +26,21 @@ function SlotContainer({
   timeLabel,
   onRemove,
   disabled,
+  isParentDragging,
 }: {
   index: number;
   content: SlotContent;
   timeLabel: string;
   onRemove: () => void;
   disabled?: boolean;
+  isParentDragging?: boolean;
 }) {
+  const isContinuation = content?.type === 'continuation';
+
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `slot-${index}`,
     data: { slotIndex: index },
-    disabled: disabled,
+    disabled: disabled || isContinuation,
   });
 
   const draggableData = content?.type === 'food'
@@ -45,7 +51,7 @@ function SlotContainer({
 
   const { setNodeRef: setDragRef, attributes, listeners, isDragging } = useDraggable({
     id: `placed-slot-${index}`,
-    disabled: disabled || !content,
+    disabled: disabled || !content || isContinuation,
     data: draggableData,
   });
 
@@ -54,45 +60,53 @@ function SlotContainer({
     setDragRef(node);
   };
 
+  const showContent = content && !isDragging && !isParentDragging;
+  const isMultiStart = content?.type === 'intervention' && (content.intervention.slotSize ?? 1) > 1;
+
   return (
     <div
       ref={combinedRef}
       className={
         'slot-container' +
-        (content && !isDragging ? ' slot-container--filled' : '') +
-        (content?.type === 'intervention' && !isDragging ? ' slot-container--intervention' : '') +
+        (showContent ? ' slot-container--filled' : '') +
+        (showContent && (content.type === 'intervention' || content.type === 'continuation') ? ' slot-container--intervention' : '') +
+        (showContent && isContinuation ? ' slot-container--continuation' : '') +
+        (showContent && isMultiStart ? ' slot-container--multi-start' : '') +
         (isOver ? ' slot-container--over' : '') +
         (disabled ? ' slot-container--disabled' : '') +
-        (isDragging ? ' slot-container--dragging' : '')
+        ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
       }
       onClick={content && !disabled && !isDragging ? onRemove : undefined}
-      {...(content && !disabled ? listeners : {})}
+      {...(content && !disabled && !isContinuation ? listeners : {})}
       {...attributes}
     >
       <div className="slot-container__time">{timeLabel}</div>
-      {content && !isDragging ? (
+      {showContent ? (
         <div className="slot-container__card">
           <span className="slot-container__emoji">
             {content.type === 'food' ? content.ship.emoji : content.intervention.emoji}
           </span>
           <div className="slot-container__info">
-            <span className="slot-container__name">
-              {content.type === 'food' ? content.ship.name : content.intervention.name}
+            <span className={`slot-container__name${isContinuation ? ' slot-container__name--dim' : ''}`}>
+              {content.type === 'food' ? content.ship.name
+                : isContinuation ? '⋯' : content.intervention.name}
             </span>
-            <span className="slot-container__stats">
-              {content.type === 'food' ? (
-                <>
-                  {content.ship.kcal} kcal · {content.ship.carbs ?? 0}g
-                  {(content.ship.wpCost ?? 0) > 0 && <> · {content.ship.wpCost}☀️</>}
-                </>
-              ) : (
-                <>
-                  {content.intervention.isBreak
-                    ? `+${Math.abs(content.intervention.wpCost)}☀️`
-                    : `${content.intervention.duration}m · -${content.intervention.depth} · ${content.intervention.wpCost}☀️`}
-                </>
-              )}
-            </span>
+            {!isContinuation && (
+              <span className="slot-container__stats">
+                {content.type === 'food' ? (
+                  <>
+                    {content.ship.kcal} kcal · {content.ship.carbs ?? 0}g
+                    {(content.ship.wpCost ?? 0) > 0 && <> · {content.ship.wpCost}☀️</>}
+                  </>
+                ) : (
+                  <>
+                    {content.intervention.isBreak
+                      ? `+${Math.abs(content.intervention.wpCost)}☀️`
+                      : `${content.intervention.duration}m · -${content.intervention.depth} · ${content.intervention.wpCost}☀️`}
+                  </>
+                )}
+              </span>
+            )}
           </div>
         </div>
       ) : (
@@ -111,16 +125,44 @@ export function SlotGrid({
   onRemoveFromSlot,
   disabled,
 }: SlotGridProps) {
+  // Track which slots are being dragged (for multi-slot visual)
+  const { active } = useDndContext();
+  const draggingSlots = useMemo(() => {
+    const slots = new Set<number>();
+    if (active?.data.current?.isFromSlot) {
+      const fromSlot = active.data.current.fromSlotIndex as number;
+      const pi = placedInterventions.find(i => i.slotIndex === fromSlot);
+      if (pi) {
+        const size = pi.slotSize ?? 1;
+        for (let s = fromSlot; s < fromSlot + size; s++) slots.add(s);
+      } else {
+        slots.add(fromSlot);
+      }
+    }
+    return slots;
+  }, [active, placedInterventions]);
+
   const getSlotContent = (slotIndex: number): SlotContent => {
     const food = placedFoods.find(f => f.slotIndex === slotIndex);
     if (food) {
       const ship = allShips.find(s => s.id === food.shipId);
       if (ship) return { type: 'food', ship };
     }
+    // Check exact match (start slot)
     const intervention = placedInterventions.find(i => i.slotIndex === slotIndex);
     if (intervention) {
       const int = allInterventions.find(a => a.id === intervention.interventionId);
       if (int) return { type: 'intervention', intervention: int };
+    }
+    // Check continuation (multi-slot)
+    const continuation = placedInterventions.find(i => {
+      const size = i.slotSize ?? 1;
+      const start = i.slotIndex ?? -1;
+      return size > 1 && slotIndex > start && slotIndex < start + size;
+    });
+    if (continuation) {
+      const int = allInterventions.find(a => a.id === continuation.interventionId);
+      if (int) return { type: 'continuation', intervention: int, parentSlotIndex: continuation.slotIndex! };
     }
     return null;
   };
@@ -143,6 +185,7 @@ export function SlotGrid({
                   timeLabel={slotTimeLabel(slotIndex, settings.timeFormat)}
                   onRemove={() => onRemoveFromSlot(slotIndex)}
                   disabled={disabled}
+                  isParentDragging={draggingSlots.has(slotIndex)}
                 />
               );
             })}

@@ -55,7 +55,7 @@ interface GameState {
   // Actions
   setLevel: (level: LevelConfig) => void;
   placeFoodInSlot: (shipId: string, slotIndex: number) => void;
-  placeInterventionInSlot: (interventionId: string, slotIndex: number) => void;
+  placeInterventionInSlot: (interventionId: string, slotIndex: number, slotSize?: number) => void;
   removeFromSlot: (slotIndex: number) => void;
   moveSlotToSlot: (fromSlot: number, toSlot: number) => void;
   toggleMedication: (medicationId: string) => void;
@@ -103,8 +103,13 @@ export const useGameStore = create<GameState>()(
       placeFoodInSlot: (shipId, slotIndex) =>
         set((state) => {
           if (slotIndex < 0 || slotIndex >= TOTAL_SLOTS) return state;
+          // Check slot not covered by food or multi-slot intervention
           const occupied = state.placedFoods.some(f => f.slotIndex === slotIndex)
-            || state.placedInterventions.some(i => i.slotIndex === slotIndex);
+            || state.placedInterventions.some(i => {
+              const start = i.slotIndex ?? -1;
+              const size = i.slotSize ?? 1;
+              return slotIndex >= start && slotIndex < start + size;
+            });
           if (occupied) return state;
           return {
             placedFoods: [
@@ -114,25 +119,42 @@ export const useGameStore = create<GameState>()(
           };
         }),
 
-      placeInterventionInSlot: (interventionId, slotIndex) =>
+      placeInterventionInSlot: (interventionId, slotIndex, slotSize = 1) =>
         set((state) => {
-          if (slotIndex < 0 || slotIndex >= TOTAL_SLOTS) return state;
-          const occupied = state.placedFoods.some(f => f.slotIndex === slotIndex)
-            || state.placedInterventions.some(i => i.slotIndex === slotIndex);
-          if (occupied) return state;
+          if (slotIndex < 0 || slotIndex + slotSize > TOTAL_SLOTS) return state;
+          // Check ALL required slots are unoccupied
+          for (let s = slotIndex; s < slotIndex + slotSize; s++) {
+            const occupied = state.placedFoods.some(f => f.slotIndex === s)
+              || state.placedInterventions.some(i => {
+                const start = i.slotIndex ?? -1;
+                const sz = i.slotSize ?? 1;
+                return s >= start && s < start + sz;
+              });
+            if (occupied) return state;
+          }
           return {
             placedInterventions: [
               ...state.placedInterventions,
-              { id: uuidv4(), interventionId, dropColumn: slotToColumn(slotIndex), slotIndex },
+              { id: uuidv4(), interventionId, dropColumn: slotToColumn(slotIndex), slotIndex, slotSize },
             ],
           };
         }),
 
       removeFromSlot: (slotIndex) =>
-        set((state) => ({
-          placedFoods: state.placedFoods.filter(f => f.slotIndex !== slotIndex),
-          placedInterventions: state.placedInterventions.filter(i => i.slotIndex !== slotIndex),
-        })),
+        set((state) => {
+          // Find multi-slot intervention covering this slot
+          const coveringInt = state.placedInterventions.find(i => {
+            const start = i.slotIndex ?? -1;
+            const size = i.slotSize ?? 1;
+            return slotIndex >= start && slotIndex < start + size;
+          });
+          return {
+            placedFoods: state.placedFoods.filter(f => f.slotIndex !== slotIndex),
+            placedInterventions: coveringInt
+              ? state.placedInterventions.filter(i => i.id !== coveringInt.id)
+              : state.placedInterventions,
+          };
+        }),
 
       moveSlotToSlot: (fromSlot, toSlot) =>
         set((state) => {
@@ -141,8 +163,43 @@ export const useGameStore = create<GameState>()(
           const intFrom = state.placedInterventions.find(i => i.slotIndex === fromSlot);
           if (!foodFrom && !intFrom) return state;
 
+          const fromSize = intFrom ? (intFrom.slotSize ?? 1) : 1;
+
+          // Multi-slot move: only move to free range (no swap)
+          if (fromSize > 1) {
+            if (toSlot + fromSize > TOTAL_SLOTS) return state;
+            for (let s = toSlot; s < toSlot + fromSize; s++) {
+              // Skip self slots
+              if (intFrom && s >= fromSlot && s < fromSlot + fromSize) continue;
+              const occFood = state.placedFoods.some(f => f.slotIndex === s);
+              const occInt = state.placedInterventions.some(i => {
+                if (intFrom && i.id === intFrom.id) return false;
+                const size = i.slotSize ?? 1;
+                const start = i.slotIndex ?? -1;
+                return s >= start && s < start + size;
+              });
+              if (occFood || occInt) return state;
+            }
+            return {
+              placedFoods: state.placedFoods,
+              placedInterventions: state.placedInterventions.map(i =>
+                intFrom && i.id === intFrom.id
+                  ? { ...i, slotIndex: toSlot, dropColumn: slotToColumn(toSlot) }
+                  : i
+              ),
+            };
+          }
+
+          // Single-slot: check if target is inside a multi-slot (reject swap)
+          const covInt = state.placedInterventions.find(i => {
+            const size = i.slotSize ?? 1;
+            const start = i.slotIndex ?? -1;
+            return toSlot >= start && toSlot < start + size;
+          });
+          if (covInt && (covInt.slotSize ?? 1) > 1) return state;
+
           const foodTo = state.placedFoods.find(f => f.slotIndex === toSlot);
-          const intTo = state.placedInterventions.find(i => i.slotIndex === toSlot);
+          const intTo = covInt;
 
           const newFoods = state.placedFoods.map(f => {
             if (foodFrom && f.id === foodFrom.id)

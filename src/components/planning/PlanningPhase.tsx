@@ -243,38 +243,70 @@ export function PlanningPhase() {
         moveSlotToSlot(fromSlotIndex, targetSlot);
       } else {
         // Inventory → Slot: place (or replace if occupied)
-        const isOccupied = placedFoods.some(f => f.slotIndex === targetSlot)
-          || placedInterventions.some(i => i.slotIndex === targetSlot);
+        const isIntervention = activeData?.isIntervention === true;
+
+        // Helper: check if a slot is covered (including multi-slot interventions)
+        const isSlotCovered = (slot: number): boolean => {
+          if (placedFoods.some(f => f.slotIndex === slot)) return true;
+          return placedInterventions.some(i => {
+            const start = i.slotIndex ?? -1;
+            const size = i.slotSize ?? 1;
+            return slot >= start && slot < start + size;
+          });
+        };
+
+        // Multi-slot intervention placement: all target slots must be free
+        if (isIntervention) {
+          const intervention = activeData?.intervention as Intervention | undefined;
+          if (!intervention) return;
+          const slotSize = intervention.slotSize ?? 1;
+
+          if (slotSize > 1) {
+            if (targetSlot + slotSize > TOTAL_SLOTS) return;
+            for (let s = targetSlot; s < targetSlot + slotSize; s++) {
+              if (isSlotCovered(s)) return;
+            }
+            if (intervention.wpCost > wpRemaining) return;
+            placeInterventionInSlot(intervention.id, targetSlot, slotSize);
+            return;
+          }
+        }
+
+        // Single-slot placement (food or single-slot intervention)
+        const targetOccupied = isSlotCovered(targetSlot);
 
         // Compute WP freed if replacing an existing card
         let freedWp = 0;
-        if (isOccupied) {
+        if (targetOccupied) {
           const existingFood = placedFoods.find(f => f.slotIndex === targetSlot);
           if (existingFood) {
             const s = allShips.find(sh => sh.id === existingFood.shipId);
             freedWp = s?.wpCost ?? 0;
           }
-          const existingInt = placedInterventions.find(i => i.slotIndex === targetSlot);
-          if (existingInt) {
-            const inv = allInterventions.find(a => a.id === existingInt.interventionId);
+          const coveringInt = placedInterventions.find(i => {
+            const start = i.slotIndex ?? -1;
+            const size = i.slotSize ?? 1;
+            return targetSlot >= start && targetSlot < start + size;
+          });
+          if (coveringInt) {
+            const inv = allInterventions.find(a => a.id === coveringInt.interventionId);
             freedWp = inv?.wpCost ?? 0;
           }
         }
 
         const effectiveWp = wpRemaining + freedWp;
-        const isIntervention = activeData?.isIntervention === true;
 
         if (isIntervention) {
           const intervention = activeData?.intervention as Intervention | undefined;
           if (!intervention) return;
           if (intervention.wpCost > effectiveWp) return;
-          if (isOccupied) removeFromSlot(targetSlot);
+          if (targetOccupied) removeFromSlot(targetSlot);
           placeInterventionInSlot(intervention.id, targetSlot);
         } else {
           const ship = activeData?.ship as Ship | undefined;
           if (!ship) return;
           if ((ship.wpCost ?? 0) > effectiveWp) return;
-          if (isOccupied) removeFromSlot(targetSlot);
+          if (targetOccupied) removeFromSlot(targetSlot);
           placeFoodInSlot(ship.id, targetSlot);
         }
       }

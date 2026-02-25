@@ -18,7 +18,8 @@
       "duration": 180,
       "wpCost": 4,
       "boostCols": 5,
-      "boostExtra": 2
+      "boostExtra": 2,
+      "slotSize": 2
     },
     {
       "id": "takeabreak",
@@ -36,11 +37,12 @@
       "name": "Take a Rest",
       "emoji": "😴",
       "depth": 0,
-      "duration": 60,
+      "duration": 120,
       "wpCost": -2,
       "boostCols": 0,
       "boostExtra": 0,
-      "isBreak": true
+      "isBreak": true,
+      "slotSize": 2
     }
   ]
 }
