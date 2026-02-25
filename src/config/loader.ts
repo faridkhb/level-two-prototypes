@@ -108,6 +108,7 @@ interface RawInterventionConfig {
   boostCols?: number;
   boostExtra?: number;
   isBreak?: boolean;
+  slotSize?: number;
 }
 
 function transformIntervention(raw: RawInterventionConfig): Intervention {
@@ -121,6 +122,7 @@ function transformIntervention(raw: RawInterventionConfig): Intervention {
     boostCols: raw.boostCols,
     boostExtra: raw.boostExtra,
     isBreak: raw.isBreak,
+    slotSize: raw.slotSize,
   };
 }
 
