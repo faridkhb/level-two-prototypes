@@ -1,4 +1,4 @@
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, useDraggable } from '@dnd-kit/core';
 import type { Ship, Intervention, PlacedFood, PlacedIntervention, GameSettings } from '../../core/types';
 import { MEAL_SEGMENTS, slotTimeLabel } from '../../core/types';
 import './SlotGrid.css';
@@ -31,26 +31,46 @@ function SlotContainer({
   onRemove: () => void;
   disabled?: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `slot-${index}`,
     data: { slotIndex: index },
-    disabled: disabled || content !== null,
+    disabled: disabled,
   });
+
+  const draggableData = content?.type === 'food'
+    ? { ship: content.ship, isFromSlot: true, fromSlotIndex: index }
+    : content?.type === 'intervention'
+      ? { intervention: content.intervention, isIntervention: true, isFromSlot: true, fromSlotIndex: index }
+      : {};
+
+  const { setNodeRef: setDragRef, attributes, listeners, isDragging } = useDraggable({
+    id: `placed-slot-${index}`,
+    disabled: disabled || !content,
+    data: draggableData,
+  });
+
+  const combinedRef = (node: HTMLElement | null) => {
+    setDropRef(node);
+    setDragRef(node);
+  };
 
   return (
     <div
-      ref={setNodeRef}
+      ref={combinedRef}
       className={
         'slot-container' +
-        (content ? ' slot-container--filled' : '') +
-        (content?.type === 'intervention' ? ' slot-container--intervention' : '') +
-        (isOver && !content ? ' slot-container--over' : '') +
-        (disabled ? ' slot-container--disabled' : '')
+        (content && !isDragging ? ' slot-container--filled' : '') +
+        (content?.type === 'intervention' && !isDragging ? ' slot-container--intervention' : '') +
+        (isOver ? ' slot-container--over' : '') +
+        (disabled ? ' slot-container--disabled' : '') +
+        (isDragging ? ' slot-container--dragging' : '')
       }
-      onClick={content && !disabled ? onRemove : undefined}
+      onClick={content && !disabled && !isDragging ? onRemove : undefined}
+      {...(content && !disabled ? listeners : {})}
+      {...attributes}
     >
       <div className="slot-container__time">{timeLabel}</div>
-      {content ? (
+      {content && !isDragging ? (
         <div className="slot-container__card">
           <span className="slot-container__emoji">
             {content.type === 'food' ? content.ship.emoji : content.intervention.emoji}

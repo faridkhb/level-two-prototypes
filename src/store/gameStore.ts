@@ -57,6 +57,7 @@ interface GameState {
   placeFoodInSlot: (shipId: string, slotIndex: number) => void;
   placeInterventionInSlot: (interventionId: string, slotIndex: number) => void;
   removeFromSlot: (slotIndex: number) => void;
+  moveSlotToSlot: (fromSlot: number, toSlot: number) => void;
   toggleMedication: (medicationId: string) => void;
   clearFoods: () => void;
   goToDay: (day: number) => void;
@@ -132,6 +133,35 @@ export const useGameStore = create<GameState>()(
           placedFoods: state.placedFoods.filter(f => f.slotIndex !== slotIndex),
           placedInterventions: state.placedInterventions.filter(i => i.slotIndex !== slotIndex),
         })),
+
+      moveSlotToSlot: (fromSlot, toSlot) =>
+        set((state) => {
+          if (fromSlot === toSlot) return state;
+          const foodFrom = state.placedFoods.find(f => f.slotIndex === fromSlot);
+          const intFrom = state.placedInterventions.find(i => i.slotIndex === fromSlot);
+          if (!foodFrom && !intFrom) return state;
+
+          const foodTo = state.placedFoods.find(f => f.slotIndex === toSlot);
+          const intTo = state.placedInterventions.find(i => i.slotIndex === toSlot);
+
+          const newFoods = state.placedFoods.map(f => {
+            if (foodFrom && f.id === foodFrom.id)
+              return { ...f, slotIndex: toSlot, dropColumn: slotToColumn(toSlot) };
+            if (foodTo && f.id === foodTo.id)
+              return { ...f, slotIndex: fromSlot, dropColumn: slotToColumn(fromSlot) };
+            return f;
+          });
+
+          const newInts = state.placedInterventions.map(i => {
+            if (intFrom && i.id === intFrom.id)
+              return { ...i, slotIndex: toSlot, dropColumn: slotToColumn(toSlot) };
+            if (intTo && i.id === intTo.id)
+              return { ...i, slotIndex: fromSlot, dropColumn: slotToColumn(fromSlot) };
+            return i;
+          });
+
+          return { placedFoods: newFoods, placedInterventions: newInts };
+        }),
 
       toggleMedication: (medicationId) =>
         set((state) => ({

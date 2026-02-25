@@ -5,6 +5,7 @@ import {
   DragOverlay,
   PointerSensor,
   TouchSensor,
+  useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -35,6 +36,18 @@ const REVEAL_HOLD: Record<number, number> = {
   4: 1200,  // medications
 };
 
+function InventoryDropZone({ children }: { children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`planning-phase__inventory-zone${isOver ? ' planning-phase__inventory-zone--over' : ''}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 function togglePancreasTier(current: PancreasTier, maxBars: number): PancreasTier {
   if (current === 3) return 1; // BOOST → ON
   // ON → BOOST (if affordable)
@@ -49,6 +62,7 @@ export function PlanningPhase() {
     placedInterventions,
     placeInterventionInSlot,
     removeFromSlot,
+    moveSlotToSlot,
     activeMedications,
     toggleMedication,
     clearFoods,
@@ -206,32 +220,67 @@ export function PlanningPhase() {
 
       if (!over || gamePhase !== 'planning') return;
 
-      // Extract slot index from drop target id
+      const activeData = active.data.current;
+      const isFromSlot = activeData?.isFromSlot === true;
+      const fromSlotIndex = activeData?.fromSlotIndex as number | undefined;
       const overId = String(over.id);
+
+      // Case: Drop onto inventory zone → remove from slot
+      if (overId === 'inventory-zone') {
+        if (isFromSlot && fromSlotIndex !== undefined) {
+          removeFromSlot(fromSlotIndex);
+        }
+        return;
+      }
+
+      // Only slot targets from here
       if (!overId.startsWith('slot-')) return;
-      const slotIndex = parseInt(overId.replace('slot-', ''), 10);
-      if (isNaN(slotIndex) || slotIndex < 0 || slotIndex >= TOTAL_SLOTS) return;
+      const targetSlot = parseInt(overId.replace('slot-', ''), 10);
+      if (isNaN(targetSlot) || targetSlot < 0 || targetSlot >= TOTAL_SLOTS) return;
 
-      // Check if slot is already occupied
-      const isOccupied = placedFoods.some(f => f.slotIndex === slotIndex)
-        || placedInterventions.some(i => i.slotIndex === slotIndex);
-      if (isOccupied) return;
-
-      const isIntervention = active.data.current?.isIntervention === true;
-
-      if (isIntervention) {
-        const intervention = active.data.current?.intervention as Intervention | undefined;
-        if (!intervention) return;
-        if (intervention.wpCost > wpRemaining) return;
-        placeInterventionInSlot(intervention.id, slotIndex);
+      if (isFromSlot && fromSlotIndex !== undefined) {
+        // Slot → Slot: move or swap
+        if (fromSlotIndex === targetSlot) return;
+        moveSlotToSlot(fromSlotIndex, targetSlot);
       } else {
-        const ship = active.data.current?.ship as Ship | undefined;
-        if (!ship) return;
-        if ((ship.wpCost ?? 0) > wpRemaining) return;
-        placeFoodInSlot(ship.id, slotIndex);
+        // Inventory → Slot: place (or replace if occupied)
+        const isOccupied = placedFoods.some(f => f.slotIndex === targetSlot)
+          || placedInterventions.some(i => i.slotIndex === targetSlot);
+
+        // Compute WP freed if replacing an existing card
+        let freedWp = 0;
+        if (isOccupied) {
+          const existingFood = placedFoods.find(f => f.slotIndex === targetSlot);
+          if (existingFood) {
+            const s = allShips.find(sh => sh.id === existingFood.shipId);
+            freedWp = s?.wpCost ?? 0;
+          }
+          const existingInt = placedInterventions.find(i => i.slotIndex === targetSlot);
+          if (existingInt) {
+            const inv = allInterventions.find(a => a.id === existingInt.interventionId);
+            freedWp = inv?.wpCost ?? 0;
+          }
+        }
+
+        const effectiveWp = wpRemaining + freedWp;
+        const isIntervention = activeData?.isIntervention === true;
+
+        if (isIntervention) {
+          const intervention = activeData?.intervention as Intervention | undefined;
+          if (!intervention) return;
+          if (intervention.wpCost > effectiveWp) return;
+          if (isOccupied) removeFromSlot(targetSlot);
+          placeInterventionInSlot(intervention.id, targetSlot);
+        } else {
+          const ship = activeData?.ship as Ship | undefined;
+          if (!ship) return;
+          if ((ship.wpCost ?? 0) > effectiveWp) return;
+          if (isOccupied) removeFromSlot(targetSlot);
+          placeFoodInSlot(ship.id, targetSlot);
+        }
       }
     },
-    [placeFoodInSlot, placeInterventionInSlot, wpRemaining, gamePhase, placedFoods, placedInterventions]
+    [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions]
   );
 
   const handleToggleTimeFormat = useCallback(() => {
@@ -441,7 +490,7 @@ export function PlanningPhase() {
           />
 
           {isPlanning && (
-            <>
+            <InventoryDropZone>
               <ShipInventory
                 allShips={allShips}
                 availableFoods={effectiveAvailableFoods}
@@ -461,7 +510,7 @@ export function PlanningPhase() {
                   onMedicationToggle={toggleMedication}
                 />
               </div>
-            </>
+            </InventoryDropZone>
           )}
 
           {showResults && penaltyResult && (

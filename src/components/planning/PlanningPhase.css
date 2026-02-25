@@ -53,6 +53,18 @@
   z-index: 10;
 }
 
+/* Inventory drop zone (accepts cards dragged back from slots) */
+.planning-phase__inventory-zone {
+  border: 1.5px dashed transparent;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.planning-phase__inventory-zone--over {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.06);
+}
+
 /* Interventions row */
 .planning-phase__interventions-row {
   display: flex;
