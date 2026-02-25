@@ -71,7 +71,7 @@ export function InterventionInventory({
 
     for (const ai of availableInterventions) {
       const intervention = allInterventions.find((i) => i.id === ai.id);
-      if (!intervention || intervention.isBreak) continue; // Skip break interventions (slots provide time structure)
+      if (!intervention) continue;
 
       const placed = placedCounts.get(ai.id) || 0;
       const remaining = ai.count - placed;
