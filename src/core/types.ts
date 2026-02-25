@@ -160,6 +160,17 @@ export interface AvailableFood {
   count: number;
 }
 
+export interface PreplacedFood {
+  shipId: string;
+  slotIndex: number;
+}
+
+export interface PreplacedIntervention {
+  interventionId: string;
+  slotIndex: number;
+  slotSize?: number;
+}
+
 export interface DayConfig {
   day: number;
   kcalBudget: number;
@@ -167,6 +178,9 @@ export interface DayConfig {
   availableFoods: AvailableFood[];
   availableInterventions?: AvailableFood[];
   availableMedications?: string[];
+  preplacedFoods?: PreplacedFood[];
+  preplacedInterventions?: PreplacedIntervention[];
+  lockedSlots?: number[];
 }
 
 // === Kcal Assessment (3-zone satiety system) ===

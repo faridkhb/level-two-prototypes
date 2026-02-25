@@ -12,6 +12,7 @@ interface SlotGridProps {
   settings: GameSettings;
   onRemoveFromSlot: (slotIndex: number) => void;
   disabled?: boolean;
+  lockedSlots?: Set<number>;
 }
 
 type SlotContent =
@@ -26,6 +27,7 @@ function SlotContainer({
   timeLabel,
   onRemove,
   disabled,
+  isLocked,
   isParentDragging,
   isGroupHovered,
   isDropTarget,
@@ -37,6 +39,7 @@ function SlotContainer({
   timeLabel: string;
   onRemove: () => void;
   disabled?: boolean;
+  isLocked?: boolean;
   isParentDragging?: boolean;
   isGroupHovered?: boolean;
   isDropTarget?: boolean;
@@ -48,7 +51,7 @@ function SlotContainer({
   const { setNodeRef: setDropRef } = useDroppable({
     id: `slot-${index}`,
     data: { slotIndex: index },
-    disabled: disabled || isContinuation,
+    disabled: disabled || isContinuation || isLocked,
   });
 
   const draggableData = content?.type === 'food'
@@ -59,7 +62,7 @@ function SlotContainer({
 
   const { setNodeRef: setDragRef, attributes, listeners, isDragging } = useDraggable({
     id: `placed-slot-${index}`,
-    disabled: disabled || !content || isContinuation,
+    disabled: disabled || !content || isContinuation || isLocked,
     data: draggableData,
   });
 
@@ -83,12 +86,13 @@ function SlotContainer({
         (showContent && isGroupHovered ? ' slot-container--hover' : '') +
         (isDropTarget ? ' slot-container--over' : '') +
         (disabled ? ' slot-container--disabled' : '') +
+        (isLocked ? ' slot-container--locked' : '') +
         ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
       }
-      onClick={content && !disabled && !isDragging ? onRemove : undefined}
+      onClick={content && !disabled && !isLocked && !isDragging ? onRemove : undefined}
       onMouseEnter={() => content && onHoverEnter(index)}
       onMouseLeave={onHoverLeave}
-      {...(content && !disabled && !isContinuation ? listeners : {})}
+      {...(content && !disabled && !isContinuation && !isLocked ? listeners : {})}
       {...attributes}
     >
       <div className="slot-container__time">{timeLabel}</div>
@@ -121,7 +125,7 @@ function SlotContainer({
           </div>
         </div>
       ) : (
-        <div className="slot-container__empty">+</div>
+        <div className="slot-container__empty">{isLocked ? '🔒' : '+'}</div>
       )}
     </div>
   );
@@ -135,6 +139,7 @@ export function SlotGrid({
   settings,
   onRemoveFromSlot,
   disabled,
+  lockedSlots,
 }: SlotGridProps) {
   // Track which slots are being dragged and drop targets (for multi-slot visual)
   const { active, over } = useDndContext();
@@ -239,8 +244,9 @@ export function SlotGrid({
                   timeLabel={slotTimeLabel(slotIndex, settings.timeFormat)}
                   onRemove={() => onRemoveFromSlot(slotIndex)}
                   disabled={disabled}
+                  isLocked={lockedSlots?.has(slotIndex)}
                   isParentDragging={draggingSlots.has(slotIndex)}
-                  isGroupHovered={hoveredGroup.has(slotIndex)}
+                  isGroupHovered={!lockedSlots?.has(slotIndex) && hoveredGroup.has(slotIndex)}
                   isDropTarget={dropTargetSlots.has(slotIndex)}
                   onHoverEnter={handleSlotHover}
                   onHoverLeave={handleSlotLeave}

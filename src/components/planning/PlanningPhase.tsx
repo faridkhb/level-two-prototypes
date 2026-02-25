@@ -132,6 +132,17 @@ export function PlanningPhase() {
     return getDayConfig(currentLevel, currentDay);
   }, [currentLevel, currentDay]);
 
+  // Compute effective locked slots (pre-placed items + explicitly locked)
+  const effectiveLockedSlots = useMemo(() => {
+    const slots = new Set<number>(dayConfig?.lockedSlots ?? []);
+    for (const pf of dayConfig?.preplacedFoods ?? []) slots.add(pf.slotIndex);
+    for (const pi of dayConfig?.preplacedInterventions ?? []) {
+      const size = pi.slotSize ?? 1;
+      for (let s = pi.slotIndex; s < pi.slotIndex + size; s++) slots.add(s);
+    }
+    return slots;
+  }, [dayConfig]);
+
   // Compute medication modifiers from active medications
   const medicationModifiers = useMemo(
     () => activeMedications.length > 0
@@ -238,6 +249,10 @@ export function PlanningPhase() {
       if (isNaN(targetSlot) || targetSlot < 0 || targetSlot >= TOTAL_SLOTS) return;
 
       if (isFromSlot && fromSlotIndex !== undefined) {
+        // Block drag from locked slot
+        if (effectiveLockedSlots.has(fromSlotIndex)) return;
+        // Block drag to locked slot
+        if (effectiveLockedSlots.has(targetSlot)) return;
         // Slot → Slot: move or swap
         if (fromSlotIndex === targetSlot) return;
         moveSlotToSlot(fromSlotIndex, targetSlot);
@@ -255,7 +270,7 @@ export function PlanningPhase() {
           });
         };
 
-        // Multi-slot intervention placement: all target slots must be free
+        // Multi-slot intervention placement: all target slots must be free and unlocked
         if (isIntervention) {
           const intervention = activeData?.intervention as Intervention | undefined;
           if (!intervention) return;
@@ -264,6 +279,7 @@ export function PlanningPhase() {
           if (slotSize > 1) {
             if (targetSlot + slotSize > TOTAL_SLOTS) return;
             for (let s = targetSlot; s < targetSlot + slotSize; s++) {
+              if (effectiveLockedSlots.has(s)) return;
               if (isSlotCovered(s)) return;
             }
             if (intervention.wpCost > wpRemaining) return;
@@ -271,6 +287,9 @@ export function PlanningPhase() {
             return;
           }
         }
+
+        // Block placement on locked slots
+        if (effectiveLockedSlots.has(targetSlot)) return;
 
         // Single-slot placement (food or single-slot intervention)
         const targetOccupied = isSlotCovered(targetSlot);
@@ -311,7 +330,7 @@ export function PlanningPhase() {
         }
       }
     },
-    [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions]
+    [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions, effectiveLockedSlots]
   );
 
   const handleTogglePancreas = useCallback(() => {
@@ -504,6 +523,7 @@ export function PlanningPhase() {
             settings={settings}
             onRemoveFromSlot={removeFromSlot}
             disabled={!isPlanning}
+            lockedSlots={effectiveLockedSlots}
           />
 
           {isPlanning && (

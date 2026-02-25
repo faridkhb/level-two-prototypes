@@ -33,6 +33,9 @@ interface RawLevelConfig {
     availableFoods: AvailableFood[] | string[];
     availableInterventions?: AvailableFood[] | string[];
     availableMedications?: string[];
+    preplacedFoods?: Array<{ shipId: string; slotIndex: number }>;
+    preplacedInterventions?: Array<{ interventionId: string; slotIndex: number; slotSize?: number }>;
+    lockedSlots?: number[];
   }>;
 }
 
@@ -92,6 +95,9 @@ function transformLevel(raw: RawLevelConfig): LevelConfig {
         ? normalizeAvailableFoods(dc.availableInterventions)
         : undefined,
       availableMedications: dc.availableMedications,
+      preplacedFoods: dc.preplacedFoods,
+      preplacedInterventions: dc.preplacedInterventions,
+      lockedSlots: dc.lockedSlots,
     }));
   }
 

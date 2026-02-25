@@ -13,6 +13,25 @@ import type {
   SatietyPenalty,
 } from '../core/types';
 import { DEFAULT_SETTINGS, DEFAULT_SATIETY_PENALTY, slotToColumn, TOTAL_SLOTS } from '../core/types';
+
+// Build pre-placed items from day config
+function getPreplacedItems(dayConfig: DayConfig | null): { foods: PlacedFood[]; interventions: PlacedIntervention[] } {
+  if (!dayConfig) return { foods: [], interventions: [] };
+  const foods: PlacedFood[] = (dayConfig.preplacedFoods ?? []).map(pf => ({
+    id: `preplaced-food-${pf.shipId}-${pf.slotIndex}`,
+    shipId: pf.shipId,
+    dropColumn: slotToColumn(pf.slotIndex),
+    slotIndex: pf.slotIndex,
+  }));
+  const interventions: PlacedIntervention[] = (dayConfig.preplacedInterventions ?? []).map(pi => ({
+    id: `preplaced-int-${pi.interventionId}-${pi.slotIndex}`,
+    interventionId: pi.interventionId,
+    dropColumn: slotToColumn(pi.slotIndex),
+    slotIndex: pi.slotIndex,
+    slotSize: pi.slotSize,
+  }));
+  return { foods, interventions };
+}
 import { getPancreasTiers } from '../config/loader';
 
 // Helper to get day config
@@ -87,18 +106,21 @@ export const useGameStore = create<GameState>()(
       settings: DEFAULT_SETTINGS,
 
       // Actions
-      setLevel: (level) =>
-        set({
+      setLevel: (level) => {
+        const dc = getDayConfig(level, 1);
+        const pre = getPreplacedItems(dc);
+        return set({
           currentLevel: level,
           currentDay: 1,
-          placedFoods: [],
-          placedInterventions: [],
+          placedFoods: pre.foods,
+          placedInterventions: pre.interventions,
           activeMedications: [],
           pancreasTierPerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
           satietyPenaltyPerDay: {},
-        }),
+        });
+      },
 
       placeFoodInSlot: (shipId, slotIndex) =>
         set((state) => {
@@ -142,12 +164,16 @@ export const useGameStore = create<GameState>()(
 
       removeFromSlot: (slotIndex) =>
         set((state) => {
+          // Block removal of pre-placed items
+          const preplacedFood = state.placedFoods.find(f => f.slotIndex === slotIndex && f.id.startsWith('preplaced-'));
+          if (preplacedFood) return state;
           // Find multi-slot intervention covering this slot
           const coveringInt = state.placedInterventions.find(i => {
             const start = i.slotIndex ?? -1;
             const size = i.slotSize ?? 1;
             return slotIndex >= start && slotIndex < start + size;
           });
+          if (coveringInt?.id.startsWith('preplaced-')) return state;
           return {
             placedFoods: state.placedFoods.filter(f => f.slotIndex !== slotIndex),
             placedInterventions: coveringInt
@@ -161,6 +187,9 @@ export const useGameStore = create<GameState>()(
           if (fromSlot === toSlot) return state;
           const foodFrom = state.placedFoods.find(f => f.slotIndex === fromSlot);
           const intFrom = state.placedInterventions.find(i => i.slotIndex === fromSlot);
+          // Block moving pre-placed items
+          if (foodFrom?.id.startsWith('preplaced-')) return state;
+          if (intFrom?.id.startsWith('preplaced-')) return state;
           if (!foodFrom && !intFrom) return state;
 
           const fromSize = intFrom ? (intFrom.slotSize ?? 1) : 1;
@@ -227,23 +256,37 @@ export const useGameStore = create<GameState>()(
             : [...state.activeMedications, medicationId],
         })),
 
-      clearFoods: () => set({ placedFoods: [], placedInterventions: [], activeMedications: [] }),
+      clearFoods: () =>
+        set((state) => {
+          const dc = state.currentLevel ? getDayConfig(state.currentLevel, state.currentDay) : null;
+          const pre = getPreplacedItems(dc);
+          return { placedFoods: pre.foods, placedInterventions: pre.interventions, activeMedications: [] };
+        }),
 
       goToDay: (day) =>
-        set({
-          currentDay: day,
-          placedFoods: [],
-          placedInterventions: [],
-          activeMedications: [],
+        set((state) => {
+          const dc = state.currentLevel ? getDayConfig(state.currentLevel, day) : null;
+          const pre = getPreplacedItems(dc);
+          return {
+            currentDay: day,
+            placedFoods: pre.foods,
+            placedInterventions: pre.interventions,
+            activeMedications: [],
+          };
         }),
 
       startNextDay: () =>
-        set((state) => ({
-          currentDay: state.currentDay + 1,
-          placedFoods: [],
-          placedInterventions: [],
-          activeMedications: [],
-        })),
+        set((state) => {
+          const nextDay = state.currentDay + 1;
+          const dc = state.currentLevel ? getDayConfig(state.currentLevel, nextDay) : null;
+          const pre = getPreplacedItems(dc);
+          return {
+            currentDay: nextDay,
+            placedFoods: pre.foods,
+            placedInterventions: pre.interventions,
+            activeMedications: [],
+          };
+        }),
 
       restartLevel: () =>
         set({
