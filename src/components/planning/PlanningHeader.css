@@ -98,7 +98,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 200px;
+  flex: 1;
+  min-width: 120px;
 }
 
 .planning-header__kcal-bar-header {
@@ -219,34 +220,3 @@
   cursor: not-allowed;
 }
 
-/* Settings */
-.planning-header__settings {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-}
-
-.planning-header__toggle {
-  padding: 4px 10px;
-  border: 1px solid #4a5568;
-  border-radius: 6px;
-  background: #1a202c;
-  color: #a0aec0;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-
-.planning-header__toggle:hover {
-  background: #2d3748;
-  border-color: #63b3ed;
-  color: #e2e8f0;
-}
-
-.planning-header__toggle--active {
-  background: #2b6cb0;
-  border-color: #63b3ed;
-  color: #e2e8f0;
-}

@@ -101,10 +101,26 @@
   flex-shrink: 0;
 }
 
+.slot-container__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 0;
+}
+
 .slot-container__name {
   font-size: 11px;
   font-weight: 600;
   color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-container__stats {
+  font-size: 9px;
+  color: #a0aec0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

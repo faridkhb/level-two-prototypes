@@ -75,9 +75,25 @@ function SlotContainer({
           <span className="slot-container__emoji">
             {content.type === 'food' ? content.ship.emoji : content.intervention.emoji}
           </span>
-          <span className="slot-container__name">
-            {content.type === 'food' ? content.ship.name : content.intervention.name}
-          </span>
+          <div className="slot-container__info">
+            <span className="slot-container__name">
+              {content.type === 'food' ? content.ship.name : content.intervention.name}
+            </span>
+            <span className="slot-container__stats">
+              {content.type === 'food' ? (
+                <>
+                  {content.ship.kcal} kcal · {content.ship.carbs ?? 0}g
+                  {(content.ship.wpCost ?? 0) > 0 && <> · {content.ship.wpCost}☀️</>}
+                </>
+              ) : (
+                <>
+                  {content.intervention.isBreak
+                    ? `+${Math.abs(content.intervention.wpCost)}☀️`
+                    : `${content.intervention.duration}m · -${content.intervention.depth} · ${content.intervention.wpCost}☀️`}
+                </>
+              )}
+            </span>
+          </div>
         </div>
       ) : (
         <div className="slot-container__empty">+</div>

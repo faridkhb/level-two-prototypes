@@ -72,7 +72,6 @@ export function PlanningPhase() {
     goToDay,
     startNextDay,
     settings,
-    updateSettings,
     pancreasTierPerDay,
     lockedBarsPerDay,
     setPancreasTier,
@@ -283,18 +282,6 @@ export function PlanningPhase() {
     [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions]
   );
 
-  const handleToggleTimeFormat = useCallback(() => {
-    updateSettings({
-      timeFormat: settings.timeFormat === '12h' ? '24h' : '12h',
-    });
-  }, [settings.timeFormat, updateSettings]);
-
-  const handleToggleBgUnit = useCallback(() => {
-    updateSettings({
-      bgUnit: settings.bgUnit === 'mg/dL' ? 'mmol/L' : 'mg/dL',
-    });
-  }, [settings.bgUnit, updateSettings]);
-
   const handleTogglePancreas = useCallback(() => {
     const nextTier = togglePancreasTier(currentPancreasTier, barsAvailable);
     setPancreasTier(currentDay, nextTier);
@@ -429,20 +416,6 @@ export function PlanningPhase() {
       onDragEnd={handleDragEnd}
     >
       <div className="planning-phase">
-        <PlanningHeader
-          dayLabel={`Day ${currentDay}/${currentLevel.days}`}
-          kcalUsed={kcalUsed}
-          kcalBudget={kcalBudget}
-          wpRemaining={wpRemaining}
-          satietyPenalty={satietyPenalty}
-          settings={settings}
-          medicationModifiers={medicationModifiers}
-          submitEnabled={submitEnabled}
-          onSubmit={handleSubmit}
-          onToggleTimeFormat={handleToggleTimeFormat}
-          onToggleBgUnit={handleToggleBgUnit}
-        />
-
         {isPlanning && (
           <div className="planning-phase__hint">
             Drag food cards into meal slots to plan your day!
@@ -478,6 +451,18 @@ export function PlanningPhase() {
               </div>
             )}
           </div>
+
+          <PlanningHeader
+            dayLabel={`Day ${currentDay}/${currentLevel.days}`}
+            kcalUsed={kcalUsed}
+            kcalBudget={kcalBudget}
+            wpRemaining={wpRemaining}
+            satietyPenalty={satietyPenalty}
+            settings={settings}
+            medicationModifiers={medicationModifiers}
+            submitEnabled={submitEnabled}
+            onSubmit={handleSubmit}
+          />
 
           <SlotGrid
             allShips={allShips}
