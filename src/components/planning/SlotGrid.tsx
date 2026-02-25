@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useDroppable, useDraggable, useDndContext } from '@dnd-kit/core';
 import type { Ship, Intervention, PlacedFood, PlacedIntervention, GameSettings } from '../../core/types';
 import { MEAL_SEGMENTS, slotTimeLabel } from '../../core/types';
@@ -27,6 +27,9 @@ function SlotContainer({
   onRemove,
   disabled,
   isParentDragging,
+  isGroupHovered,
+  onHoverEnter,
+  onHoverLeave,
 }: {
   index: number;
   content: SlotContent;
@@ -34,6 +37,9 @@ function SlotContainer({
   onRemove: () => void;
   disabled?: boolean;
   isParentDragging?: boolean;
+  isGroupHovered?: boolean;
+  onHoverEnter: (slotIndex: number) => void;
+  onHoverLeave: () => void;
 }) {
   const isContinuation = content?.type === 'continuation';
 
@@ -72,11 +78,14 @@ function SlotContainer({
         (showContent && (content.type === 'intervention' || content.type === 'continuation') ? ' slot-container--intervention' : '') +
         (showContent && isContinuation ? ' slot-container--continuation' : '') +
         (showContent && isMultiStart ? ' slot-container--multi-start' : '') +
+        (showContent && isGroupHovered ? ' slot-container--hover' : '') +
         (isOver ? ' slot-container--over' : '') +
         (disabled ? ' slot-container--disabled' : '') +
         ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
       }
       onClick={content && !disabled && !isDragging ? onRemove : undefined}
+      onMouseEnter={() => content && onHoverEnter(index)}
+      onMouseLeave={onHoverLeave}
       {...(content && !disabled && !isContinuation ? listeners : {})}
       {...attributes}
     >
@@ -142,6 +151,30 @@ export function SlotGrid({
     return slots;
   }, [active, placedInterventions]);
 
+  // Track hover group for multi-slot highlight
+  const [hoveredGroup, setHoveredGroup] = useState<Set<number>>(new Set());
+
+  const handleSlotHover = useCallback((slotIndex: number) => {
+    const pi = placedInterventions.find(i => {
+      const start = i.slotIndex ?? -1;
+      const size = i.slotSize ?? 1;
+      return slotIndex >= start && slotIndex < start + size;
+    });
+    if (pi && (pi.slotSize ?? 1) > 1) {
+      const slots = new Set<number>();
+      const start = pi.slotIndex ?? 0;
+      const size = pi.slotSize ?? 1;
+      for (let s = start; s < start + size; s++) slots.add(s);
+      setHoveredGroup(slots);
+    } else {
+      setHoveredGroup(new Set([slotIndex]));
+    }
+  }, [placedInterventions]);
+
+  const handleSlotLeave = useCallback(() => {
+    setHoveredGroup(new Set());
+  }, []);
+
   const getSlotContent = (slotIndex: number): SlotContent => {
     const food = placedFoods.find(f => f.slotIndex === slotIndex);
     if (food) {
@@ -186,6 +219,9 @@ export function SlotGrid({
                   onRemove={() => onRemoveFromSlot(slotIndex)}
                   disabled={disabled}
                   isParentDragging={draggingSlots.has(slotIndex)}
+                  isGroupHovered={hoveredGroup.has(slotIndex)}
+                  onHoverEnter={handleSlotHover}
+                  onHoverLeave={handleSlotLeave}
                 />
               );
             })}

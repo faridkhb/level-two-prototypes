@@ -46,17 +46,13 @@
   cursor: pointer;
 }
 
-.slot-container--filled:hover {
-  border-color: #e53e3e;
-  background: rgba(229, 62, 62, 0.12);
-}
-
 .slot-container--intervention {
   border-color: #48bb78;
   background: rgba(72, 187, 120, 0.12);
 }
 
-.slot-container--intervention:hover {
+/* Hover state (controlled by React for multi-slot group hover) */
+.slot-container--hover.slot-container--filled {
   border-color: #e53e3e;
   background: rgba(229, 62, 62, 0.12);
 }
