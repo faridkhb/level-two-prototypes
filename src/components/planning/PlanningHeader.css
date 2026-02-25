@@ -98,13 +98,14 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
-  min-width: 120px;
+  flex: 0.75;
+  min-width: 100px;
 }
 
 .planning-header__kcal-bar-header {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 4px;
 }
 

@@ -452,6 +452,16 @@ export function PlanningPhase() {
             )}
           </div>
 
+          <SlotGrid
+            allShips={allShips}
+            allInterventions={allInterventions}
+            placedFoods={placedFoods}
+            placedInterventions={placedInterventions}
+            settings={settings}
+            onRemoveFromSlot={removeFromSlot}
+            disabled={!isPlanning}
+          />
+
           <PlanningHeader
             dayLabel={`Day ${currentDay}/${currentLevel.days}`}
             kcalUsed={kcalUsed}
@@ -462,16 +472,6 @@ export function PlanningPhase() {
             medicationModifiers={medicationModifiers}
             submitEnabled={submitEnabled}
             onSubmit={handleSubmit}
-          />
-
-          <SlotGrid
-            allShips={allShips}
-            allInterventions={allInterventions}
-            placedFoods={placedFoods}
-            placedInterventions={placedInterventions}
-            settings={settings}
-            onRemoveFromSlot={removeFromSlot}
-            disabled={!isPlanning}
           />
 
           {isPlanning && (
