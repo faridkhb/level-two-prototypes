@@ -414,11 +414,20 @@ function runSolve(args: Record<string, string>) {
 
       // Try adding single interventions at each free slot
       const remainSlots = freeSlots.filter(s => !usedSlots.has(s));
+      // Compute min negative WP from break interventions (for pair pruning)
+      const minNegWp = intPool.reduce((min, item) => {
+        const iv = allInts.find(x => x.id === item.id);
+        return iv && iv.wpCost < 0 ? Math.min(min, iv.wpCost) : min;
+      }, 0);
+
       for (let ii = 0; ii < intPool.length; ii++) {
         const intItem = intPool[ii];
         const intv = allInts.find(x => x.id === intItem.id);
         if (!intv) continue;
-        if (currentWp + intv.wpCost > effWp) continue;
+        // Allow if: affordable alone, OR could become affordable with a negative-WP partner
+        const singleWpOk = currentWp + intv.wpCost <= effWp;
+        const pairPossible = currentWp + intv.wpCost + minNegWp <= effWp;
+        if (!singleWpOk && !pairPossible) continue;
 
         for (const slot of remainSlots) {
           // Multi-slot check
@@ -436,17 +445,19 @@ function runSolve(args: Record<string, string>) {
           const c = intCurve(intv.depth, intv.duration, slotToCol(slot), intv.boostExtra ?? 0);
           for (let i = 0; i < TOTAL_COLUMNS; i++) iRed[i] += c[i];
 
-          const r = calcPenalty(heights, iRed, mods);
-          tracker.add({
-            foods: [...preFoods, ...foodList],
-            interventions: [...preInts.map(i => ({ id: i.id, slot: i.slot })), { id: intItem.id, slot }],
-            meds: medCombo, penalty: r.totalPenalty, stars: r.stars,
-            label: r.label, kcal: currentKcal, wp: currentWp + intv.wpCost,
-          });
+          // Record single intervention only if WP fits
+          if (singleWpOk) {
+            const r = calcPenalty(heights, iRed, mods);
+            tracker.add({
+              foods: [...preFoods, ...foodList],
+              interventions: [...preInts.map(i => ({ id: i.id, slot: i.slot })), { id: intItem.id, slot }],
+              meds: medCombo, penalty: r.totalPenalty, stars: r.stars,
+              label: r.label, kcal: currentKcal, wp: currentWp + intv.wpCost,
+            });
+          }
 
           // Try adding a second intervention
-          for (let jj = ii; jj < intPool.length; jj++) {
-            if (ii === jj) continue; // skip same index
+          for (let jj = ii + 1; jj < intPool.length; jj++) {
             const intItem2 = intPool[jj];
             const intv2 = allInts.find(x => x.id === intItem2.id);
             if (!intv2) continue;
