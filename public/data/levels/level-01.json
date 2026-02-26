@@ -2,7 +2,7 @@
   "id": "level-01",
   "name": "First Steps",
   "description": "Learn the basics of meal planning across three days.",
-  "days": 3,
+  "days": 4,
   "dayConfigs": [
     {
       "day": 1,
@@ -220,6 +220,58 @@
             "to": 47,
             "rate": 2
           }
+        ]
+      }
+    },
+    {
+      "day": 4,
+      "kcalBudget": 2000,
+      "wpBudget": 10,
+      "availableFoods": [
+        { "id": "banana", "count": 1 },
+        { "id": "apple", "count": 1 },
+        { "id": "icecream", "count": 1 },
+        { "id": "popcorn", "count": 1 },
+        { "id": "cookie", "count": 1 },
+        { "id": "caesarsalad", "count": 1 },
+        { "id": "chocolatemuffin", "count": 1 },
+        { "id": "sandwich", "count": 1 },
+        { "id": "chicken", "count": 1 },
+        { "id": "rice", "count": 1 },
+        { "id": "burger", "count": 1 },
+        { "id": "oatmeal", "count": 1 },
+        { "id": "pizza", "count": 1 },
+        { "id": "eggsboiled", "count": 1 },
+        { "id": "berriesmixed", "count": 1 },
+        { "id": "greekyogurt", "count": 1 },
+        { "id": "milk", "count": 1 },
+        { "id": "vegetablestew", "count": 1 },
+        { "id": "boiledcarrots", "count": 1 },
+        { "id": "chickpeas", "count": 1 },
+        { "id": "cottagecheese", "count": 1 },
+        { "id": "cheesewedge", "count": 1 },
+        { "id": "avocado", "count": 1 },
+        { "id": "nutsmixed", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 },
+        { "id": "heavyrun", "count": 1 },
+        { "id": "takeabreak", "count": 1 },
+        { "id": "takearest", "count": 1 }
+      ],
+      "preplacedFoods": [],
+      "lockedSlots": [],
+      "availableMedications": [
+        "metformin",
+        "sglt2",
+        "glp1"
+      ],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 15, "rate": 3 },
+          { "from": 16, "to": 31, "rate": 2 },
+          { "from": 32, "to": 47, "rate": 1 }
         ]
       }
     }
