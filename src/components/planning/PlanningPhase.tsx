@@ -535,6 +535,8 @@ export function PlanningPhase() {
               revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
               previewShip={activeShip && previewSlot !== null ? activeShip : undefined}
               previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}
+              previewIntervention={activeIntervention && previewSlot !== null ? activeIntervention : undefined}
+              previewInterventionColumn={activeIntervention && previewSlot !== null ? slotToColumn(previewSlot) : undefined}
             />
             {isPlanning && (
               <div className="planning-phase__pancreas-overlay">

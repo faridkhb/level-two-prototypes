@@ -121,6 +121,8 @@ interface BgGraphProps {
   revealPhase?: number; // undefined = all visible, 0-4 = progressive layer reveal
   previewShip?: Ship;        // food being dragged (for preview on graph)
   previewColumn?: number;    // target column for preview
+  previewIntervention?: Intervention;   // intervention being dragged
+  previewInterventionColumn?: number;   // target column for intervention preview
 }
 
 // Convert column to SVG x
@@ -146,6 +148,8 @@ export function BgGraph({
   revealPhase,
   previewShip,
   previewColumn,
+  previewIntervention,
+  previewInterventionColumn,
 }: BgGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -559,6 +563,45 @@ export function BgGraph({
     return { foodCubes, wrapCubes, dropColumn: previewColumn };
   }, [previewShip, previewColumn, medicationModifiers, decayOrInsulin, graphRenderData, effectiveRows]);
 
+  // Preview: intervention burn overlay — green cubes on food that would be burned
+  const interventionPreviewData = useMemo(() => {
+    if (!previewIntervention || previewInterventionColumn === undefined) return null;
+    if (previewIntervention.depth <= 0) return null;
+
+    const dropCol = previewInterventionColumn;
+    const curve = calculateInterventionCurve(
+      previewIntervention.depth, previewIntervention.duration, dropCol,
+      previewIntervention.boostCols ?? 0, previewIntervention.boostExtra ?? 0,
+    );
+
+    const previewReduction = new Array(TOTAL_COLUMNS).fill(0);
+    for (const c of curve) {
+      const graphCol = dropCol + c.columnOffset;
+      if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+        previewReduction[graphCol] = c.cubeCount;
+      }
+    }
+
+    const burnColor = previewIntervention.id === 'lightwalk' ? '#86efac' : '#22c55e';
+    const { columnCaps } = graphRenderData;
+    const burnCubes: Array<{ col: number; row: number; color: string }> = [];
+
+    for (let col = 0; col < TOTAL_COLUMNS; col++) {
+      const reduction = previewReduction[col];
+      if (reduction <= 0) continue;
+      const currentTop = columnCaps[col];
+      if (currentTop <= 0) continue;
+      const burnCount = Math.min(reduction, currentTop);
+      for (let i = 0; i < burnCount; i++) {
+        const row = currentTop - 1 - i;
+        if (row < 0) break;
+        burnCubes.push({ col, row, color: burnColor });
+      }
+    }
+
+    return { burnCubes, dropColumn: dropCol };
+  }, [previewIntervention, previewInterventionColumn, graphRenderData]);
+
   // Detect removed food layers for exit animation
   useLayoutEffect(() => {
     const prev = prevLayersRef.current;
@@ -774,7 +817,7 @@ export function BgGraph({
                   width={CELL_SIZE - 1}
                   height={barHeight}
                   fill="#f59e0b"
-                  opacity={0.18}
+                  opacity={0.35}
                   rx={1}
                 />
               );
@@ -870,6 +913,28 @@ export function BgGraph({
             })}
           </g>
         ))}
+
+        {/* Drag preview: intervention burn overlay — green cubes on food that would burn */}
+        {interventionPreviewData && (
+          <g pointerEvents="none">
+            {interventionPreviewData.burnCubes.map(cube => {
+              const waveDelay = Math.abs(cube.col - interventionPreviewData.dropColumn) * 15;
+              return (
+                <rect
+                  key={`preview-burn-${cube.col}-${cube.row}`}
+                  x={colToX(cube.col) + 0.5}
+                  y={rowToY(cube.row) + 0.5}
+                  width={CELL_SIZE - 1}
+                  height={cellHeight - 1}
+                  fill={cube.color}
+                  rx={2}
+                  className="bg-graph__cube--preview-burn"
+                  style={{ animationDelay: `${waveDelay}ms` }}
+                />
+              );
+            })}
+          </g>
+        )}
 
         {/* Digest cubes + insulin fall animation (after food placement + reveal) */}
         {graphRenderData.layers.map(layer => {
