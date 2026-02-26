@@ -162,3 +162,40 @@
 .ship-card:not(.ship-card--dragging):hover[data-tooltip]::after {
   opacity: 1;
 }
+
+/* ───── Mobile (iPhone 14 — 390×844) ───── */
+@media (max-width: 480px) {
+  .ship-card {
+    flex-direction: column;
+    width: auto;
+    min-width: 70px;
+    height: auto;
+    min-height: 80px;
+    padding: 6px 4px;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .ship-card__emoji {
+    font-size: 22px;
+  }
+
+  .ship-card__details {
+    align-items: center;
+  }
+
+  .ship-card__name {
+    font-size: 10px;
+  }
+
+  .ship-card__info {
+    font-size: 9px;
+  }
+
+  .ship-card__badge--wp {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+}

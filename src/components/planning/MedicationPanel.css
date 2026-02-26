@@ -122,3 +122,30 @@
 .medication-toggle:hover[data-tooltip]::after {
   opacity: 1;
 }
+
+/* ───── Mobile (iPhone 14 — 390×844) ───── */
+@media (max-width: 480px) {
+  .medication-toggle {
+    width: 120px;
+    height: 44px;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .medication-toggle__emoji {
+    font-size: 20px;
+  }
+
+  .medication-toggle__name {
+    font-size: 10px;
+  }
+
+  .medication-toggle__desc {
+    font-size: 8px;
+  }
+
+  .medication-toggle__status {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+}

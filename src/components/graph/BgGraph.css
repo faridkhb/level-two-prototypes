@@ -276,3 +276,27 @@
 .bg-graph__drag-card-name {
   color: #fc8181;
 }
+
+/* ───── Mobile (iPhone 14 — 390×844) ───── */
+@media (max-width: 480px) {
+  .bg-graph {
+    border-radius: 6px;
+    padding: 2px;
+    border-width: 1.5px;
+  }
+
+  .bg-graph__svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .bg-graph__reveal-label {
+    padding: 4px 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .reveal-label__emoji {
+    font-size: 14px;
+  }
+}

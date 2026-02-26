@@ -115,3 +115,51 @@
 .planning-phase__day-btn:disabled {
   opacity: 0.7;
 }
+
+/* ───── Mobile (iPhone 14 — 390×844) ───── */
+@media (max-width: 480px) {
+  .planning-phase {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .planning-phase__content {
+    flex: 1;
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  .planning-phase__graph-wrapper {
+    flex-shrink: 0;
+  }
+
+  .planning-phase__inventory-zone {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .planning-phase__interventions-row {
+    gap: 6px;
+  }
+
+  .planning-phase__hint {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+
+  .planning-phase__day-nav {
+    flex-shrink: 0;
+    padding: 2px 0;
+    margin-top: 0;
+  }
+
+  .planning-phase__day-btn {
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+}

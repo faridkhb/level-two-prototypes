@@ -172,3 +172,10 @@
   font-size: 12px;
   flex-shrink: 0;
 }
+
+/* ───── Mobile (iPhone 14 — 390×844) ───── */
+@media (max-width: 480px) {
+  .slot-grid {
+    display: none;
+  }
+}

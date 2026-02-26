@@ -49,7 +49,7 @@ export function ShipInventory({
   }, [allShips, availableFoods, placedCounts]);
 
   return (
-    <div className="ship-inventory">
+    <div className="ship-inventory ship-inventory--food">
       <div className="ship-inventory__title">Food Cards</div>
       <div className="ship-inventory__grid">
         {inventoryItems.length === 0 ? (

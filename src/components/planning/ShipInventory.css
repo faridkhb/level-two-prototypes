@@ -28,3 +28,37 @@
   color: #718096;
   font-size: 14px;
 }
+
+/* ───── Mobile (iPhone 14 — 390×844) ───── */
+@media (max-width: 480px) {
+  .ship-inventory {
+    border-radius: 8px;
+    padding: 6px;
+    gap: 3px;
+  }
+
+  .ship-inventory__title {
+    font-size: 10px;
+  }
+
+  /* Food inventory: compact grid */
+  .ship-inventory--food .ship-inventory__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 4px;
+  }
+
+  /* Actions inventory: horizontal scroll */
+  .ship-inventory--actions .ship-inventory__grid {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    padding-bottom: 2px;
+  }
+
+  .ship-inventory__empty {
+    padding: 8px;
+    font-size: 12px;
+  }
+}

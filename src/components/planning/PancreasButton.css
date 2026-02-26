@@ -80,3 +80,27 @@
   background: rgba(113, 128, 150, 0.2);
   color: #718096;
 }
+
+/* ───── Mobile (iPhone 14 — 390×844) ───── */
+@media (max-width: 480px) {
+  .pancreas-btn {
+    padding: 5px 10px;
+    gap: 5px;
+    border-radius: 8px;
+    font-size: 10px;
+  }
+
+  .pancreas-btn__emoji {
+    font-size: 14px;
+  }
+
+  .pancreas-btn__text {
+    font-size: 11px;
+  }
+
+  .pancreas-btn__uses {
+    min-width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+}

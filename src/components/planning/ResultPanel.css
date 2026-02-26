@@ -201,3 +201,42 @@
 .result-panel__btn--next:hover {
   background: #3182ce;
 }
+
+/* ───── Mobile (iPhone 14 — 390×844) ───── */
+@media (max-width: 480px) {
+  .result-panel {
+    padding: 16px 12px;
+    gap: 8px;
+    border-radius: 8px;
+  }
+
+  .result-panel__stars {
+    gap: 6px;
+  }
+
+  .result-panel__star,
+  .result-panel__star--empty {
+    font-size: 28px;
+  }
+
+  .result-panel__label {
+    font-size: 18px;
+  }
+
+  .result-panel__penalty-value {
+    font-size: 22px;
+  }
+
+  .result-panel__actions {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .result-panel__btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    width: 100%;
+    text-align: center;
+  }
+}
