@@ -49,7 +49,7 @@ function getFoodColor(index: number): string {
 }
 
 // Unified render data types
-type CubeStatus = 'normal' | 'burned' | 'pancreas';
+type CubeStatus = 'normal' | 'burned';
 
 interface FoodRenderCube {
   col: number;
@@ -75,6 +75,7 @@ interface FoodRenderLayer {
   emoji: string;
   carbs: number;
   cubes: FoodRenderCube[];
+  digestCubes: FoodRenderCube[]; // cubes insulin ate (positioned above food's alive zone)
   colSummary: FoodColumnSummary[];
   skylinePath: string | null;
 }
@@ -143,6 +144,15 @@ export function BgGraph({
   const prevLayersRef = useRef<FoodRenderLayer[]>([]);
   const [exitingCubes, setExitingCubes] = useState<ExitingCube[]>([]);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Digest animation state: tracks foods currently in "insulin eating" animation
+  const [digestingFoodIds, setDigestingFoodIds] = useState<Set<string>>(new Set());
+  const digestTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Hover ghost state
+  const [hoveredFoodId, setHoveredFoodId] = useState<string | null>(null);
+  const [leavingFoodId, setLeavingFoodId] = useState<string | null>(null);
+  const leavingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Calculate intervention reduction per column, split by type (walk/run)
   const interventionReductions = useMemo(() => {
@@ -302,12 +312,12 @@ export function BgGraph({
     );
 
     // Phase 4: Per-food layers — stamp cubes, compute markers and skylines
-    // Alive cubes use decay-stacked positions. Pancreas cubes stack above all alive cubes.
+    // Alive cubes use decay-stacked positions. Digest cubes (insulin-eaten) positioned above food's own alive zone.
     const hasMultipleFoods = rawFoods.length >= 2;
     const bottomY = PAD_TOP + GRAPH_H;
-    const pancreasOffset = new Array(TOTAL_COLUMNS).fill(0);
     const layers: FoodRenderLayer[] = rawFoods.map((food) => {
       const cubes: FoodRenderCube[] = [];
+      const digestCubes: FoodRenderCube[] = [];
       const colSummary: FoodColumnSummary[] = [];
 
       for (const c of food.columns) {
@@ -344,15 +354,12 @@ export function BgGraph({
           cubes.push({ col: c.col, row, status, burnColor });
         }
 
-        // Pancreas cubes — full difference between plateau and decay curves
-        const visibleEaten = c.pancreasExtra;
-        const pBase = pancreasCaps[c.col] + pancreasOffset[c.col];
-        for (let i = 0; i < visibleEaten; i++) {
-          const row = pBase + i;
+        // Digest cubes — what insulin ate (positioned directly above THIS food's alive zone)
+        for (let i = 0; i < c.pancreasExtra; i++) {
+          const row = c.baseRow + c.aliveCount + i;
           if (row >= effectiveRows) break;
-          cubes.push({ col: c.col, row, status: 'pancreas' });
+          digestCubes.push({ col: c.col, row, status: 'normal' });
         }
-        pancreasOffset[c.col] += visibleEaten;
 
         // aliveTop: food's own alive boundary (for markers — stable, independent)
         const aliveTop = Math.min(c.baseRow + c.aliveCount, effectiveRows);
@@ -412,6 +419,7 @@ export function BgGraph({
         emoji: food.emoji,
         carbs: food.carbs,
         cubes,
+        digestCubes,
         colSummary,
         skylinePath,
       };
@@ -450,7 +458,7 @@ export function BgGraph({
       for (let col = 0; col < TOTAL_COLUMNS; col++) {
         const metReduction = Math.max(0, originalPlateauHeights[col] - afterMetPlateauHeights[col]);
         const glp1Reduction = Math.max(0, afterMetPlateauHeights[col] - plateauHeights[col]);
-        const baseRow = pancreasCaps[col] + pancreasOffset[col];
+        const baseRow = pancreasCaps[col];
         // Stack: Metformin cubes first (bottom), then GLP-1 cubes (top)
         for (let i = 0; i < metReduction; i++) {
           const row = baseRow + i;
@@ -477,8 +485,10 @@ export function BgGraph({
   useLayoutEffect(() => {
     const prev = prevLayersRef.current;
     const currIds = new Set(graphRenderData.layers.map(l => l.placementId));
-    const removed = prev.filter(l => !currIds.has(l.placementId));
+    const prevIds = new Set(prev.map(l => l.placementId));
 
+    // Detect removed foods → exit animation
+    const removed = prev.filter(l => !currIds.has(l.placementId));
     if (removed.length > 0) {
       const cubes = removed.flatMap(l =>
         l.cubes
@@ -490,12 +500,35 @@ export function BgGraph({
       exitTimerRef.current = setTimeout(() => setExitingCubes([]), 1200);
     }
 
+    // Detect added foods → digest animation (insulin eating)
+    const added = graphRenderData.layers.filter(l => !prevIds.has(l.placementId));
+    if (added.length > 0) {
+      setDigestingFoodIds(prev => {
+        const next = new Set(prev);
+        for (const a of added) next.add(a.placementId);
+        return next;
+      });
+      for (const a of added) {
+        const timer = setTimeout(() => {
+          setDigestingFoodIds(prev => {
+            const next = new Set(prev);
+            next.delete(a.placementId);
+            return next;
+          });
+          digestTimersRef.current.delete(a.placementId);
+        }, 1800);
+        digestTimersRef.current.set(a.placementId, timer);
+      }
+    }
+
     prevLayersRef.current = graphRenderData.layers;
   }, [graphRenderData.layers]);
 
-  // Cleanup exit timer on unmount
+  // Cleanup timers on unmount
   useEffect(() => () => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    if (leavingTimerRef.current) clearTimeout(leavingTimerRef.current);
+    for (const timer of digestTimersRef.current.values()) clearTimeout(timer);
   }, []);
 
   // Dynamic zone clip bands (Y-positions depend on cellHeight)
@@ -688,13 +721,25 @@ export function BgGraph({
 
         {/* Per-food cube layers: last placed rendered first (bottom), first placed last (top) */}
         {[...graphRenderData.layers].reverse().map(layer => (
-          <g key={`food-layer-${layer.placementId}`} className="bg-graph__food-group">
+          <g
+            key={`food-layer-${layer.placementId}`}
+            className="bg-graph__food-group"
+            onMouseEnter={() => {
+              if (leavingTimerRef.current) clearTimeout(leavingTimerRef.current);
+              setLeavingFoodId(null);
+              setHoveredFoodId(layer.placementId);
+            }}
+            onMouseLeave={() => {
+              setHoveredFoodId(null);
+              setLeavingFoodId(layer.placementId);
+              leavingTimerRef.current = setTimeout(() => setLeavingFoodId(null), 500);
+            }}
+          >
             {layer.cubes
               .filter(cube => {
                 // During reveal, progressively show cube layers
                 if (revealPhase === undefined) return true;
                 if (cube.status === 'normal') return revealPhase >= 1;
-                if (cube.status === 'pancreas') return revealPhase >= 2;
                 if (cube.status === 'burned') {
                   const isExercise = cube.burnColor === '#86efac' || cube.burnColor === '#22c55e';
                   return isExercise ? revealPhase >= 3 : revealPhase >= 4;
@@ -703,16 +748,12 @@ export function BgGraph({
               })
               .map(cube => {
               const waveDelay = (cube.col - layer.dropColumn) * 20;
-              const cubeClass = cube.status === 'pancreas'
-                ? 'bg-graph__cube--pancreas'
-                : cube.status === 'burned'
-                  ? 'bg-graph__cube--burned'
-                  : 'bg-graph__cube';
-              const cubeFill = cube.status === 'pancreas'
-                ? '#f97316'
-                : cube.status === 'burned' && cube.burnColor
-                  ? cube.burnColor
-                  : layer.color;
+              const cubeClass = cube.status === 'burned'
+                ? 'bg-graph__cube--burned'
+                : 'bg-graph__cube';
+              const cubeFill = cube.status === 'burned' && cube.burnColor
+                ? cube.burnColor
+                : layer.color;
               return (
                 <rect
                   key={`${layer.placementId}-${cube.col}-${cube.row}`}
@@ -729,6 +770,79 @@ export function BgGraph({
             })}
           </g>
         ))}
+
+        {/* Digest cubes — insulin eating animation + hover ghosts */}
+        {graphRenderData.layers.map(layer => {
+          if (layer.digestCubes.length === 0) return null;
+
+          const isDigesting = digestingFoodIds.has(layer.placementId);
+          const isHovered = hoveredFoodId === layer.placementId;
+          const isLeaving = leavingFoodId === layer.placementId;
+
+          // Reveal mode
+          if (revealPhase !== undefined) {
+            if (revealPhase < 1) return null;
+            // Phase 1: show as normal food cubes (full plateau height)
+            // Phase 2+: digest animation (insulin eating)
+            const cls = revealPhase >= 2 ? 'bg-graph__cube--digest' : 'bg-graph__cube';
+            return (
+              <g key={`digest-${layer.placementId}`} pointerEvents="none">
+                {layer.digestCubes.map(cube => {
+                  const waveDelay = Math.abs(cube.col - layer.dropColumn) * 30;
+                  return (
+                    <rect
+                      key={`${layer.placementId}-digest-${cube.col}-${cube.row}`}
+                      x={colToX(cube.col) + 0.5}
+                      y={rowToY(cube.row) + 0.5}
+                      width={CELL_SIZE - 1}
+                      height={cellHeight - 1}
+                      fill={layer.color}
+                      rx={2}
+                      className={cls}
+                      style={{ animationDelay: `${waveDelay}ms` }}
+                    />
+                  );
+                })}
+              </g>
+            );
+          }
+
+          // Gameplay: show when digesting, hovered, or leaving hover
+          if (!isDigesting && !isHovered && !isLeaving) return null;
+
+          return (
+            <g key={`digest-${layer.placementId}`} pointerEvents="none">
+              {layer.digestCubes.map(cube => {
+                const waveDelay = Math.abs(cube.col - layer.dropColumn) * 30;
+                let className: string;
+                let extraDelay = 0;
+
+                if (isDigesting) {
+                  className = 'bg-graph__cube--digest';
+                  extraDelay = 450; // wait for cubeAppear to finish
+                } else if (isHovered) {
+                  className = 'bg-graph__cube--digest-ghost';
+                } else {
+                  className = 'bg-graph__cube--digest-ghost-out';
+                }
+
+                return (
+                  <rect
+                    key={`${layer.placementId}-digest-${cube.col}-${cube.row}`}
+                    x={colToX(cube.col) + 0.5}
+                    y={rowToY(cube.row) + 0.5}
+                    width={CELL_SIZE - 1}
+                    height={cellHeight - 1}
+                    fill={layer.color}
+                    rx={2}
+                    className={className}
+                    style={{ animationDelay: `${waveDelay + extraDelay}ms` }}
+                  />
+                );
+              })}
+            </g>
+          );
+        })}
 
         {/* Medication-prevented cubes (above pancreas zone) */}
         {graphRenderData.medCubes.length > 0 && (revealPhase === undefined || revealPhase >= 4) && (
@@ -873,7 +987,7 @@ export function BgGraph({
         {revealPhase !== undefined && revealPhase >= 1 && (() => {
           const labels: Record<number, { emoji: string; text: string }> = {
             1: { emoji: '🍽️', text: 'Food Cubes' },
-            2: { emoji: '🟠', text: 'Pancreas' },
+            2: { emoji: '🫠', text: 'Insulin' },
             3: { emoji: '🏃', text: 'Exercise' },
             4: { emoji: '💊', text: 'Medications' },
           };

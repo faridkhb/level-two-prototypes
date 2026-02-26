@@ -97,39 +97,50 @@
   transition: all 0.15s ease-out;
 }
 
-/* Pancreas-eaten cubes (orange semi-transparent, epic digest) */
-@keyframes pancreasDigest {
-  0% {
-    opacity: 0.9;
-    filter: brightness(2.0);
-    transform: scale(1.12);
-  }
-  25% {
-    opacity: 0.5;
-    filter: brightness(0.7);
-    transform: scale(0.94);
-  }
-  50% {
-    opacity: 0.45;
-    filter: brightness(1.4);
-    transform: scale(1.04);
-  }
-  75% {
-    opacity: 0.3;
-    filter: brightness(0.9);
-    transform: scale(0.98);
-  }
-  100% {
-    opacity: 0.25;
-    filter: brightness(1);
-    transform: scale(1);
-  }
+/* Insulin digest — cubes appear then get eaten by insulin "blanket" pressing down */
+@keyframes insulinDigest {
+  0%   { opacity: 0; transform: scale(0.3); }
+  25%  { opacity: 1; transform: scale(1.05); }
+  40%  { opacity: 1; transform: scale(1); }
+  55%  { opacity: 0.8; filter: brightness(1.8); }
+  75%  { opacity: 0.4; transform: scaleY(0.5); }
+  100% { opacity: 0; transform: scaleY(0); }
 }
 
-.bg-graph__cube--pancreas {
-  animation: pancreasDigest 0.7s ease-out both;
+.bg-graph__cube--digest {
+  animation: insulinDigest 1.2s ease-in-out both;
   transform-box: fill-box;
-  transform-origin: center;
+  transform-origin: center bottom;
+  pointer-events: none;
+}
+
+/* Ghost appear on hover — show what insulin ate */
+@keyframes digestGhostIn {
+  from { opacity: 0; transform: scaleY(0.3); }
+  to   { opacity: 0.3; transform: scaleY(1); }
+}
+
+.bg-graph__cube--digest-ghost {
+  animation: digestGhostIn 0.25s ease-out both;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  pointer-events: none;
+  stroke: #fbbf24;
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+
+/* Ghost burn away on mouse leave */
+@keyframes digestGhostOut {
+  0%   { opacity: 0.3; transform: scaleY(1); }
+  40%  { opacity: 0.35; filter: brightness(1.6); }
+  100% { opacity: 0; transform: scaleY(0); }
+}
+
+.bg-graph__cube--digest-ghost-out {
+  animation: digestGhostOut 0.4s ease-in both;
+  transform-box: fill-box;
+  transform-origin: center bottom;
   pointer-events: none;
 }
 
