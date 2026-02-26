@@ -24,7 +24,7 @@
       "type": "slowAbsorption",
       "durationMultiplier": 1.5,
       "glucoseMultiplier": 0.90,
-      "kcalMultiplier": 0.7,
+      "kcalMultiplier": 0.85,
       "wpBonus": 4,
       "description": "Slower absorption (-10% glucose), reduced appetite, +4 WP"
     }
