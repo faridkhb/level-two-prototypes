@@ -9,21 +9,19 @@
       "kcalBudget": 1800,
       "wpBudget": 10,
       "availableFoods": [
-        { "id": "burger", "count": 1 },
-        { "id": "sandwich", "count": 1 },
-        { "id": "chickpeas", "count": 1 },
         { "id": "cookie", "count": 1 },
-        { "id": "milk", "count": 1 }
+        { "id": "milk", "count": 1 },
+        { "id": "chickpeas", "count": 1 }
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
         { "id": "takeabreak", "count": 1 }
       ],
       "preplacedFoods": [
-        { "shipId": "banana", "slotIndex": 0 },
-        { "shipId": "popcorn", "slotIndex": 1 }
+        { "shipId": "burger", "slotIndex": 0 },
+        { "shipId": "banana", "slotIndex": 4 }
       ],
-      "lockedSlots": [5, 10, 11]
+      "lockedSlots": [0, 3, 4, 7, 8, 9, 10, 11]
     },
     {
       "day": 2,
@@ -53,23 +51,18 @@
         { "id": "sandwich", "count": 1 },
         { "id": "cookie", "count": 1 },
         { "id": "banana", "count": 1 },
-        { "id": "berriesmixed", "count": 1 },
-        { "id": "nutsmixed", "count": 1 },
-        { "id": "milk", "count": 1 },
-        { "id": "eggsboiled", "count": 1 }
+        { "id": "milk", "count": 1 }
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
-        { "id": "heavyrun", "count": 1 },
-        { "id": "takeabreak", "count": 2 },
-        { "id": "takearest", "count": 1 }
+        { "id": "takeabreak", "count": 2 }
       ],
       "preplacedFoods": [
         { "shipId": "burger", "slotIndex": 0 },
-        { "shipId": "chocolatemuffin", "slotIndex": 1 },
-        { "shipId": "oatmeal", "slotIndex": 2 }
+        { "shipId": "chocolatemuffin", "slotIndex": 2 },
+        { "shipId": "oatmeal", "slotIndex": 5 }
       ],
-      "lockedSlots": [0, 1, 2],
+      "lockedSlots": [0, 2, 4, 5, 8, 9, 10, 11],
       "availableMedications": ["metformin", "glp1"]
     }
   ]
