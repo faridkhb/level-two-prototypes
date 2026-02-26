@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Intervention, Medication, PlacedIntervention, PreplacedIntervention, AvailableFood } from '../../core/types';
+import type { Intervention, Medication, PlacedIntervention, AvailableFood } from '../../core/types';
 import { InterventionCard } from './InterventionCard';
 import './ShipInventory.css';
 import './MedicationPanel.css';
@@ -35,7 +35,6 @@ interface InterventionInventoryProps {
   allInterventions: Intervention[];
   availableInterventions: AvailableFood[];
   placedInterventions: PlacedIntervention[];
-  preplacedInterventions?: PreplacedIntervention[];
   wpRemaining: number;
   allMedications?: Medication[];
   availableMedicationIds?: string[];
@@ -47,14 +46,12 @@ interface InventoryItem {
   intervention: Intervention;
   index: number;
   remaining: number;
-  locked?: boolean;
 }
 
 export function InterventionInventory({
   allInterventions,
   availableInterventions,
   placedInterventions,
-  preplacedInterventions = [],
   wpRemaining,
   allMedications = [],
   availableMedicationIds = [],
@@ -72,12 +69,6 @@ export function InterventionInventory({
   const inventoryItems = useMemo(() => {
     const items: InventoryItem[] = [];
 
-    // Locked cards for pre-placed interventions (shown first)
-    for (const pi of preplacedInterventions) {
-      const intervention = allInterventions.find(i => i.id === pi.interventionId);
-      if (intervention) items.push({ intervention, index: 0, remaining: 1, locked: true });
-    }
-
     for (const ai of availableInterventions) {
       const intervention = allInterventions.find((i) => i.id === ai.id);
       if (!intervention) continue;
@@ -91,7 +82,7 @@ export function InterventionInventory({
     }
 
     return items;
-  }, [allInterventions, availableInterventions, preplacedInterventions, placedCounts]);
+  }, [allInterventions, availableInterventions, placedCounts]);
 
   const hasMedications = availableMedicationIds.length > 0;
   if (availableInterventions.length === 0 && !hasMedications) return null;
@@ -126,14 +117,13 @@ export function InterventionInventory({
         {inventoryItems.length === 0 && !hasMedications ? (
           <div className="ship-inventory__empty">All interventions placed!</div>
         ) : (
-          inventoryItems.map(({ intervention, index, locked }) => {
-            const wpDisabled = !locked && intervention.wpCost > wpRemaining;
+          inventoryItems.map(({ intervention, index }) => {
+            const wpDisabled = intervention.wpCost > wpRemaining;
             return (
               <InterventionCard
-                key={locked ? `locked-int-${intervention.id}-${index}` : `${intervention.id}-${index}`}
+                key={`${intervention.id}-${index}`}
                 intervention={intervention}
-                instanceId={locked ? `locked-int-${intervention.id}-${index}` : `intervention-${intervention.id}-${index}`}
-                isLocked={locked}
+                instanceId={`intervention-${intervention.id}-${index}`}
                 wpDisabled={wpDisabled}
               />
             );

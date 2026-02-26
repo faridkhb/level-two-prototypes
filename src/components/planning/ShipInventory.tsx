@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Ship, PlacedFood, AvailableFood, PreplacedFood } from '../../core/types';
+import type { Ship, PlacedFood, AvailableFood } from '../../core/types';
 import { ShipCard } from './ShipCard';
 import './ShipInventory.css';
 
@@ -7,7 +7,6 @@ interface ShipInventoryProps {
   allShips: Ship[];
   availableFoods: AvailableFood[];
   placedFoods: PlacedFood[];
-  preplacedFoods?: PreplacedFood[];
   wpRemaining: number;
 }
 
@@ -15,14 +14,12 @@ interface InventoryItem {
   ship: Ship;
   index: number;
   remaining: number;
-  locked?: boolean;
 }
 
 export function ShipInventory({
   allShips,
   availableFoods,
   placedFoods,
-  preplacedFoods = [],
   wpRemaining,
 }: ShipInventoryProps) {
   const placedCounts = useMemo(() => {
@@ -35,12 +32,6 @@ export function ShipInventory({
 
   const inventoryItems = useMemo(() => {
     const items: InventoryItem[] = [];
-
-    // Locked cards for pre-placed foods (shown first)
-    for (const pf of preplacedFoods) {
-      const ship = allShips.find(s => s.id === pf.shipId);
-      if (ship) items.push({ ship, index: 0, remaining: 1, locked: true });
-    }
 
     for (const af of availableFoods) {
       const ship = allShips.find((s) => s.id === af.id);
@@ -55,7 +46,7 @@ export function ShipInventory({
     }
 
     return items;
-  }, [allShips, availableFoods, preplacedFoods, placedCounts]);
+  }, [allShips, availableFoods, placedCounts]);
 
   return (
     <div className="ship-inventory">
@@ -64,15 +55,14 @@ export function ShipInventory({
         {inventoryItems.length === 0 ? (
           <div className="ship-inventory__empty">All cards placed!</div>
         ) : (
-          inventoryItems.map(({ ship, index, locked }) => {
+          inventoryItems.map(({ ship, index }) => {
             const wpCost = ship.wpCost ?? 0;
-            const wpDisabled = !locked && wpCost > wpRemaining;
+            const wpDisabled = wpCost > wpRemaining;
             return (
               <ShipCard
-                key={locked ? `locked-${ship.id}-${index}` : `${ship.id}-${index}`}
+                key={`${ship.id}-${index}`}
                 ship={ship}
-                instanceId={locked ? `locked-food-${ship.id}-${index}` : `inventory-${ship.id}-${index}`}
-                isLocked={locked}
+                instanceId={`inventory-${ship.id}-${index}`}
                 wpDisabled={wpDisabled}
               />
             );

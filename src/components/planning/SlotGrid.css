@@ -152,7 +152,7 @@
   font-weight: 400;
 }
 
-/* Locked slot — pre-placed card or blocked empty slot */
+/* Locked slot — blocked empty slot */
 .slot-container--locked {
   border-style: solid;
   border-color: #718096;
@@ -161,8 +161,17 @@
   opacity: 0.85;
 }
 
+/* Locked slot with pre-placed content — grayscale + muted */
 .slot-container--locked.slot-container--filled {
   border-color: #718096;
-  background: rgba(113, 128, 150, 0.18);
+  background: rgba(113, 128, 150, 0.22);
   cursor: default;
+  filter: grayscale(0.6) brightness(0.85);
+  opacity: 0.7;
+}
+
+.slot-container__lock {
+  font-size: 12px;
+  flex-shrink: 0;
+  filter: brightness(1.3);
 }

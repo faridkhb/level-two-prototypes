@@ -98,6 +98,7 @@ function SlotContainer({
       <div className="slot-container__time">{timeLabel}</div>
       {showContent ? (
         <div className="slot-container__card">
+          {isLocked && <span className="slot-container__lock">🔒</span>}
           <span className="slot-container__emoji">
             {content.type === 'food' ? content.ship.emoji : content.intervention.emoji}
           </span>

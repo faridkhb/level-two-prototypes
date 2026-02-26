@@ -567,7 +567,6 @@ export function PlanningPhase() {
                 allShips={allShips}
                 availableFoods={effectiveAvailableFoods}
                 placedFoods={placedFoods}
-                preplacedFoods={dayConfig?.preplacedFoods}
                 wpRemaining={wpRemaining}
               />
 
@@ -576,7 +575,6 @@ export function PlanningPhase() {
                   allInterventions={allInterventions}
                   availableInterventions={dayConfig?.availableInterventions || []}
                   placedInterventions={placedInterventions}
-                  preplacedInterventions={dayConfig?.preplacedInterventions}
                   wpRemaining={wpRemaining}
                   allMedications={allMedications}
                   availableMedicationIds={dayConfig?.availableMedications ?? []}
