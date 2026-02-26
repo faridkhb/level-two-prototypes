@@ -773,7 +773,7 @@ export function BgGraph({
                   y={y}
                   width={CELL_SIZE - 1}
                   height={barHeight}
-                  fill="#fbbf24"
+                  fill="#f59e0b"
                   opacity={0.18}
                   rx={1}
                 />
@@ -821,11 +821,11 @@ export function BgGraph({
                 y={rowToY(cube.row) + 0.5}
                 width={CELL_SIZE - 1}
                 height={cellHeight - 1}
-                fill="#fbbf24"
+                fill="#f59e0b"
                 opacity={0.5}
                 rx={2}
                 className="bg-graph__cube--preview"
-                stroke="#f59e0b"
+                stroke="#d97706"
                 strokeWidth={0.5}
               />
             ))}
@@ -915,7 +915,7 @@ export function BgGraph({
                         y={rowToY(plateauTop + i) + 0.5}
                         width={CELL_SIZE - 1}
                         height={cellHeight - 1}
-                        fill="#fbbf24"
+                        fill="#f59e0b"
                         rx={2}
                         className="bg-graph__cube--insulin-fall"
                         style={{
@@ -965,7 +965,7 @@ export function BgGraph({
                       y={rowToY(plateauTop + i) + 0.5}
                       width={CELL_SIZE - 1}
                       height={cellHeight - 1}
-                      fill="#fbbf24"
+                      fill="#f59e0b"
                       rx={2}
                       className="bg-graph__cube--insulin-fall"
                       style={{
