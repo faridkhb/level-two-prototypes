@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useLayoutEffect, useEffect } from 'react';
-import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, MedicationModifiers } from '../../core/types';
+import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, MedicationModifiers, BoostConfig } from '../../core/types';
 import {
   TOTAL_COLUMNS,
   TOTAL_ROWS,
@@ -12,7 +12,8 @@ import {
   columnToTimeString,
   formatBgValue,
 } from '../../core/types';
-import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, calculateSglt2Reduction } from '../../core/cubeEngine';
+import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, calculateSglt2Reduction, calculateBoostReduction } from '../../core/cubeEngine';
+import type { InsulinParams } from '../../core/cubeEngine';
 import './BgGraph.css';
 
 // SVG layout constants
@@ -107,7 +108,8 @@ interface BgGraphProps {
   placedInterventions: PlacedIntervention[];
   allInterventions: Intervention[];
   settings: GameSettings;
-  decayRate: number;
+  decayOrInsulin: number | InsulinParams;
+  boostConfig?: BoostConfig;
   medicationModifiers?: MedicationModifiers;
   showPenaltyHighlight?: boolean;
   revealPhase?: number; // undefined = all visible, 0-4 = progressive layer reveal
@@ -129,7 +131,8 @@ export function BgGraph({
   placedInterventions,
   allInterventions,
   settings,
-  decayRate,
+  decayOrInsulin,
+  boostConfig,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   showPenaltyHighlight = false,
   revealPhase,
@@ -202,12 +205,13 @@ export function BgGraph({
       if (!ship) continue;
       const { glucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
 
-      // Decay curve: determines cube POSITIONS (actual visible alive cubes)
-      const decayCurve = calculateCurve(glucose, duration, placed.dropColumn, decayRate);
-      // Plateau curve: determines TOTAL cubes per column (including pancreas-eaten)
-      const plateauCurve = decayRate > 0
+      // Decay/insulin curve: determines cube POSITIONS (actual visible alive cubes)
+      const decayCurve = calculateCurve(glucose, duration, placed.dropColumn, decayOrInsulin);
+      // Plateau curve: determines TOTAL cubes per column (including insulin-eaten)
+      const hasInsulin = typeof decayOrInsulin === 'number' ? decayOrInsulin > 0 : true;
+      const plateauCurve = hasInsulin
         ? calculateCurve(glucose, duration, placed.dropColumn, 0)
-        : decayCurve; // same when no decay
+        : decayCurve; // same when no decay/insulin
 
       // Build plateau count lookup + accumulate plateauHeights (for preview)
       const plateauMap: Record<number, number> = {};
@@ -284,12 +288,16 @@ export function BgGraph({
     // pancreasCaps = sum of decay heights (already computed)
     const pancreasCaps = decayHeights;
 
-    // Phase 3: ColumnCaps (pancreas − interventions − SGLT2)
+    // Phase 3: ColumnCaps (pancreas − boost − interventions − SGLT2)
+    const boostReduction = boostConfig
+      ? calculateBoostReduction(pancreasCaps, boostConfig)
+      : new Array(TOTAL_COLUMNS).fill(0);
+    const afterBoost = pancreasCaps.map((h, i) => Math.max(0, h - boostReduction[i]));
     const sglt2 = medicationModifiers.sglt2;
     const sglt2Reduction = sglt2
-      ? calculateSglt2Reduction(pancreasCaps, sglt2.depth, sglt2.floorRow)
+      ? calculateSglt2Reduction(afterBoost, sglt2.depth, sglt2.floorRow)
       : new Array(TOTAL_COLUMNS).fill(0);
-    const columnCaps = pancreasCaps.map((h, i) =>
+    const columnCaps = afterBoost.map((h, i) =>
       Math.max(0, h - interventionReduction[i] - sglt2Reduction[i])
     );
 
@@ -315,15 +323,19 @@ export function BgGraph({
           if (row >= columnCaps[c.col]) {
             status = 'burned';
             // Determine burn source by row position within burned zone
+            // Stacking order (bottom → top): walk → run → SGLT2 → boost
             const offset = row - columnCaps[c.col];
             const walkR = interventionReductions.walk[c.col];
             const runR = interventionReductions.run[c.col];
+            const sglt2R = sglt2Reduction[c.col];
             if (offset < walkR) {
               burnColor = '#86efac'; // light green (walk)
             } else if (offset < walkR + runR) {
               burnColor = '#22c55e'; // darker green (run)
-            } else {
+            } else if (offset < walkR + runR + sglt2R) {
               burnColor = '#c084fc'; // purple (SGLT2)
+            } else {
+              burnColor = '#f59e0b'; // amber-500 (BOOST)
             }
           } else {
             status = 'normal';
@@ -454,7 +466,7 @@ export function BgGraph({
     }
 
     return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps, medCubes, effectiveRows };
-  }, [placedFoods, allShips, medicationModifiers, decayRate, interventionReduction, interventionReductions]);
+  }, [placedFoods, allShips, medicationModifiers, decayOrInsulin, boostConfig, interventionReduction, interventionReductions]);
 
   // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
   const { effectiveRows } = graphRenderData;
@@ -635,6 +647,30 @@ export function BgGraph({
             </text>
           );
         })}
+
+        {/* Insulin profile bars — visible background layer showing pancreas strength */}
+        {typeof decayOrInsulin !== 'number' && (
+          <g className="bg-graph__insulin-bars" pointerEvents="none">
+            {decayOrInsulin.rates.map((rate, col) => {
+              if (rate <= 0) return null;
+              const x = colToX(col) + 0.5;
+              const barHeight = rate * cellHeight;
+              const y = PAD_TOP + GRAPH_H - barHeight;
+              return (
+                <rect
+                  key={`insulin-${col}`}
+                  x={x}
+                  y={y}
+                  width={CELL_SIZE - 1}
+                  height={barHeight}
+                  fill="#fbbf24"
+                  opacity={0.2}
+                  rx={1}
+                />
+              );
+            })}
+          </g>
+        )}
 
         {/* SGLT2 drain threshold line */}
         {medicationModifiers.sglt2 && (revealPhase === undefined || revealPhase >= 4) && (

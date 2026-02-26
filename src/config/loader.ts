@@ -1,4 +1,4 @@
-import type { Ship, LevelConfig, LoadType, AvailableFood, Intervention, Medication, MedicationType, PancreasTier } from '../core/types';
+import type { Ship, LevelConfig, LoadType, AvailableFood, Intervention, Medication, MedicationType, PancreasTier, InsulinProfileConfig } from '../core/types';
 import { PANCREAS_TIERS } from '../core/types';
 import { useConfigStore } from '../store/configStore';
 
@@ -36,6 +36,7 @@ interface RawLevelConfig {
     preplacedFoods?: Array<{ shipId: string; slotIndex: number }>;
     preplacedInterventions?: Array<{ interventionId: string; slotIndex: number; slotSize?: number }>;
     lockedSlots?: number[];
+    insulinProfile?: InsulinProfileConfig;
   }>;
 }
 
@@ -98,6 +99,7 @@ function transformLevel(raw: RawLevelConfig): LevelConfig {
       preplacedFoods: dc.preplacedFoods,
       preplacedInterventions: dc.preplacedInterventions,
       lockedSlots: dc.lockedSlots,
+      insulinProfile: dc.insulinProfile,
     }));
   }
 

@@ -163,6 +163,23 @@
   padding-left: 4px;
 }
 
+.config-info-text {
+  color: #718096;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 4px 0 12px 4px;
+}
+
+.config-insulin-section {
+  padding: 0 4px;
+}
+
+.config-boost-fields {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 /* Medication cards */
 .config-med-card {
   background: rgba(85, 60, 154, 0.15);

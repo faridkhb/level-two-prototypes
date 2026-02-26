@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.42.19 | Graph-based food planning with cubes, interventions, medications, decay, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing |
+| `main` | BG Planner | v0.43.0 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -109,7 +109,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.42.19)
+- `src/version.ts` — version number (v0.43.0)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -159,7 +159,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.42.19) — Pre-placed Foods, Locked Slots, Level Balancing, Break Interventions
+### Current State (v0.43.0) — Insulin Profiles, BOOST System, Visual Insulin Bars
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -339,14 +339,19 @@ CONFIG:
   - Star rating: 3★ Perfect (≤12.5), 2★ Good (≤50), 1★ Pass (≤100), 0★ Defeat (>100)
   - Penalty highlight overlays (pulsing orange/red) on cubes above threshold
 
-- **Pancreas System** ✅ (simplified v0.40.5)
-  - 2-state compact toggle: ON (Tier I, decayRate 0.5) ↔ BOOST (Tier III, decayRate 0.75)
-  - Continuous drain from column 0: `height = round(rawRise − decayRate × (i+1))` during ramp-up
-  - Post-peak: `height = round(peakCubes − decayRate × (i+1))` until 0
-  - Button overlaid on graph top-left corner with absolute positioning
-  - Default label "BOOST", active label "BOOST OFF"
-  - 1 use per level (PANCREAS_TOTAL_BARS=1) — shared across all days
-  - Locked state when no uses remain (muted, non-interactive)
+- **Insulin Profile System** ✅ (v0.43.0, replaces old Pancreas tiers)
+  - **Visible insulin bars** on graph: amber background bars showing insulin rate per column
+  - **Variable rates** throughout the day: high morning (insulin sensitive) → low evening (insulin resistant)
+  - **Post-peak insulin**: food rises to full peak without drain, insulin absorbs only after peak
+  - **Cumulative mode** (default): `height = round(peak − cumInsulin)` where `cumInsulin += rate[col]` after peak
+  - **Per-column mode** (config option): `height = round(peak − rate[col])` flat subtraction
+  - **Integer rates** 1-5: 1 insulin cell absorbs 1 glucose cell per column
+  - **Segment-based profiles** per day in level config: `[{from, to, rate}]`
+  - **BOOST** — adaptive insulin: ON/OFF toggle, 1 use per level
+    - Only enhances columns above 200 mg/dL threshold
+    - Extra rate = 4 cubes per column above threshold (configurable)
+    - Button overlaid on graph top-left corner
+  - Config screen: BOOST threshold and extra rate editable
 
 - **Overeating Penalty System** ✅ (v0.40.6)
   - Each satiety level beyond Well Fed penalizes the next day:
@@ -512,18 +517,20 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 }
 ```
 
-### Level 01 Balance (v0.42.19)
+### Level 01 Balance (v0.43.0)
 
-| Day | kcal | WP | Pre-placed | Gap | Locked | Free | Foods | Interventions | Meds | 3★ % |
-|-----|-----:|---:|-----------|-----|--------|------|-------|--------------|------|-----:|
-| 1 | 1800 | 10 | burger@0, banana@4 | 3 | [0,1,3,4,6,7,9,10] | [2,5,8,11] | cookie,milk,chickpeas | walk×1,break×1 | — | 14.6% |
-| 2 | 2000 | 10 | banana@0, muffin@5 | 4 | [1,3,6,8,11] | [2,4,7,9,10] | chickpeas,cookie,oatmeal | walk×2,break×1 | metformin | 12.3% |
-| 3 | 2000 | 10 | burger@0, muffin@2, oatmeal@5 | 1,2 | [0,2,3,5,6,8,9,11] | [1,4,7,10] | sandwich,cookie,banana,milk | walk×1,break×2 | met+glp1 | 0.6% |
+| Day | kcal | WP | Pre-placed | Insulin Profile | Locked | Free | Foods | Interventions | Meds | 3★ % |
+|-----|-----:|---:|-----------|----------------|--------|------|-------|--------------|------|-----:|
+| 1 | 1800 | 10 | burger@0, banana@4 | 2,2,1 | [0,1,3,4,6,7,9,10] | [2,5,8,11] | cookie,milk,chickpeas | walk×1,break×1 | — | 14.8% |
+| 2 | 2000 | 10 | banana@0, muffin@5 | 2,2(→25),1 | [1,3,6,8,11] | [2,4,7,9,10] | chickpeas,cookie,oatmeal | walk×2,break×1 | metformin | 13.4% |
+| 3 | 2000 | 10 | burger@0, muffin@2, oatmeal@5 | 4,3,2 | [0,2,3,5,6,8,9,11] | [1,4,7,10] | sandwich,cookie,banana,milk | walk×1,break×2 | met+glp1 | 0.7%* |
+
+*Day 3 requires BOOST (extraRate=4) to achieve 3★. Without BOOST: 0% 3★.
 
 Key puzzle solutions:
 - **Day 1**: lightwalk@2 covers burger+banana overlap
 - **Day 2**: metformin + 2×lightwalk near muffin spike
-- **Day 3**: both meds + lightwalk@1 + sandwich@4, precise WP management
+- **Day 3**: both meds + BOOST + lightwalk@1 + sandwich@7, precise WP management
 
 ### Graph Configuration Constants
 | Constant | Value | Location |
@@ -537,20 +544,20 @@ Key puzzle solutions:
 | TOTAL_COLUMNS | 48 | `types.ts` derived |
 | TOTAL_ROWS | 17 | `types.ts` derived |
 | CELL_SIZE | 18px (SVG) | `BgGraph.tsx` |
-| DECAY_RATE | 0.5 cubes/col (Tier I) | `cubeEngine.ts` default |
 | PANCREAS_TOTAL_BARS | 1 | `types.ts` — BOOST uses per level |
+| BOOST_EXTRA_RATE | 4 | default — cubes absorbed per col above 200 |
 
 ### Cube Engine Details
 
-#### Ramp + Decay/Plateau Algorithm
+#### Ramp + Insulin Drain Algorithm (v0.43.0)
 1. `peakCubes = Math.round(glucose / 20)`
 2. `riseCols = Math.round(duration / 15)`
-3. Rise phase (cols 0..riseCols-1): `height = round(peakCubes × (i+1)/riseCols − decayRate × (i+1))`
-   - Pancreas drains continuously FROM column 0 (not after peak)
-4. Post-peak (decay ON): `height = round(peakCubes − decayRate × (i+1))` until 0
-5. Post-peak (decay OFF): flat plateau at peakCubes to right edge
+3. Rise phase (cols 0..riseCols-1): `height = round(peakCubes × (i+1)/riseCols)` — NO insulin drain during ramp
+4. Post-peak (cumulative mode): `height = round(peakCubes − cumInsulin)` where cumInsulin accumulates insulin rate per column
+5. Post-peak (per-column mode): `height = round(peakCubes − rate[col])` flat subtraction
 6. Drop column = left edge (start of food absorption)
 7. Guarantee: at least 1 cube at peak for any food with glucose > 0
+8. Legacy fallback: if no insulin profile, uses old decayRate formula (drain from col 0)
 
 #### Intervention Algorithm (v0.40.0)
 1. `depth` = cubes to remove during main phase
@@ -602,6 +609,7 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 - `alpha-2-stable` (v0.40.4) — Main menu, config screen, merged Actions panel, phased reveal animation, dynamic Y-axis
 - `alpha-3-stable` (v0.40.25) — WP remaining display, Take a Break/Rest interventions, bidirectional time blocking, level balancing
 - `alpha-4-stable` (v0.42.19) — Pre-placed foods, locked slots, balance solver, level-01 3-day puzzle design
+- `alpha-5-stable` (v0.43.0) — Insulin profile system, BOOST, visual insulin bars, post-peak drain, re-balanced level-01
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)

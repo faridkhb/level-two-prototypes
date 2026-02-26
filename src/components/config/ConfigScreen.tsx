@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-// Types loaded from JSON directly, not from core/types
-import { PANCREAS_TIERS } from '../../core/types';
 import { useConfigStore } from '../../store/configStore';
-import type { FoodOverride, InterventionOverride, PancreasTierOverride, MedicationOverride } from '../../store/configStore';
+import type { FoodOverride, InterventionOverride, MedicationOverride } from '../../store/configStore';
 import './ConfigScreen.css';
 
 type Tab = 'food' | 'pancreas' | 'interventions';
@@ -61,13 +59,13 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
 
   const {
     foods: foodOverrides,
-    pancreasTiers: pancreasOverrides,
     interventions: interventionOverrides,
     medications: medicationOverrides,
+    boostOverride,
     setFoodField,
-    setPancreasField,
     setInterventionField,
     setMedicationField,
+    setBoostField,
     resetAll,
   } = useConfigStore();
 
@@ -147,10 +145,6 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
 
   const getInterventionValue = (id: string, field: keyof InterventionOverride, defaultVal: number): number => {
     return interventionOverrides[id]?.[field] ?? defaultVal;
-  };
-
-  const getPancreasValue = (tier: string, field: keyof PancreasTierOverride, defaultVal: number): number => {
-    return pancreasOverrides[tier]?.[field] ?? defaultVal;
   };
 
   const getMedicationValue = (id: string, field: keyof MedicationOverride, defaultVal: number | undefined): number | string => {
@@ -285,43 +279,38 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
         )}
 
         {tab === 'pancreas' && (
-          <div className="config-table-wrap">
-            <table className="config-table">
-              <thead>
-                <tr>
-                  <th className="config-table__th--name">Tier</th>
-                  <th>Decay Rate</th>
-                  <th>Cost (bars)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {([0, 1, 2, 3] as const).map(tier => {
-                  const defaults = PANCREAS_TIERS[tier];
-                  return (
-                    <tr key={tier}>
-                      <td className="config-table__td--name">{defaults.label}</td>
-                      <td>
-                        <input
-                          type="number"
-                          className="config-input"
-                          step={0.05}
-                          value={getPancreasValue(String(tier), 'decayRate', defaults.decayRate)}
-                          onChange={e => setPancreasField(String(tier), 'decayRate', Number(e.target.value))}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="config-input config-input--small"
-                          value={getPancreasValue(String(tier), 'cost', defaults.cost)}
-                          onChange={e => setPancreasField(String(tier), 'cost', Number(e.target.value))}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="config-insulin-section">
+            <div className="config-section-label">Insulin Profile</div>
+            <p className="config-info-text">
+              Insulin rates are defined per-day in level config. Higher rate = faster glucose absorption after peak.
+              Morning slots typically have higher rates (insulin sensitivity), evening slots lower (insulin resistance).
+            </p>
+            <div className="config-section-label">BOOST Parameters</div>
+            <div className="config-boost-fields">
+              <label className="config-med-field">
+                <span>Threshold (mg/dL)</span>
+                <input
+                  type="number"
+                  className="config-input"
+                  step={20}
+                  value={boostOverride.thresholdMgDl ?? 200}
+                  onChange={e => setBoostField('thresholdMgDl', Number(e.target.value))}
+                />
+              </label>
+              <label className="config-med-field">
+                <span>Extra Rate</span>
+                <input
+                  type="number"
+                  className="config-input config-input--small"
+                  value={boostOverride.extraRate ?? 4}
+                  onChange={e => setBoostField('extraRate', Number(e.target.value))}
+                />
+              </label>
+            </div>
+            <p className="config-info-text">
+              BOOST is an adaptive insulin boost that only enhances columns above the threshold.
+              Extra Rate = additional cubes absorbed per column above threshold. 1 use per level.
+            </p>
           </div>
         )}
 

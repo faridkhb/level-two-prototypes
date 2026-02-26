@@ -1,36 +1,32 @@
-import type { PancreasTier } from '../../core/types';
-import { getPancreasTiers } from '../../config/loader';
 import './PancreasButton.css';
 
 interface PancreasButtonProps {
-  currentTier: PancreasTier;
+  isBoostActive: boolean;
   usesRemaining: number;
   onToggle: () => void;
   disabled?: boolean;
 }
 
 export function PancreasButton({
-  currentTier,
+  isBoostActive,
   usesRemaining,
   onToggle,
   disabled = false,
 }: PancreasButtonProps) {
-  const isBoosted = currentTier === 3;
-  const boostCost = getPancreasTiers()[3].cost;
-  const canAffordBoost = !isBoosted && usesRemaining >= boostCost;
+  const canAffordBoost = !isBoostActive && usesRemaining >= 1;
 
   return (
     <button
-      className={`pancreas-btn ${isBoosted ? 'pancreas-btn--boost' : ''} ${!canAffordBoost && !isBoosted ? 'pancreas-btn--locked' : ''} ${disabled ? 'pancreas-btn--disabled' : ''}`}
+      className={`pancreas-btn ${isBoostActive ? 'pancreas-btn--boost' : ''} ${!canAffordBoost && !isBoostActive ? 'pancreas-btn--locked' : ''} ${disabled ? 'pancreas-btn--disabled' : ''}`}
       onClick={disabled ? undefined : onToggle}
       disabled={disabled}
-      title={`Pancreas boost: ${isBoosted ? 'active — tap to deactivate' : `${usesRemaining} use${usesRemaining !== 1 ? 's' : ''} left — tap to activate`}`}
+      title={`Insulin boost (>200 mg/dL): ${isBoostActive ? 'active — tap to deactivate' : `${usesRemaining} use${usesRemaining !== 1 ? 's' : ''} left — tap to activate`}`}
     >
       <span className="pancreas-btn__emoji">{'\uD83E\uDEC1'}</span>
       <span className="pancreas-btn__text">
-        {isBoosted ? 'BOOST OFF' : 'BOOST'}
+        {isBoostActive ? 'BOOST OFF' : 'BOOST'}
       </span>
-      {!isBoosted && (
+      {!isBoostActive && (
         <span className={`pancreas-btn__uses ${usesRemaining === 0 ? 'pancreas-btn__uses--empty' : ''}`}>
           {usesRemaining}
         </span>

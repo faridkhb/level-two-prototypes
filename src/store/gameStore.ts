@@ -9,7 +9,6 @@ import type {
   Ship,
   Intervention,
   GameSettings,
-  PancreasTier,
   SatietyPenalty,
 } from '../core/types';
 import { DEFAULT_SETTINGS, DEFAULT_SATIETY_PENALTY, slotToColumn, TOTAL_SLOTS } from '../core/types';
@@ -32,7 +31,6 @@ function getPreplacedItems(dayConfig: DayConfig | null): { foods: PlacedFood[]; 
   }));
   return { foods, interventions };
 }
-import { getPancreasTiers } from '../config/loader';
 
 // Helper to get day config
 function getDayConfig(level: LevelConfig, day: number): DayConfig | null {
@@ -58,8 +56,8 @@ interface GameState {
   placedInterventions: PlacedIntervention[];
   activeMedications: string[];
 
-  // Pancreas tier system
-  pancreasTierPerDay: Record<number, PancreasTier>;
+  // BOOST system (adaptive insulin above threshold)
+  boostActivePerDay: Record<number, boolean>;
   lockedBarsPerDay: Record<number, number>;
 
   // WP carry-over tracking
@@ -83,9 +81,9 @@ interface GameState {
   startNextDay: () => void;
   restartLevel: () => void;
   updateSettings: (settings: Partial<GameSettings>) => void;
-  setPancreasTier: (day: number, tier: PancreasTier) => void;
-  lockPancreasBars: () => void;
-  unlockPancreasBars: (day: number) => void;
+  toggleBoost: (day: number) => void;
+  lockBoostBars: () => void;
+  unlockBoostBars: (day: number) => void;
   submitDayWp: (day: number, wpUsed: number, effectiveWpBudget: number) => void;
   setSatietyPenalty: (day: number, penalty: SatietyPenalty) => void;
 }
@@ -99,7 +97,7 @@ export const useGameStore = create<GameState>()(
       placedFoods: [],
       placedInterventions: [],
       activeMedications: [],
-      pancreasTierPerDay: {},
+      boostActivePerDay: {},
       lockedBarsPerDay: {},
       submittedWpPerDay: {},
       satietyPenaltyPerDay: {},
@@ -115,7 +113,7 @@ export const useGameStore = create<GameState>()(
           placedFoods: pre.foods,
           placedInterventions: pre.interventions,
           activeMedications: [],
-          pancreasTierPerDay: {},
+          boostActivePerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
           satietyPenaltyPerDay: {},
@@ -294,7 +292,7 @@ export const useGameStore = create<GameState>()(
           placedFoods: [],
           placedInterventions: [],
           activeMedications: [],
-          pancreasTierPerDay: {},
+          boostActivePerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
           satietyPenaltyPerDay: {},
@@ -305,23 +303,26 @@ export const useGameStore = create<GameState>()(
           settings: { ...state.settings, ...newSettings },
         })),
 
-      setPancreasTier: (day, tier) =>
+      toggleBoost: (day) =>
         set((state) => ({
-          pancreasTierPerDay: { ...state.pancreasTierPerDay, [day]: tier },
+          boostActivePerDay: {
+            ...state.boostActivePerDay,
+            [day]: !state.boostActivePerDay[day],
+          },
         })),
 
-      lockPancreasBars: () =>
+      lockBoostBars: () =>
         set((state) => {
-          const tier = (state.pancreasTierPerDay[state.currentDay] ?? 1) as PancreasTier;
+          const isActive = state.boostActivePerDay[state.currentDay] ?? false;
           return {
             lockedBarsPerDay: {
               ...state.lockedBarsPerDay,
-              [state.currentDay]: getPancreasTiers()[tier].cost,
+              [state.currentDay]: isActive ? 1 : 0,
             },
           };
         }),
 
-      unlockPancreasBars: (day) =>
+      unlockBoostBars: (day) =>
         set((state) => {
           const next = { ...state.lockedBarsPerDay };
           delete next[day];
@@ -346,11 +347,11 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'bg-graph-save',
-      version: 8,
+      version: 9,
       partialize: (state) => ({
         currentDay: state.currentDay,
         settings: state.settings,
-        pancreasTierPerDay: state.pancreasTierPerDay,
+        boostActivePerDay: state.boostActivePerDay,
         lockedBarsPerDay: state.lockedBarsPerDay,
         submittedWpPerDay: state.submittedWpPerDay,
         satietyPenaltyPerDay: state.satietyPenaltyPerDay,

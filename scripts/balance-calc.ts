@@ -33,6 +33,25 @@ interface Medication {
 
 interface AvailableItem { id: string; count: number; }
 
+interface InsulinSegment { from: number; to: number; rate: number; }
+interface InsulinProfileConfig { mode: 'cumulative' | 'per-column'; segments: InsulinSegment[]; }
+
+interface BoostConfig {
+  active: boolean;
+  thresholdRow: number; // row for 200 mg/dL = 7
+  extraRate: number;    // +N cubes per column above threshold
+}
+
+function expandInsulinProfile(config: InsulinProfileConfig): number[] {
+  const rates = new Array(TOTAL_COLUMNS).fill(0);
+  for (const seg of config.segments) {
+    for (let col = seg.from; col <= Math.min(seg.to, TOTAL_COLUMNS - 1); col++) {
+      rates[col] = seg.rate;
+    }
+  }
+  return rates;
+}
+
 interface DayConfig {
   day: number; kcalBudget: number; wpBudget: number;
   availableFoods: AvailableItem[];
@@ -41,6 +60,7 @@ interface DayConfig {
   preplacedFoods?: { shipId: string; slotIndex: number }[];
   preplacedInterventions?: { interventionId: string; slotIndex: number; slotSize?: number }[];
   lockedSlots?: number[];
+  insulinProfile?: InsulinProfileConfig;
 }
 
 interface MedMods {
@@ -78,23 +98,53 @@ const slotTime = (s: number) => { const h = 8 + s; return h < 12 ? `${h} AM` : h
 
 // ── Engine ──
 
-function foodCurve(glucose: number, dur: number, dropCol: number, decay: number): number[] {
+type DecayOrInsulin = number | { rates: number[]; mode: 'cumulative' | 'per-column' };
+
+function foodCurve(glucose: number, dur: number, dropCol: number, decay: DecayOrInsulin): number[] {
   const peak = Math.round(glucose / CELL_H);
   const rise = Math.max(1, Math.round(dur / CELL_W));
   if (peak <= 0) return new Array(TOTAL_COLUMNS).fill(0);
   const h = new Array(TOTAL_COLUMNS).fill(0);
-  for (let i = 0; i < TOTAL_COLUMNS - dropCol; i++) {
-    let height: number;
-    if (i < rise) {
-      height = Math.round(peak * (i+1) / rise - decay * (i+1));
-    } else if (decay > 0) {
-      height = Math.round(peak - decay * (i+1));
-    } else {
-      height = peak;
+
+  if (typeof decay === 'number') {
+    // Legacy mode: drain from column 0
+    for (let i = 0; i < TOTAL_COLUMNS - dropCol; i++) {
+      let height: number;
+      if (i < rise) {
+        height = Math.round(peak * (i+1) / rise - decay * (i+1));
+      } else if (decay > 0) {
+        height = Math.round(peak - decay * (i+1));
+      } else {
+        height = peak;
+      }
+      if (height <= 0) { if (i >= rise) break; continue; }
+      h[dropCol + i] = height;
     }
-    if (height <= 0) { if (i >= rise) break; continue; }
-    h[dropCol + i] = height;
+  } else {
+    // Insulin profile mode: post-peak drain
+    const { rates, mode } = decay;
+    let cumInsulin = 0;
+    for (let i = 0; i < TOTAL_COLUMNS - dropCol; i++) {
+      const col = dropCol + i;
+      let height: number;
+      if (i < rise) {
+        // Ramp: NO insulin drain — food rises to full peak
+        height = Math.round(peak * (i + 1) / rise);
+      } else {
+        const rate = col < rates.length ? rates[col] : 0;
+        if (mode === 'cumulative') {
+          cumInsulin += rate;
+          height = Math.round(peak - cumInsulin);
+        } else {
+          // per-column: flat subtraction
+          height = Math.round(peak - rate);
+        }
+      }
+      if (height <= 0) { if (i >= rise) break; continue; }
+      h[col] = height;
+    }
   }
+
   // Guarantee at least 1 cube
   if (h.every(v => v === 0) && peak > 0) h[dropCol + rise - 1] = 1;
   return h;
@@ -129,10 +179,16 @@ function getMods(medIds: string[], allMeds: Medication[]): MedMods {
   return m;
 }
 
-function calcPenalty(heights: number[], intReduction: number[], mods: MedMods): PenaltyResult {
+function calcPenalty(heights: number[], intReduction: number[], mods: MedMods, boost?: BoostConfig): PenaltyResult {
   let total = 0, oc = 0, rc = 0;
   for (let i = 0; i < TOTAL_COLUMNS; i++) {
-    let h = heights[i] - intReduction[i];
+    let h = heights[i];
+    // BOOST reduction (adaptive: only above threshold)
+    if (boost?.active) {
+      const excess = Math.max(0, h - boost.thresholdRow);
+      h -= Math.min(boost.extraRate, excess);
+    }
+    h -= intReduction[i];
     if (mods.sglt2) h -= Math.min(mods.sglt2.depth, Math.max(0, heights[i] - mods.sglt2.floorRow));
     h = Math.max(0, h);
     const orange = Math.max(0, Math.min(h, P_RED_ROW) - P_ORANGE_ROW);
@@ -194,6 +250,7 @@ function loadDayConfig(levelId: string, day: number): DayConfig & { totalDays: n
     availableMedications: dc.availableMedications,
     preplacedFoods: dc.preplacedFoods, preplacedInterventions: dc.preplacedInterventions,
     lockedSlots: dc.lockedSlots,
+    insulinProfile: dc.insulinProfile,
     totalDays: raw.days ?? raw.dayConfigs?.length ?? 1,
   };
 }
@@ -204,7 +261,22 @@ function runCalc(args: Record<string, string>) {
   const allShips = loadFoods();
   const allInts = loadInterventions();
   const allMeds = loadMedications();
-  const decay = parseFloat(args['decay'] ?? '0.5');
+
+  // Resolve insulin profile: --level/--day loads from config, --decay for legacy
+  let decayParam: DecayOrInsulin = parseFloat(args['decay'] ?? '0.5');
+  let insulinLabel = `decay=${args['decay'] ?? '0.5'}`;
+  if (args['level']) {
+    const loaded = loadDayConfig(args['level'], +(args['day'] ?? '1'));
+    if (loaded.insulinProfile) {
+      const rates = expandInsulinProfile(loaded.insulinProfile);
+      decayParam = { rates, mode: loaded.insulinProfile.mode };
+      insulinLabel = `insulin profile (${loaded.insulinProfile.mode})`;
+    }
+  }
+
+  // BOOST config
+  const useBoost = args['boost'] === 'true';
+  const boost: BoostConfig | undefined = useBoost ? { active: true, thresholdRow: P_ORANGE_ROW, extraRate: +(args['boost-rate'] ?? '4') } : undefined;
 
   // Parse placements
   const foods: { id: string; slot: number }[] = [];
@@ -219,7 +291,7 @@ function runCalc(args: Record<string, string>) {
   for (const f of foods) {
     const ship = allShips.find(s => s.id === f.id);
     if (!ship) continue;
-    const c = foodCurve(ship.load * mods.glucoseMultiplier, ship.duration * mods.durationMultiplier, slotToCol(f.slot), decay);
+    const c = foodCurve(ship.load * mods.glucoseMultiplier, ship.duration * mods.durationMultiplier, slotToCol(f.slot), decayParam);
     for (let i = 0; i < TOTAL_COLUMNS; i++) heights[i] += c[i];
   }
   const intRed = new Array(TOTAL_COLUMNS).fill(0);
@@ -230,7 +302,7 @@ function runCalc(args: Record<string, string>) {
     for (let i = 0; i < TOTAL_COLUMNS; i++) intRed[i] += c[i];
   }
 
-  const result = calcPenalty(heights, intRed, mods);
+  const result = calcPenalty(heights, intRed, mods, boost);
 
   // Budget
   let kcal = 0, wp = 0;
@@ -249,8 +321,9 @@ function runCalc(args: Record<string, string>) {
   }
   if (ints.length) { console.log('\nInterventions:'); for (const iv of ints) { const intv = allInts.find(x => x.id === iv.id); if (intv) console.log(`  Slot ${iv.slot} (${slotTime(iv.slot)}): ${intv.emoji} ${intv.name} — depth ${intv.depth}, ${intv.wpCost} WP`); } }
   if (medIds.length) console.log('\nMeds:', medIds.map(id => { const m = allMeds.find(x => x.id === id); return m ? `${m.emoji} ${m.name}` : id; }).join(', '));
+  if (useBoost) console.log(`BOOST: active (threshold=200, rate=${boost!.extraRate})`);
   console.log(`\nBudget: ${kcal}/${kcalBudget} kcal (${Math.round(kcal/kcalBudget*100)}%) | ${wp}/${wpBudget} WP`);
-  console.log(`Decay: ${decay}`);
+  console.log(`Insulin: ${insulinLabel}`);
   console.log(`\nPenalty: ${result.totalPenalty} → ${'⭐'.repeat(result.stars)}${result.stars===0?'💀':''} ${result.label}`);
   console.log(`Orange: ${result.orangeCount} | Red: ${result.redCount}\n`);
 }
@@ -282,16 +355,23 @@ function runSolve(args: Record<string, string>) {
   const allShips = loadFoods();
   const allInts = loadInterventions();
   const allMeds = loadMedications();
-  const decay = parseFloat(args['decay'] ?? '0.5');
   const maxFoods = parseInt(args['max-foods'] ?? '5', 10);
 
   // Load config
   let dayConfig: DayConfig;
   let isLastDay = args['last-day'] === 'true';
+  let decayParam: DecayOrInsulin = parseFloat(args['decay'] ?? '0.5');
+  let insulinLabel = `decay=${args['decay'] ?? '0.5'}`;
   if (args['level']) {
     const loaded = loadDayConfig(args['level'], +(args['day'] ?? '1'));
     dayConfig = loaded;
     if (!args['last-day']) isLastDay = loaded.day === loaded.totalDays;
+    // Auto-load insulin profile from level config (--decay overrides)
+    if (loaded.insulinProfile && !args['decay']) {
+      const rates = expandInsulinProfile(loaded.insulinProfile);
+      decayParam = { rates, mode: loaded.insulinProfile.mode };
+      insulinLabel = `insulin profile (${loaded.insulinProfile.mode})`;
+    }
   } else {
     const parse = (s: string) => s.split(',').filter(Boolean).map(x => { const [id, c] = x.split(':'); return { id, count: +(c ?? '1') }; });
     dayConfig = {
@@ -350,7 +430,11 @@ function runSolve(args: Record<string, string>) {
 
   console.log('\n=== Solver ===\n');
   console.log(`Level: ${args['level'] ?? 'custom'}, Day: ${dayConfig.day}`);
-  console.log(`Budget: ${dayConfig.kcalBudget} kcal, ${dayConfig.wpBudget} WP, decay=${decay}`);
+  // BOOST config
+  const useBoost = args['boost'] === 'true';
+  const boost: BoostConfig | undefined = useBoost ? { active: true, thresholdRow: P_ORANGE_ROW, extraRate: +(args['boost-rate'] ?? '4') } : undefined;
+
+  console.log(`Budget: ${dayConfig.kcalBudget} kcal, ${dayConfig.wpBudget} WP, ${insulinLabel}`);
   console.log(`Free slots: [${freeSlots.join(', ')}] (${freeSlots.length}/${TOTAL_SLOTS})`);
   console.log(`Food pool (${foodPool.length}): ${foodPool.join(', ')}`);
   console.log(`Intervention pool (${intPool.length}): ${intPool.map(i => i.id).join(', ')}`);
@@ -358,6 +442,7 @@ function runSolve(args: Record<string, string>) {
   console.log(`Max foods per solution: ${maxFoods}`);
   if (preFoods.length) console.log(`Pre-placed foods: ${preFoods.map(f => `${f.id}@${f.slot}`).join(', ')}`);
   if (preInts.length) console.log(`Pre-placed interventions: ${preInts.map(i => `${i.id}@${i.slot}`).join(', ')}`);
+  if (useBoost) console.log(`BOOST: active (threshold=200, rate=${boost!.extraRate})`);
   if (isLastDay) console.log(`⚠️  Last day — unspent WP penalty: +${WP_PENALTY_WEIGHT} per unspent WP`);
   console.log('\nSearching...');
 
@@ -411,7 +496,7 @@ function runSolve(args: Record<string, string>) {
     for (const pf of preFoods) {
       const ship = allShips.find(s => s.id === pf.id);
       if (!ship) continue;
-      const c = foodCurve(ship.load * mods.glucoseMultiplier, ship.duration * mods.durationMultiplier, slotToCol(pf.slot), decay);
+      const c = foodCurve(ship.load * mods.glucoseMultiplier, ship.duration * mods.durationMultiplier, slotToCol(pf.slot), decayParam);
       for (let i = 0; i < TOTAL_COLUMNS; i++) heights[i] += c[i];
     }
 
@@ -421,7 +506,7 @@ function runSolve(args: Record<string, string>) {
 
     function evaluateWithInterventions(foodList: { id: string; slot: number }[], usedSlots: Set<number>) {
       // Try: no interventions, then each single intervention, then pairs
-      const baseResult = calcPenalty(heights, preIntRed, mods);
+      const baseResult = calcPenalty(heights, preIntRed, mods, boost);
 
       // Record baseline (no player interventions)
       addSolution({
@@ -466,7 +551,7 @@ function runSolve(args: Record<string, string>) {
 
           // Record single intervention only if WP fits
           if (singleWpOk) {
-            const r = calcPenalty(heights, iRed, mods);
+            const r = calcPenalty(heights, iRed, mods, boost);
             addSolution({
               foods: [...preFoods, ...foodList],
               interventions: [...preInts.map(i => ({ id: i.id, slot: i.slot })), { id: intItem.id, slot }],
@@ -500,7 +585,7 @@ function runSolve(args: Record<string, string>) {
               const c2 = intCurve(intv2.depth, intv2.duration, slotToCol(slot2), intv2.boostExtra ?? 0);
               for (let i = 0; i < TOTAL_COLUMNS; i++) iRed2[i] += c2[i];
 
-              const r2 = calcPenalty(heights, iRed2, mods);
+              const r2 = calcPenalty(heights, iRed2, mods, boost);
               addSolution({
                 foods: [...preFoods, ...foodList],
                 interventions: [...preInts.map(i => ({ id: i.id, slot: i.slot })), { id: intItem.id, slot }, { id: intItem2.id, slot: slot2 }],
@@ -543,7 +628,7 @@ function runSolve(args: Record<string, string>) {
           if (usedSlots.has(slot)) continue;
 
           // Add food curve to heights
-          const curve = foodCurve(ship.load * mods.glucoseMultiplier, ship.duration * mods.durationMultiplier, slotToCol(slot), decay);
+          const curve = foodCurve(ship.load * mods.glucoseMultiplier, ship.duration * mods.durationMultiplier, slotToCol(slot), decayParam);
           for (let i = 0; i < TOTAL_COLUMNS; i++) heights[i] += curve[i];
           usedSlots.add(slot);
           placedFoodList.push({ id: foodId, slot });
@@ -570,7 +655,7 @@ function runSolve(args: Record<string, string>) {
     for (const pf of preFoods) {
       const ship = allShips.find(s => s.id === pf.id);
       if (!ship) continue;
-      const c = foodCurve(ship.load * mods.glucoseMultiplier, ship.duration * mods.durationMultiplier, slotToCol(pf.slot), decay);
+      const c = foodCurve(ship.load * mods.glucoseMultiplier, ship.duration * mods.durationMultiplier, slotToCol(pf.slot), decayParam);
       for (let i = 0; i < TOTAL_COLUMNS; i++) heights[i] -= c[i];
     }
   }
@@ -640,12 +725,17 @@ Calc:
   --foods "banana:0,chicken:6"      Food placements (id:slot)
   --interventions "lightwalk:2"     Intervention placements
   --meds "metformin,glp1"           Active medications
-  --decay 0.5                       Decay rate (default: 0.5)
+  --level level-01 --day 1          Load insulin profile from level config
+  --decay 0.5                       Legacy decay rate (overrides insulin profile)
+  --boost true                      Enable BOOST (adaptive insulin above 200)
+  --boost-rate 4                    BOOST extra rate (default: 4)
   --wp 10 --kcal 2000               Budgets (display only)
 
 Solve:
-  --level level-01 --day 1          Load from level config
-  --decay 0.5                       Decay rate
+  --level level-01 --day 1          Load from level config (auto-loads insulin profile)
+  --decay 0.5                       Legacy decay rate (overrides insulin profile)
+  --boost true                      Enable BOOST for all solutions
+  --boost-rate 4                    BOOST extra rate (default: 4)
   --max-foods 5                     Max foods to place (default: 5)
   --last-day true                   Force last-day WP penalty (auto-detected from level config)
 

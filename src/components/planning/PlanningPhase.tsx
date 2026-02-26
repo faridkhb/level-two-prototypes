@@ -9,13 +9,14 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, PancreasTier, SatietyPenalty } from '../../core/types';
-import { TOTAL_SLOTS } from '../../core/types';
+import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BoostConfig } from '../../core/types';
+import { TOTAL_SLOTS, expandInsulinProfile, PENALTY_ORANGE_ROW } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
+import { useConfigStore } from '../../store/configStore';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
+import type { InsulinParams } from '../../core/cubeEngine';
 import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
-import { getPancreasTiers } from '../../config/loader';
 import { BgGraph } from '../graph';
 import { PlanningHeader } from './PlanningHeader';
 import { ShipInventory } from './ShipInventory';
@@ -48,13 +49,6 @@ function InventoryDropZone({ children }: { children: React.ReactNode }) {
   );
 }
 
-function togglePancreasTier(current: PancreasTier, maxBars: number): PancreasTier {
-  if (current === 3) return 1; // BOOST → ON
-  // ON → BOOST (if affordable)
-  if (getPancreasTiers()[3].cost <= maxBars) return 3;
-  return 1; // can't afford boost, stay ON
-}
-
 export function PlanningPhase() {
   const {
     placedFoods,
@@ -72,16 +66,18 @@ export function PlanningPhase() {
     goToDay,
     startNextDay,
     settings,
-    pancreasTierPerDay,
+    boostActivePerDay,
     lockedBarsPerDay,
-    setPancreasTier,
-    lockPancreasBars,
-    unlockPancreasBars,
+    toggleBoost,
+    lockBoostBars,
+    unlockBoostBars,
     submittedWpPerDay,
     submitDayWp,
     satietyPenaltyPerDay,
     setSatietyPenalty,
   } = useGameStore();
+
+  const { boostOverride } = useConfigStore();
 
   const [allShips, setAllShips] = useState<Ship[]>([]);
   const [allInterventions, setAllInterventions] = useState<Intervention[]>([]);
@@ -170,11 +166,28 @@ export function PlanningPhase() {
   const effectiveWpBudget = Math.max(rawWpBudget - wpPenalty + satietyPenalty.wpDelta, wpFloor);
   const wpRemaining = effectiveWpBudget - wpUsed;
 
-  // Pancreas tier system
-  const currentPancreasTier = (pancreasTierPerDay[currentDay] ?? 1) as PancreasTier;
-  const currentDecayRate = getPancreasTiers()[currentPancreasTier].decayRate;
+  // Insulin profile system
+  const insulinParams: InsulinParams | number = useMemo(() => {
+    if (dayConfig?.insulinProfile) {
+      return {
+        rates: expandInsulinProfile(dayConfig.insulinProfile),
+        mode: dayConfig.insulinProfile.mode,
+      };
+    }
+    return 0.5; // legacy fallback
+  }, [dayConfig]);
+
+  // BOOST system
+  const isBoostActive = boostActivePerDay[currentDay] ?? false;
   const totalLockedBars = Object.values(lockedBarsPerDay).reduce((a, b) => a + b, 0);
   const barsAvailable = PANCREAS_TOTAL_BARS - totalLockedBars;
+  const boostThresholdRow = boostOverride.thresholdMgDl
+    ? Math.round((boostOverride.thresholdMgDl - 60) / 20)
+    : PENALTY_ORANGE_ROW;
+  const boostExtraRate = boostOverride.extraRate ?? 4;
+  const boostConfig: BoostConfig | undefined = isBoostActive
+    ? { active: true, thresholdRow: boostThresholdRow, extraRate: boostExtraRate }
+    : undefined;
 
   // Submit button enabled when kcal >= 50% (Optimal zone) and in planning phase
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier) + satietyPenalty.kcalDelta;
@@ -333,17 +346,17 @@ export function PlanningPhase() {
     [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions, effectiveLockedSlots]
   );
 
-  const handleTogglePancreas = useCallback(() => {
-    const nextTier = togglePancreasTier(currentPancreasTier, barsAvailable);
-    setPancreasTier(currentDay, nextTier);
-  }, [currentPancreasTier, barsAvailable, currentDay, setPancreasTier]);
+  const handleToggleBoost = useCallback(() => {
+    if (!isBoostActive && barsAvailable <= 0) return;
+    toggleBoost(currentDay);
+  }, [isBoostActive, barsAvailable, currentDay, toggleBoost]);
 
   // === Submit handler: start reveal animation (no graph clear) ===
   const handleSubmit = useCallback(() => {
     if (!submitEnabled) return;
 
-    // Lock pancreas bars for this day
-    lockPancreasBars();
+    // Lock BOOST bars for this day
+    lockBoostBars();
 
     // Save WP state for carry-over penalty
     submitDayWp(currentDay, wpUsed, effectiveWpBudget);
@@ -354,8 +367,9 @@ export function PlanningPhase() {
     setSatietyResult(penalty);
 
     // Build reveal sequence — only phases that have content
+    const hasInsulin = typeof insulinParams !== 'number' || insulinParams > 0;
     const phases: number[] = [1]; // food cubes always present
-    if (currentDecayRate > 0) phases.push(2); // pancreas
+    if (hasInsulin) phases.push(2); // insulin/pancreas
     if (placedInterventions.length > 0) phases.push(3); // exercise
     if (activeMedications.length > 0) phases.push(4); // medications
     revealSequenceRef.current = phases;
@@ -364,7 +378,7 @@ export function PlanningPhase() {
     setGamePhase('replaying');
     setRevealPhase(0);
     setPenaltyResult(null);
-  }, [submitEnabled, lockPancreasBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, kcalUsed, effectiveKcalBudget, setSatietyPenalty, currentDecayRate, placedInterventions.length, activeMedications.length]);
+  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, kcalUsed, effectiveKcalBudget, setSatietyPenalty, insulinParams, placedInterventions.length, activeMedications.length]);
 
   // === Reveal animation effect — progressive layer reveal (skips empty phases) ===
   useEffect(() => {
@@ -388,7 +402,8 @@ export function PlanningPhase() {
           placedInterventions,
           allInterventions,
           medicationModifiers,
-          currentDecayRate,
+          insulinParams,
+          boostConfig,
         );
 
         // Last day: add WP penalty for unspent WP
@@ -425,12 +440,12 @@ export function PlanningPhase() {
   // === Result actions ===
   const handleRetry = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-    unlockPancreasBars(currentDay);
+    unlockBoostBars(currentDay);
     clearFoods();
     setGamePhase('planning');
     setRevealPhase(undefined);
     setPenaltyResult(null);
-  }, [clearFoods, unlockPancreasBars, currentDay]);
+  }, [clearFoods, unlockBoostBars, currentDay]);
 
   const handleNextDay = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
@@ -498,7 +513,8 @@ export function PlanningPhase() {
               placedInterventions={placedInterventions}
               allInterventions={allInterventions}
               settings={settings}
-              decayRate={currentDecayRate}
+              decayOrInsulin={insulinParams}
+              boostConfig={boostConfig}
               medicationModifiers={medicationModifiers}
               showPenaltyHighlight={showResults}
               revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
@@ -506,9 +522,9 @@ export function PlanningPhase() {
             {isPlanning && (
               <div className="planning-phase__pancreas-overlay">
                 <PancreasButton
-                  currentTier={currentPancreasTier}
+                  isBoostActive={isBoostActive}
                   usesRemaining={barsAvailable}
-                  onToggle={handleTogglePancreas}
+                  onToggle={handleToggleBoost}
                   disabled={gamePhase !== 'planning'}
                 />
               </div>

@@ -53,6 +53,46 @@ export const PANCREAS_TIERS: Record<PancreasTier, { decayRate: number; cost: num
 
 export const PANCREAS_TOTAL_BARS = 1;
 
+// === Insulin Profile System ===
+
+export type InsulinMode = 'cumulative' | 'per-column';
+
+export interface InsulinSegment {
+  from: number;  // column index (0-47)
+  to: number;    // column index inclusive
+  rate: number;  // integer 1-5: cubes absorbed per column (post-peak)
+}
+
+export interface InsulinProfileConfig {
+  mode: InsulinMode;
+  segments: InsulinSegment[];
+}
+
+export interface BoostConfig {
+  active: boolean;
+  thresholdRow: number;  // row for 200 mg/dL = 7
+  extraRate: number;     // +N cubes per column above threshold (e.g., 2)
+}
+
+/** Expand segment-based insulin profile to per-column rate array (48 elements) */
+export function expandInsulinProfile(config: InsulinProfileConfig): number[] {
+  const rates = new Array(TOTAL_COLUMNS).fill(0);
+  for (const seg of config.segments) {
+    for (let col = seg.from; col <= Math.min(seg.to, TOTAL_COLUMNS - 1); col++) {
+      rates[col] = seg.rate;
+    }
+  }
+  return rates;
+}
+
+/** Create a uniform insulin profile from a legacy decayRate value */
+export function legacyDecayToProfile(decayRate: number): InsulinProfileConfig {
+  return {
+    mode: 'cumulative',
+    segments: [{ from: 0, to: TOTAL_COLUMNS - 1, rate: decayRate }],
+  };
+}
+
 // === WP Carry-Over Penalty ===
 
 /** Each unspent WP on the last day adds this many penalty points */
@@ -181,6 +221,7 @@ export interface DayConfig {
   preplacedFoods?: PreplacedFood[];
   preplacedInterventions?: PreplacedIntervention[];
   lockedSlots?: number[];
+  insulinProfile?: InsulinProfileConfig;
 }
 
 // === Kcal Assessment (3-zone satiety system) ===
