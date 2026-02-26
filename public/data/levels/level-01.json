@@ -28,6 +28,10 @@
           "count": 1
         },
         {
+          "id": "heavyrun",
+          "count": 1
+        },
+        {
           "id": "takeabreak",
           "count": 1
         }
@@ -44,7 +48,6 @@
       ],
       "lockedSlots": [
         0,
-        1,
         3,
         4,
         6,
@@ -95,6 +98,10 @@
         {
           "id": "lightwalk",
           "count": 2
+        },
+        {
+          "id": "heavyrun",
+          "count": 1
         },
         {
           "id": "takeabreak",
