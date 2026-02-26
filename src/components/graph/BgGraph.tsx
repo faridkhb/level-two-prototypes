@@ -266,6 +266,10 @@ export function BgGraph({
       }
 
       // Build column entries from PLATEAU curve, compute per-column eating
+      // Insulin eating: per-column during ramp-up, CUMULATIVE after peak
+      const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
+      let cumInsulin = 0; // accumulates only after ramp-up
+
       const cols: Array<{ col: number; baseRow: number; aliveCount: number; plateauCount: number; eatenCount: number }> = [];
       for (const pc of plateauCurve) {
         const graphCol = placed.dropColumn + pc.columnOffset;
@@ -275,12 +279,19 @@ export function BgGraph({
 
         let eatenCount: number;
         if (insulinRates) {
-          // New model: per-column eating with 100 mg/dL floor
           const rate = graphCol < insulinRates.length ? insulinRates[graphCol] : 0;
           const absoluteTop = baseRow + plateauCount;
           const effectiveFloor = Math.max(baseRow, INSULIN_FLOOR_ROW);
           const cubesAboveFloor = Math.max(0, absoluteTop - effectiveFloor);
-          eatenCount = Math.min(rate, cubesAboveFloor);
+
+          if (pc.columnOffset < riseCols) {
+            // Ramp-up: per-column eating (not cumulative)
+            eatenCount = Math.min(rate, cubesAboveFloor);
+          } else {
+            // Post-peak: cumulative eating — creates natural decay slope
+            cumInsulin += rate;
+            eatenCount = Math.min(cumInsulin, cubesAboveFloor);
+          }
         } else if (legacyDecayCurve) {
           // Legacy: use decay curve difference
           const decayCount = legacyDecayMap[graphCol] ?? plateauCount;
