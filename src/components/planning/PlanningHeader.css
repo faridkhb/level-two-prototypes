@@ -227,47 +227,46 @@
 
 /* ───── Mobile (iPhone 14 — 390×844) ───── */
 @media (max-width: 480px) {
-  .planning-header {
-    flex-wrap: wrap;
-    padding: 4px 8px;
-    gap: 4px 8px;
-    border-radius: 8px;
-    align-items: center;
+  /* Wrapper: day label above header bar */
+  .planning-header-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
-  /* Row 1: Day label — full width, above everything */
+  /* Day label — standalone above header */
   .planning-header__day {
-    order: 0;
-    width: 100%;
     text-align: center;
     font-size: 13px;
     font-weight: 700;
   }
 
-  /* Row 2 left: WP budget */
+  /* Header bar: WP | kcal | Submit in one row */
+  .planning-header {
+    padding: 4px 8px;
+    gap: 8px;
+    border-radius: 8px;
+    align-items: center;
+  }
+
   .planning-header__wp {
-    order: 1;
     padding: 3px 8px;
   }
 
-  /* Row 2 center: kcal bar */
+  /* Kcal bar — center */
   .planning-header__kcal-bar-wrap {
-    order: 2;
     flex: 1;
     max-width: none;
     min-width: 0;
   }
 
-  /* Tooltip wrapper around kcal bar — same flex behavior */
   .planning-header > .tooltip-wrapper {
-    order: 2;
     flex: 1;
     min-width: 0;
   }
 
-  /* Row 2 right: Submit button */
+  /* Submit — right */
   .planning-header__submit {
-    order: 3;
     margin-left: 0;
     padding: 4px 12px;
     font-size: 12px;
