@@ -114,36 +114,6 @@
   pointer-events: none;
 }
 
-/* Ghost appear on hover — show what insulin ate */
-@keyframes digestGhostIn {
-  from { opacity: 0; transform: scaleY(0.3); }
-  to   { opacity: 0.3; transform: scaleY(1); }
-}
-
-.bg-graph__cube--digest-ghost {
-  animation: digestGhostIn 0.25s ease-out both;
-  transform-box: fill-box;
-  transform-origin: center bottom;
-  pointer-events: none;
-  stroke: #fbbf24;
-  stroke-width: 1;
-  stroke-dasharray: 3 2;
-}
-
-/* Ghost burn away on mouse leave */
-@keyframes digestGhostOut {
-  0%   { opacity: 0.3; transform: scaleY(1); }
-  40%  { opacity: 0.35; filter: brightness(1.6); }
-  100% { opacity: 0; transform: scaleY(0); }
-}
-
-.bg-graph__cube--digest-ghost-out {
-  animation: digestGhostOut 0.4s ease-in both;
-  transform-box: fill-box;
-  transform-origin: center bottom;
-  pointer-events: none;
-}
-
 /* Cube burn-out animation (exit animation for food removal) */
 @keyframes cubeBurnOut {
   0%   { opacity: 1; filter: brightness(1); transform: scale(1); }

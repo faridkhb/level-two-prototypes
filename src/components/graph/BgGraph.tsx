@@ -153,11 +153,6 @@ export function BgGraph({
   const [digestingFoodIds, setDigestingFoodIds] = useState<Set<string>>(new Set());
   const digestTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Hover ghost state
-  const [hoveredFoodId, setHoveredFoodId] = useState<string | null>(null);
-  const [leavingFoodId, setLeavingFoodId] = useState<string | null>(null);
-  const leavingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Calculate intervention reduction per column, split by type (walk/run)
   const interventionReductions = useMemo(() => {
     const walk = new Array(TOTAL_COLUMNS).fill(0);
@@ -485,48 +480,49 @@ export function BgGraph({
   const cellHeight = GRAPH_H / effectiveRows;
   const rowToY = (row: number) => PAD_TOP + GRAPH_H - (row + 1) * cellHeight;
 
-  // Preview: compute food cubes that would appear when dragging food over a slot
+  // Preview: compute food cubes at PLATEAU height (no insulin) + insulin wrap overlay
   const previewData = useMemo(() => {
     if (!previewShip || previewColumn === undefined) return null;
 
     const { glucose, duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
     // Plateau curve (no insulin) — full height
     const plateauCurve = calculateCurve(glucose, duration, previewColumn, 0);
-    // Decay curve (with insulin) — after insulin eating
-    const decayCurve = calculateCurve(glucose, duration, previewColumn, decayOrInsulin);
+    // Decay curve (with insulin) — actual alive height after insulin
+    const hasInsulin = typeof decayOrInsulin === 'number' ? decayOrInsulin > 0 : true;
+    const decayCurve = hasInsulin
+      ? calculateCurve(glucose, duration, previewColumn, decayOrInsulin)
+      : plateauCurve;
 
+    const { pancreasCaps } = graphRenderData;
+    const cubes: Array<{ col: number; row: number }> = [];
+    const digestCubes: Array<{ col: number; row: number }> = [];
+
+    // Build decay count lookup per column
     const decayMap: Record<number, number> = {};
     for (const dc of decayCurve) {
       const col = previewColumn + dc.columnOffset;
-      if (col >= 0 && col < TOTAL_COLUMNS) decayMap[col] = dc.cubeCount;
+      if (col >= 0 && col < TOTAL_COLUMNS) {
+        decayMap[col] = dc.cubeCount;
+      }
     }
-
-    const { pancreasCaps } = graphRenderData;
-    const aliveCubes: Array<{ col: number; row: number }> = [];
-    const digestCubes: Array<{ col: number; row: number }> = [];
 
     for (const pc of plateauCurve) {
       const col = previewColumn + pc.columnOffset;
       if (col < 0 || col >= TOTAL_COLUMNS) continue;
       const baseRow = pancreasCaps[col]; // stack on top of existing food
-      const decayCount = decayMap[col] ?? 0;
-      const plateauCount = pc.cubeCount;
-
-      // Alive cubes (will remain after insulin)
-      for (let i = 0; i < decayCount; i++) {
+      const aliveCount = decayMap[col] ?? pc.cubeCount;
+      for (let i = 0; i < pc.cubeCount; i++) {
         const row = baseRow + i;
         if (row >= effectiveRows) break;
-        aliveCubes.push({ col, row });
-      }
-      // Digest cubes (insulin will eat these)
-      for (let i = decayCount; i < plateauCount; i++) {
-        const row = baseRow + i;
-        if (row >= effectiveRows) break;
-        digestCubes.push({ col, row });
+        cubes.push({ col, row });
+        // Mark cubes above alive line as "digest" — insulin will eat these
+        if (i >= aliveCount) {
+          digestCubes.push({ col, row });
+        }
       }
     }
 
-    return { aliveCubes, digestCubes, dropColumn: previewColumn };
+    return { cubes, digestCubes, dropColumn: previewColumn };
   }, [previewShip, previewColumn, medicationModifiers, decayOrInsulin, graphRenderData, effectiveRows]);
 
   // Detect removed food layers for exit animation
@@ -575,7 +571,6 @@ export function BgGraph({
   // Cleanup timers on unmount
   useEffect(() => () => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
-    if (leavingTimerRef.current) clearTimeout(leavingTimerRef.current);
     for (const timer of digestTimersRef.current.values()) clearTimeout(timer);
   }, []);
 
@@ -767,33 +762,33 @@ export function BgGraph({
           />
         )}
 
-        {/* Drag preview: food cubes + insulin digest overlay */}
+        {/* Drag preview: food at full plateau height + insulin wrap overlay */}
         {previewData && (
           <g className="bg-graph__preview" pointerEvents="none">
-            {/* Alive cubes (will remain after insulin) */}
-            {previewData.aliveCubes.map(cube => (
+            {/* All food cubes at full plateau height (no insulin eaten) */}
+            {previewData.cubes.map(cube => (
               <rect
-                key={`preview-alive-${cube.col}-${cube.row}`}
+                key={`preview-${cube.col}-${cube.row}`}
                 x={colToX(cube.col) + 0.5}
                 y={rowToY(cube.row) + 0.5}
                 width={CELL_SIZE - 1}
                 height={cellHeight - 1}
                 fill="#38bdf8"
-                opacity={0.4}
+                opacity={0.35}
                 rx={2}
                 className="bg-graph__cube--preview"
               />
             ))}
-            {/* Digest cubes (insulin will eat) — amber overlay */}
+            {/* Insulin wrap overlay — amber on cubes that insulin will eat */}
             {previewData.digestCubes.map(cube => (
               <rect
-                key={`preview-digest-${cube.col}-${cube.row}`}
+                key={`preview-insulin-${cube.col}-${cube.row}`}
                 x={colToX(cube.col) + 0.5}
                 y={rowToY(cube.row) + 0.5}
                 width={CELL_SIZE - 1}
                 height={cellHeight - 1}
                 fill="#fbbf24"
-                opacity={0.45}
+                opacity={0.5}
                 rx={2}
                 className="bg-graph__cube--preview"
                 stroke="#f59e0b"
@@ -805,20 +800,7 @@ export function BgGraph({
 
         {/* Per-food cube layers: last placed rendered first (bottom), first placed last (top) */}
         {[...graphRenderData.layers].reverse().map(layer => (
-          <g
-            key={`food-layer-${layer.placementId}`}
-            className="bg-graph__food-group"
-            onMouseEnter={() => {
-              if (leavingTimerRef.current) clearTimeout(leavingTimerRef.current);
-              setLeavingFoodId(null);
-              setHoveredFoodId(layer.placementId);
-            }}
-            onMouseLeave={() => {
-              setHoveredFoodId(null);
-              setLeavingFoodId(layer.placementId);
-              leavingTimerRef.current = setTimeout(() => setLeavingFoodId(null), 500);
-            }}
-          >
+          <g key={`food-layer-${layer.placementId}`} className="bg-graph__food-group">
             {layer.cubes
               .filter(cube => {
                 // During reveal, progressively show cube layers
@@ -855,13 +837,11 @@ export function BgGraph({
           </g>
         ))}
 
-        {/* Digest cubes — insulin eating animation + hover ghosts */}
+        {/* Digest cubes — insulin eating animation (after food placement + reveal) */}
         {graphRenderData.layers.map(layer => {
           if (layer.digestCubes.length === 0) return null;
 
           const isDigesting = digestingFoodIds.has(layer.placementId);
-          const isHovered = hoveredFoodId === layer.placementId;
-          const isLeaving = leavingFoodId === layer.placementId;
 
           // Reveal mode
           if (revealPhase !== undefined) {
@@ -891,60 +871,25 @@ export function BgGraph({
             );
           }
 
-          // Gameplay: show when digesting, hovered, or leaving hover
-          if (!isDigesting && !isHovered && !isLeaving) return null;
+          // Gameplay: only show during placement digest animation
+          if (!isDigesting) return null;
 
           return (
             <g key={`digest-${layer.placementId}`} pointerEvents="none">
               {layer.digestCubes.map(cube => {
                 const waveDelay = Math.abs(cube.col - layer.dropColumn) * 30;
-
-                if (isDigesting) {
-                  // Placement: digest animation (appear → amber flash → shrink)
-                  return (
-                    <rect
-                      key={`${layer.placementId}-digest-${cube.col}-${cube.row}`}
-                      x={colToX(cube.col) + 0.5}
-                      y={rowToY(cube.row) + 0.5}
-                      width={CELL_SIZE - 1}
-                      height={cellHeight - 1}
-                      fill={layer.color}
-                      rx={2}
-                      className="bg-graph__cube--digest"
-                      style={{ animationDelay: `${waveDelay + 450}ms` }}
-                    />
-                  );
-                }
-
-                // Hover/leaving: show food cube + amber insulin overlay
-                const ghostClass = isHovered ? 'bg-graph__cube--digest-ghost' : 'bg-graph__cube--digest-ghost-out';
                 return (
-                  <g key={`${layer.placementId}-digest-${cube.col}-${cube.row}`}>
-                    {/* Food cube base */}
-                    <rect
-                      x={colToX(cube.col) + 0.5}
-                      y={rowToY(cube.row) + 0.5}
-                      width={CELL_SIZE - 1}
-                      height={cellHeight - 1}
-                      fill={layer.color}
-                      rx={2}
-                      className={ghostClass}
-                      style={{ animationDelay: `${waveDelay}ms` }}
-                    />
-                    {/* Amber insulin overlay */}
-                    <rect
-                      x={colToX(cube.col) + 0.5}
-                      y={rowToY(cube.row) + 0.5}
-                      width={CELL_SIZE - 1}
-                      height={cellHeight - 1}
-                      fill="#fbbf24"
-                      rx={2}
-                      className={ghostClass}
-                      style={{ animationDelay: `${waveDelay}ms` }}
-                      stroke="#f59e0b"
-                      strokeWidth={0.5}
-                    />
-                  </g>
+                  <rect
+                    key={`${layer.placementId}-digest-${cube.col}-${cube.row}`}
+                    x={colToX(cube.col) + 0.5}
+                    y={rowToY(cube.row) + 0.5}
+                    width={CELL_SIZE - 1}
+                    height={cellHeight - 1}
+                    fill={layer.color}
+                    rx={2}
+                    className="bg-graph__cube--digest"
+                    style={{ animationDelay: `${waveDelay + 450}ms` }}
+                  />
                 );
               })}
             </g>
