@@ -43,21 +43,20 @@ interface DayConfig {
   lockedSlots?: number[];
 }
 
-interface Placed { id: string; shipId?: string; interventionId?: string; dropColumn: number; slotIndex: number; slotSize?: number; }
-
 interface MedMods {
   glucoseMultiplier: number; durationMultiplier: number;
   kcalMultiplier: number; wpBonus: number;
   sglt2: { depth: number; floorRow: number } | null;
 }
 
-interface PenaltyResult { totalPenalty: number; orangeCount: number; redCount: number; stars: number; label: string; }
+interface PenaltyResult { totalPenalty: number; orangeCount: number; redCount: number; stars: number; label: string; wpPenalty?: number; }
 
 interface Solution {
   foods: { id: string; slot: number }[];
   interventions: { id: string; slot: number }[];
   meds: string[];
   penalty: number; stars: number; label: string; kcal: number; wp: number;
+  wpPenalty?: number;
 }
 
 // ── Constants ──
@@ -72,6 +71,7 @@ const P_ORANGE_ROW = 7;
 const P_RED_ROW = 12;
 const P_ORANGE_W = 0.5;
 const P_RED_W = 1.5;
+const WP_PENALTY_WEIGHT = 5;
 
 const slotToCol = (s: number) => s * COLS_PER_SLOT;
 const slotTime = (s: number) => { const h = 8 + s; return h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h-12} PM`; };
@@ -179,7 +179,7 @@ function loadMedications(): Medication[] {
   }));
 }
 
-function loadDayConfig(levelId: string, day: number): DayConfig {
+function loadDayConfig(levelId: string, day: number): DayConfig & { totalDays: number } {
   const raw = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'levels', `${levelId}.json`), 'utf-8'));
   const dc = raw.dayConfigs?.find((d: any) => d.day === day) ?? raw.dayConfigs?.[0];
   if (!dc) throw new Error(`Day ${day} not found in ${levelId}`);
@@ -194,6 +194,7 @@ function loadDayConfig(levelId: string, day: number): DayConfig {
     availableMedications: dc.availableMedications,
     preplacedFoods: dc.preplacedFoods, preplacedInterventions: dc.preplacedInterventions,
     lockedSlots: dc.lockedSlots,
+    totalDays: raw.days ?? raw.dayConfigs?.length ?? 1,
   };
 }
 
@@ -286,8 +287,11 @@ function runSolve(args: Record<string, string>) {
 
   // Load config
   let dayConfig: DayConfig;
+  let isLastDay = args['last-day'] === 'true';
   if (args['level']) {
-    dayConfig = loadDayConfig(args['level'], +(args['day'] ?? '1'));
+    const loaded = loadDayConfig(args['level'], +(args['day'] ?? '1'));
+    dayConfig = loaded;
+    if (!args['last-day']) isLastDay = loaded.day === loaded.totalDays;
   } else {
     const parse = (s: string) => s.split(',').filter(Boolean).map(x => { const [id, c] = x.split(':'); return { id, count: +(c ?? '1') }; });
     dayConfig = {
@@ -354,10 +358,28 @@ function runSolve(args: Record<string, string>) {
   console.log(`Max foods per solution: ${maxFoods}`);
   if (preFoods.length) console.log(`Pre-placed foods: ${preFoods.map(f => `${f.id}@${f.slot}`).join(', ')}`);
   if (preInts.length) console.log(`Pre-placed interventions: ${preInts.map(i => `${i.id}@${i.slot}`).join(', ')}`);
+  if (isLastDay) console.log(`⚠️  Last day — unspent WP penalty: +${WP_PENALTY_WEIGHT} per unspent WP`);
   console.log('\nSearching...');
 
   const tracker = new SolverTracker();
   const startTime = Date.now();
+
+  // Helper: add solution with optional last-day WP penalty
+  function addSolution(sol: Solution, effWpBudget: number) {
+    if (isLastDay) {
+      const unspent = Math.max(0, effWpBudget - sol.wp);
+      if (unspent > 0) {
+        const wpPen = unspent * WP_PENALTY_WEIGHT;
+        sol.penalty = Math.round((sol.penalty + wpPen) * 10) / 10;
+        sol.wpPenalty = wpPen;
+        // Recalculate stars
+        const { stars, label } = sol.penalty <= 12.5 ? { stars: 3, label: 'Perfect' } : sol.penalty <= 50 ? { stars: 2, label: 'Good' } : sol.penalty <= 100 ? { stars: 1, label: 'Pass' } : { stars: 0, label: 'Defeat' };
+        sol.stars = stars;
+        sol.label = label;
+      }
+    }
+    tracker.add(sol);
+  }
 
   // Pre-compute intervention curves for pre-placed interventions
   const preIntRed = new Array(TOTAL_COLUMNS).fill(0);
@@ -374,8 +396,6 @@ function runSolve(args: Record<string, string>) {
     const effKcal = Math.round(dayConfig.kcalBudget * mods.kcalMultiplier);
     const preKcalMod = Math.round(preKcal * mods.kcalMultiplier);
 
-    // Pre-compute food curves for the current med combo
-    const foodCurves: Map<string, number[]> = new Map();
     const foodKcals: Map<string, number> = new Map();
     for (const fid of new Set(foodPool)) {
       const ship = allShips.find(s => s.id === fid);
@@ -395,7 +415,6 @@ function runSolve(args: Record<string, string>) {
       for (let i = 0; i < TOTAL_COLUMNS; i++) heights[i] += c[i];
     }
 
-    const usedFoodIndices = new Set<number>();
     const placedFoodList: { id: string; slot: number }[] = [];
     let currentWp = preWp;
     let currentKcal = preKcalMod;
@@ -405,12 +424,12 @@ function runSolve(args: Record<string, string>) {
       const baseResult = calcPenalty(heights, preIntRed, mods);
 
       // Record baseline (no player interventions)
-      tracker.add({
+      addSolution({
         foods: [...preFoods, ...foodList],
         interventions: preInts.map(i => ({ id: i.id, slot: i.slot })),
         meds: medCombo, penalty: baseResult.totalPenalty, stars: baseResult.stars,
         label: baseResult.label, kcal: currentKcal, wp: currentWp,
-      });
+      }, effWp);
 
       // Try adding single interventions at each free slot
       const remainSlots = freeSlots.filter(s => !usedSlots.has(s));
@@ -448,12 +467,12 @@ function runSolve(args: Record<string, string>) {
           // Record single intervention only if WP fits
           if (singleWpOk) {
             const r = calcPenalty(heights, iRed, mods);
-            tracker.add({
+            addSolution({
               foods: [...preFoods, ...foodList],
               interventions: [...preInts.map(i => ({ id: i.id, slot: i.slot })), { id: intItem.id, slot }],
               meds: medCombo, penalty: r.totalPenalty, stars: r.stars,
               label: r.label, kcal: currentKcal, wp: currentWp + intv.wpCost,
-            });
+            }, effWp);
           }
 
           // Try adding a second intervention
@@ -482,12 +501,12 @@ function runSolve(args: Record<string, string>) {
               for (let i = 0; i < TOTAL_COLUMNS; i++) iRed2[i] += c2[i];
 
               const r2 = calcPenalty(heights, iRed2, mods);
-              tracker.add({
+              addSolution({
                 foods: [...preFoods, ...foodList],
                 interventions: [...preInts.map(i => ({ id: i.id, slot: i.slot })), { id: intItem.id, slot }, { id: intItem2.id, slot: slot2 }],
                 meds: medCombo, penalty: r2.totalPenalty, stars: r2.stars,
                 label: r2.label, kcal: currentKcal, wp: currentWp + intv.wpCost + intv2.wpCost,
-              });
+              }, effWp);
             }
           }
         }
@@ -571,7 +590,8 @@ function runSolve(args: Record<string, string>) {
       const foodStr = s.foods.map(f => `${f.id}:${f.slot}`).join(', ');
       const intStr = s.interventions.length ? ` | int: ${s.interventions.map(i => `${i.id}:${i.slot}`).join(', ')}` : '';
       const medStr = s.meds.length ? ` | meds: ${s.meds.join(',')}` : '';
-      console.log(`  #${i+1}: ${foodStr}${intStr}${medStr} | p=${s.penalty} | ${s.kcal} kcal | ${s.wp} WP`);
+      const wpPenStr = s.wpPenalty ? ` (wp_pen=${s.wpPenalty})` : '';
+      console.log(`  #${i+1}: ${foodStr}${intStr}${medStr} | p=${s.penalty}${wpPenStr} | ${s.kcal} kcal | ${s.wp} WP`);
     }
     console.log('');
   }
@@ -627,6 +647,7 @@ Solve:
   --level level-01 --day 1          Load from level config
   --decay 0.5                       Decay rate
   --max-foods 5                     Max foods to place (default: 5)
+  --last-day true                   Force last-day WP penalty (auto-detected from level config)
 
   Custom config:
   --available-foods "banana:1,pizza:1"

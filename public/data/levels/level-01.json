@@ -7,7 +7,7 @@
     {
       "day": 1,
       "kcalBudget": 1800,
-      "wpBudget": 8,
+      "wpBudget": 10,
       "availableFoods": [
         { "id": "burger", "count": 1 },
         { "id": "sandwich", "count": 1 },
@@ -30,23 +30,19 @@
       "kcalBudget": 2000,
       "wpBudget": 10,
       "availableFoods": [
-        { "id": "sandwich", "count": 1 },
         { "id": "chickpeas", "count": 1 },
         { "id": "cookie", "count": 1 },
-        { "id": "greekyogurt", "count": 1 },
-        { "id": "banana", "count": 1 },
-        { "id": "nutsmixed", "count": 1 }
+        { "id": "oatmeal", "count": 1 }
       ],
       "availableInterventions": [
-        { "id": "lightwalk", "count": 1 },
-        { "id": "heavyrun", "count": 1 },
+        { "id": "lightwalk", "count": 2 },
         { "id": "takeabreak", "count": 1 }
       ],
       "preplacedFoods": [
-        { "shipId": "rice", "slotIndex": 0 },
-        { "shipId": "pizza", "slotIndex": 1 }
+        { "shipId": "banana", "slotIndex": 0 },
+        { "shipId": "chocolatemuffin", "slotIndex": 5 }
       ],
-      "lockedSlots": [3, 10, 11],
+      "lockedSlots": [1, 2, 8, 9, 10, 11],
       "availableMedications": ["metformin"]
     },
     {
@@ -54,17 +50,12 @@
       "kcalBudget": 2000,
       "wpBudget": 10,
       "availableFoods": [
-        { "id": "chocolatemuffin", "count": 1 },
         { "id": "sandwich", "count": 1 },
         { "id": "cookie", "count": 1 },
-        { "id": "berriesmixed", "count": 1 },
-        { "id": "chickpeas", "count": 1 },
-        { "id": "greekyogurt", "count": 1 },
-        { "id": "oatmeal", "count": 1 },
         { "id": "banana", "count": 1 },
+        { "id": "berriesmixed", "count": 1 },
         { "id": "nutsmixed", "count": 1 },
         { "id": "milk", "count": 1 },
-        { "id": "burger", "count": 1 },
         { "id": "eggsboiled", "count": 1 }
       ],
       "availableInterventions": [
@@ -73,6 +64,12 @@
         { "id": "takeabreak", "count": 2 },
         { "id": "takearest", "count": 1 }
       ],
+      "preplacedFoods": [
+        { "shipId": "burger", "slotIndex": 0 },
+        { "shipId": "chocolatemuffin", "slotIndex": 1 },
+        { "shipId": "oatmeal", "slotIndex": 2 }
+      ],
+      "lockedSlots": [0, 1, 2],
       "availableMedications": ["metformin", "glp1"]
     }
   ]
