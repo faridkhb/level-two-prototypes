@@ -97,20 +97,38 @@
   transition: all 0.15s ease-out;
 }
 
-/* Insulin digest — cubes appear then get eaten by insulin "blanket" pressing down */
-@keyframes insulinDigest {
+/* Digest cubes (eaten food): appear like food, hold, then burn when insulin lands */
+@keyframes digestAppearBurn {
   0%   { opacity: 0; transform: scale(0.3); }
-  25%  { opacity: 1; transform: scale(1.05); }
-  40%  { opacity: 1; transform: scale(1); }
-  55%  { opacity: 0.8; filter: brightness(1.8); }
-  75%  { opacity: 0.4; transform: scaleY(0.5); }
-  100% { opacity: 0; transform: scaleY(0); }
+  12%  { opacity: 1; transform: scale(1.08); }
+  18%  { opacity: 1; transform: scale(1); }
+  65%  { opacity: 1; transform: scale(1); }
+  80%  { opacity: 0.8; filter: brightness(2.5); transform: scale(1.1); }
+  100% { opacity: 0; filter: brightness(0.5); transform: scale(0.3); }
 }
 
-.bg-graph__cube--digest {
-  animation: insulinDigest 1.2s ease-in-out both;
+.bg-graph__cube--digest-appear-burn {
+  animation: digestAppearBurn 1.6s ease-in-out both;
   transform-box: fill-box;
-  transform-origin: center bottom;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+/* Insulin fall cubes: invisible → appear above food → fall → burn */
+@keyframes insulinFall {
+  0%   { opacity: 0; transform: translateY(0); }
+  18%  { opacity: 0; transform: translateY(0); }
+  25%  { opacity: 0.9; transform: translateY(0); }
+  55%  { opacity: 0.9; transform: translateY(var(--fall-dist)); }
+  65%  { opacity: 0.9; transform: translateY(var(--fall-dist)); }
+  80%  { opacity: 0.8; filter: brightness(2.5); transform: translateY(var(--fall-dist)) scale(1.1); }
+  100% { opacity: 0; transform: translateY(var(--fall-dist)) scale(0.3); }
+}
+
+.bg-graph__cube--insulin-fall {
+  animation: insulinFall 1.6s ease-in-out both;
+  transform-box: fill-box;
+  transform-origin: center;
   pointer-events: none;
 }
 
