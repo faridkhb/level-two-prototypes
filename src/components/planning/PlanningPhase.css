@@ -130,7 +130,7 @@
 
   .planning-phase__content {
     flex: 1;
-    gap: 8px;
+    gap: 4px;
     overflow: hidden;
     min-height: 0;
     display: flex;
@@ -151,7 +151,6 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    margin-top: -2px;
   }
 
   .planning-phase__interventions-row {
