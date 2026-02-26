@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
 import {
   DndContext,
   DragOverlay,
@@ -10,7 +10,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BoostConfig } from '../../core/types';
-import { TOTAL_SLOTS, expandInsulinProfile, PENALTY_ORANGE_ROW } from '../../core/types';
+import { TOTAL_SLOTS, expandInsulinProfile, PENALTY_ORANGE_ROW, slotToColumn } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { useConfigStore } from '../../store/configStore';
@@ -84,6 +84,7 @@ export function PlanningPhase() {
   const [allMedications, setAllMedications] = useState<Medication[]>([]);
   const [activeShip, setActiveShip] = useState<Ship | null>(null);
   const [activeIntervention, setActiveIntervention] = useState<Intervention | null>(null);
+  const [previewSlot, setPreviewSlot] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Submit / reveal state
@@ -234,12 +235,25 @@ export function PlanningPhase() {
     }
   }, [gamePhase]);
 
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const overId = event.over ? String(event.over.id) : null;
+    if (overId && overId.startsWith('slot-')) {
+      const slot = parseInt(overId.replace('slot-', ''), 10);
+      if (!isNaN(slot) && slot >= 0 && slot < TOTAL_SLOTS) {
+        setPreviewSlot(slot);
+        return;
+      }
+    }
+    setPreviewSlot(null);
+  }, []);
+
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
 
       setActiveShip(null);
       setActiveIntervention(null);
+      setPreviewSlot(null);
 
       if (!over || gamePhase !== 'planning') return;
 
@@ -479,6 +493,7 @@ export function PlanningPhase() {
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="planning-phase">
@@ -518,6 +533,8 @@ export function PlanningPhase() {
               medicationModifiers={medicationModifiers}
               showPenaltyHighlight={showResults}
               revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
+              previewShip={activeShip && previewSlot !== null ? activeShip : undefined}
+              previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}
             />
             {isPlanning && (
               <div className="planning-phase__pancreas-overlay">
