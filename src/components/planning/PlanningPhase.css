@@ -154,6 +154,9 @@
 
   .planning-phase__interventions-row {
     gap: 6px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
   }
 
   .planning-phase__hint {

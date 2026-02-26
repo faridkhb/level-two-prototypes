@@ -35,26 +35,35 @@
     border-radius: 8px;
     padding: 6px;
     gap: 3px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .ship-inventory__title {
     font-size: 10px;
+    flex-shrink: 0;
   }
 
-  /* Food inventory: compact grid */
+  .ship-inventory__grid {
+    flex: 1;
+  }
+
+  /* Food inventory: compact grid, vertical scroll */
   .ship-inventory--food .ship-inventory__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
     gap: 4px;
+    align-content: start;
   }
 
-  /* Actions inventory: horizontal scroll */
+  /* Actions inventory: wrap grid, vertical scroll */
   .ship-inventory--actions .ship-inventory__grid {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 4px;
-    padding-bottom: 2px;
+    align-content: start;
   }
 
   .ship-inventory__empty {
