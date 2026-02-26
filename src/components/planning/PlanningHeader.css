@@ -230,34 +230,47 @@
   .planning-header {
     flex-wrap: wrap;
     padding: 4px 8px;
-    gap: 6px;
+    gap: 4px 8px;
     border-radius: 8px;
+    align-items: center;
   }
 
+  /* Row 1: Day label — full width, above everything */
+  .planning-header__day {
+    order: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  /* Row 2 left: WP budget */
   .planning-header__wp {
     order: 1;
     padding: 3px 8px;
   }
 
-  .planning-header__day {
+  /* Row 2 center: kcal bar */
+  .planning-header__kcal-bar-wrap {
     order: 2;
     flex: 1;
-    text-align: center;
-    font-size: 14px;
+    max-width: none;
+    min-width: 0;
   }
 
+  /* Tooltip wrapper around kcal bar — same flex behavior */
+  .planning-header > .tooltip-wrapper {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Row 2 right: Submit button */
   .planning-header__submit {
     order: 3;
     margin-left: 0;
-    padding: 4px 14px;
+    padding: 4px 12px;
     font-size: 12px;
-  }
-
-  .planning-header__kcal-bar-wrap {
-    order: 4;
-    width: 100%;
-    max-width: 100%;
-    min-width: unset;
   }
 
   .planning-header__assessment-badge {
