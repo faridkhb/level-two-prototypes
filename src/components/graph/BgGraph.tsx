@@ -956,9 +956,21 @@ export function BgGraph({
               const cubeClass = cube.status === 'burned'
                 ? 'bg-graph__cube--burned'
                 : 'bg-graph__cube';
-              const cubeFill = cube.status === 'burned' && cube.burnColor
-                ? cube.burnColor
-                : layer.color;
+              let cubeFill: string;
+              if (cube.status === 'burned' && cube.burnColor) {
+                cubeFill = cube.burnColor;
+              } else if (revealPhase !== undefined || showPenaltyHighlight) {
+                // Results phase: color cubes by danger zone
+                if (cube.row >= PENALTY_RED_ROW) {
+                  cubeFill = '#f56565'; // red-400
+                } else if (cube.row >= PENALTY_ORANGE_ROW) {
+                  cubeFill = '#ed8936'; // orange-400
+                } else {
+                  cubeFill = layer.color;
+                }
+              } else {
+                cubeFill = layer.color;
+              }
               return (
                 <rect
                   key={`${layer.placementId}-${cube.col}-${cube.row}`}
@@ -1039,72 +1051,28 @@ export function BgGraph({
           </g>
         )}
 
-        {/* Digest cubes + insulin fall animation (after food placement + reveal) */}
+        {/* Digest cubes + insulin fall animation (unified reveal/gameplay) */}
         {graphRenderData.layers.map(layer => {
           if (layer.digestCubes.length === 0) return null;
 
-          const isDigesting = digestingFoodIds.has(layer.placementId);
+          const isReveal = revealPhase !== undefined;
+          const showDigest = isReveal ? revealPhase! >= 1 : digestingFoodIds.has(layer.placementId);
+          if (!showDigest) return null;
 
-          // Reveal mode
-          if (revealPhase !== undefined) {
-            if (revealPhase < 1) return null;
-            // Phase 1: show digest cubes as normal food cubes (full plateau height)
-            // Phase 2+: insulin fall animation
-            const digestCls = revealPhase >= 2 ? 'bg-graph__cube--digest-appear-burn' : 'bg-graph__cube';
-            const showInsulinFall = revealPhase >= 2;
-            return (
-              <g key={`digest-${layer.placementId}`} pointerEvents="none">
-                {layer.digestCubes.map(cube => {
-                  const waveDelay = Math.abs(cube.col - layer.dropColumn) * 20;
-                  return (
-                    <rect
-                      key={`${layer.placementId}-digest-${cube.col}-${cube.row}`}
-                      x={colToX(cube.col) + 0.5}
-                      y={rowToY(cube.row) + 0.5}
-                      width={CELL_SIZE - 1}
-                      height={cellHeight - 1}
-                      fill={layer.color}
-                      rx={2}
-                      className={digestCls}
-                      style={{ animationDelay: `${waveDelay}ms` }}
-                    />
-                  );
-                })}
-                {showInsulinFall && layer.colSummary
-                  .filter(cs => cs.eatenCount > 0)
-                  .flatMap(cs => {
-                    const plateauTop = cs.baseRow + cs.plateauCount;
-                    const fallDist = cs.eatenCount * cellHeight;
-                    const waveDelay = Math.abs(cs.col - layer.dropColumn) * 20;
-                    return Array.from({ length: cs.eatenCount }, (_, i) => (
-                      <rect
-                        key={`${layer.placementId}-ifall-${cs.col}-${i}`}
-                        x={colToX(cs.col) + 0.5}
-                        y={rowToY(plateauTop + i) + 0.5}
-                        width={CELL_SIZE - 1}
-                        height={cellHeight - 1}
-                        fill="#f59e0b"
-                        rx={2}
-                        className="bg-graph__cube--insulin-fall"
-                        style={{
-                          animationDelay: `${waveDelay}ms`,
-                          '--fall-dist': `${fallDist}px`,
-                        } as React.CSSProperties}
-                      />
-                    ));
-                  })}
-              </g>
-            );
-          }
-
-          // Gameplay: only show during placement digest animation
-          if (!isDigesting) return null;
+          // Phase 1 reveal: cubes appear as normal food. Phase 2+/gameplay: burn animation
+          const showFall = isReveal ? revealPhase! >= 2 : true;
+          const digestCls = showFall ? 'bg-graph__cube--digest-appear-burn' : 'bg-graph__cube';
 
           return (
             <g key={`digest-${layer.placementId}`} pointerEvents="none">
-              {/* Eaten food cubes — appear then burn with insulin */}
               {layer.digestCubes.map(cube => {
                 const waveDelay = Math.abs(cube.col - layer.dropColumn) * 20;
+                // Zone coloring for digest cubes during results
+                let fill = layer.color;
+                if (isReveal) {
+                  if (cube.row >= PENALTY_RED_ROW) fill = '#f56565';
+                  else if (cube.row >= PENALTY_ORANGE_ROW) fill = '#ed8936';
+                }
                 return (
                   <rect
                     key={`${layer.placementId}-digest-${cube.col}-${cube.row}`}
@@ -1112,15 +1080,14 @@ export function BgGraph({
                     y={rowToY(cube.row) + 0.5}
                     width={CELL_SIZE - 1}
                     height={cellHeight - 1}
-                    fill={layer.color}
+                    fill={fill}
                     rx={2}
-                    className="bg-graph__cube--digest-appear-burn"
+                    className={digestCls}
                     style={{ animationDelay: `${waveDelay}ms` }}
                   />
                 );
               })}
-              {/* Insulin fall cubes — appear above food, fall down, burn */}
-              {layer.colSummary
+              {showFall && layer.colSummary
                 .filter(cs => cs.eatenCount > 0)
                 .flatMap(cs => {
                   const plateauTop = cs.baseRow + cs.plateauCount;
@@ -1146,6 +1113,55 @@ export function BgGraph({
             </g>
           );
         })}
+
+        {/* Intervention fall during reveal phase 3 */}
+        {revealPhase !== undefined && revealPhase >= 3 && placedInterventions.length > 0 && (() => {
+          const { columnCaps } = graphRenderData;
+          const fallCubes: React.ReactElement[] = [];
+
+          for (const placed of placedInterventions) {
+            const intervention = allInterventions.find(i => i.id === placed.interventionId);
+            if (!intervention || intervention.depth <= 0) continue;
+
+            const curve = calculateInterventionCurve(
+              intervention.depth, intervention.duration, placed.dropColumn,
+              intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+            );
+            const color = intervention.id === 'lightwalk' ? '#86efac' : '#22c55e';
+
+            for (const c of curve) {
+              const col = placed.dropColumn + c.columnOffset;
+              if (col < 0 || col >= TOTAL_COLUMNS) continue;
+              const currentTop = columnCaps[col];
+              const effectiveRed = Math.min(c.cubeCount, currentTop + c.cubeCount);
+              if (effectiveRed <= 0) continue;
+              const fallDist = effectiveRed * cellHeight;
+              const waveDelay = Math.abs(col - placed.dropColumn) * 20;
+
+              for (let i = 0; i < effectiveRed; i++) {
+                fallCubes.push(
+                  <rect
+                    key={`reveal-ifall-${placed.id}-${col}-${i}`}
+                    x={colToX(col) + 0.5}
+                    y={rowToY(currentTop + effectiveRed + i) + 0.5}
+                    width={CELL_SIZE - 1}
+                    height={cellHeight - 1}
+                    fill={color}
+                    rx={2}
+                    className="bg-graph__cube--intervention-fall"
+                    style={{
+                      animationDelay: `${waveDelay}ms`,
+                      '--fall-dist': `${fallDist}px`,
+                    } as React.CSSProperties}
+                  />
+                );
+              }
+            }
+          }
+
+          if (fallCubes.length === 0) return null;
+          return <g pointerEvents="none">{fallCubes}</g>;
+        })()}
 
         {/* Medication-prevented cubes (above pancreas zone) */}
         {graphRenderData.medCubes.length > 0 && (revealPhase === undefined || revealPhase >= 4) && (
