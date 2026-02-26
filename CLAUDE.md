@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.40.6 | Graph-based food planning with cubes, interventions, medications, decay, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties |
+| `main` | BG Planner | v0.42.19 | Graph-based food planning with cubes, interventions, medications, decay, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -109,7 +109,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.40.6)
+- `src/version.ts` — version number (v0.42.19)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -149,14 +149,17 @@ CONFIG:
 #### Configuration
 - `src/config/loader.ts` — loads and transforms foods.json, interventions.json, level configs; applies config overrides
 - `public/data/foods.json` — 24 food items with glucose, carbs, protein, fat, duration, kcal, wpCost
-- `public/data/interventions.json` — 2 interventions: Light Walk, Heavy Run
+- `public/data/interventions.json` — 4 interventions: Light Walk, Heavy Run, Take a Break, Take a Rest
 - `public/data/medications.json` — 3 medications: Metformin, SGLT2 Inhibitor, GLP-1 Agonist
-- `public/data/levels/level-01.json` — 3-day level config with kcalBudget, wpBudget, availableInterventions per day
+- `public/data/levels/level-01.json` — 3-day level config with kcalBudget, wpBudget, availableFoods, availableInterventions, preplacedFoods, lockedSlots, availableMedications per day
+
+#### Balance Tools
+- `scripts/balance-calc.ts` — CLI balance calculator & solver for level design (calc single placement, solve enumerate all)
 
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.40.6) — Dynamic Y-axis, Pancreas ON/BOOST, Overeating Penalties
+### Current State (v0.42.19) — Pre-placed Foods, Locked Slots, Level Balancing, Break Interventions
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -220,12 +223,15 @@ CONFIG:
   - Decay toggle: ON/OFF button in header (toggling restarts game)
 
 - **Intervention System** ✅
-  - Two interventions: Light Walk (🚶 60m, 2 WP, -3 cubes) and Heavy Run (🏃 180m, 4 WP, -5 cubes)
-  - **Two-phase curve** (v0.40.0): main phase at full depth, then tail at reduced depth
+  - Four interventions: Light Walk, Heavy Run, Take a Break, Take a Rest
+  - **Exercise interventions** (walk/run): two-phase curve — main phase at full depth, then tail at reduced depth
     - Main phase: `duration / 15` columns at full `depth` (no ramp, immediate full power)
     - Tail phase: remaining columns at `boostExtra` depth (residual burn)
-    - Light Walk: 4 cols at 3 cubes, then 1 cube to end
-    - Heavy Run: 12 cols at 5 cubes, then 2 cubes to end
+    - Light Walk: 🚶 4 cols at 3 cubes, then 1 cube to end (2 WP)
+    - Heavy Run: 🏃 12 cols at 5 cubes, then 2 cubes to end (4 WP, slotSize=2)
+  - **Break interventions** (v0.40.25): restore WP, no cube effect
+    - Take a Break: ☕ −1 WP cost (refunds 1 WP), 30m duration
+    - Take a Rest: 😴 −2 WP cost (refunds 2 WP), 120m duration, slotSize=2
   - **Drag preview**: when dragging an intervention over the graph, per-cube green overlays show exactly which food cubes would be burned (pulsing animation)
   - Cubes are removed from the **top** of the food stack at each column
   - **Per-source burn coloring** (v0.39.0): burned cubes colored by source, not food color
@@ -250,7 +256,7 @@ CONFIG:
   - Purple toggle panel between graph and food inventory
   - All medications stack multiplicatively (glucose) and additively (drain, WP)
   - Available per day via `availableMedications` in level config
-  - Day 1: none, Day 2: Metformin, Day 3: all three
+  - Day 1: none, Day 2: Metformin, Day 3: Metformin + GLP-1
   - **Medication-prevented cubes** (v0.39.1): visual layer above pancreas zone showing cubes that medications prevented
     - Metformin: `#f0abfc` fuchsia-300 (opacity 0.45)
     - GLP-1: `#a78bfa` violet-400 (opacity 0.45)
@@ -263,7 +269,7 @@ CONFIG:
   - Wave delay: 20ms per column offset from drop point
 
 - **WP Budget** ✅
-  - Per-day wpBudget from level config (Day 1: 7, Day 2-3: 10)
+  - Per-day wpBudget from level config (Day 1: 10, Day 2-3: 10)
   - Header shows wpUsed/wpBudget with ☀️ icon
   - **Combined tracking**: food wpCost + intervention wpCost share same pool
   - **Hard limit**: cards disabled (grayed out, non-draggable) when WP insufficient
@@ -334,12 +340,13 @@ CONFIG:
   - Penalty highlight overlays (pulsing orange/red) on cubes above threshold
 
 - **Pancreas System** ✅ (simplified v0.40.5)
-  - 2-state compact toggle: ON (Tier I, decayRate 0.25) ↔ BOOST (Tier III, decayRate 0.75)
+  - 2-state compact toggle: ON (Tier I, decayRate 0.5) ↔ BOOST (Tier III, decayRate 0.75)
+  - Continuous drain from column 0: `height = round(rawRise − decayRate × (i+1))` during ramp-up
+  - Post-peak: `height = round(peakCubes − decayRate × (i+1))` until 0
   - Button overlaid on graph top-left corner with absolute positioning
   - Default label "BOOST", active label "BOOST OFF"
-  - 1 use per level — uses-remaining indicator (orange circle)
+  - 1 use per level (PANCREAS_TOTAL_BARS=1) — shared across all days
   - Locked state when no uses remain (muted, non-interactive)
-  - Activating BOOST consumes 1 use permanently for the level
 
 - **Overeating Penalty System** ✅ (v0.40.6)
   - Each satiety level beyond Well Fed penalizes the next day:
@@ -352,6 +359,26 @@ CONFIG:
   - Free Ice Cream (0 WP) injected into inventory via `effectiveAvailableFoods`
   - Header shows penalty badges: red `−N` near WP, orange `+N00` near kcal
   - Tooltips explain penalty source on hover
+
+- **Pre-placed Foods** ✅ (v0.42.12)
+  - Level config specifies foods already on the graph when day starts
+  - `preplacedFoods: [{ shipId: "burger", slotIndex: 0 }]`
+  - Player cannot remove pre-placed foods — they define the puzzle's constraint
+  - Creates mandatory stacking the player must manage with interventions/medications
+
+- **Locked Slots** ✅ (v0.42.12)
+  - Level config specifies slots where player cannot place anything
+  - `lockedSlots: [0, 1, 3, 4, 6, 7, 9, 10]`
+  - Design rule: max 2 consecutive locked slots (no long blocked segments)
+  - Design rule: no pre-placed foods in adjacent slots
+  - Constrains player choices to create meaningful puzzle decisions
+
+- **Balance Solver** ✅ (v0.42.13+)
+  - CLI tool `scripts/balance-calc.ts` for level design
+  - `calc` command: calculate penalty for a single placement
+  - `solve` command: enumerate all valid placements, count 3★/2★/1★/💀 distribution
+  - Last-day unspent WP penalty: +5 per unspent WP (WP_PENALTY_WEIGHT=5)
+  - Auto-detects last day from level config, or use `--last-day` flag
 
 - **Day Navigation** ✅
   - Cheat buttons at bottom: "Day 1", "Day 2", "Day 3" for quick switching
@@ -448,10 +475,12 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 
 ### Intervention Parameters
 
-| Intervention | Emoji | Depth | Duration | WP | Tail | Effect |
-|-------------|-------|------:|---------:|---:|-----:|--------|
-| Light Walk | 🚶 | 3 cubes | 60m (4 cols) | 2 | 1 cube | Main: 3 cubes for 4 cols, tail: 1 cube to end |
-| Heavy Run | 🏃 | 5 cubes | 180m (12 cols) | 4 | 2 cubes | Main: 5 cubes for 12 cols, tail: 2 cubes to end |
+| Intervention | Emoji | Depth | Duration | WP | Tail | SlotSize | Effect |
+|-------------|-------|------:|---------:|---:|-----:|---------:|--------|
+| Light Walk | 🚶 | 3 cubes | 60m (4 cols) | 2 | 1 cube | 1 | Main: 3 cubes for 4 cols, tail: 1 cube to end |
+| Heavy Run | 🏃 | 5 cubes | 180m (12 cols) | 4 | 2 cubes | 2 | Main: 5 cubes for 12 cols, tail: 2 cubes to end |
+| Take a Break | ☕ | 0 | 30m (2 cols) | −1 | 0 | 1 | Refunds 1 WP, no cube effect |
+| Take a Rest | 😴 | 0 | 120m (8 cols) | −2 | 0 | 2 | Refunds 2 WP, no cube effect |
 
 ### Level Config Structure
 ```json
@@ -463,19 +492,38 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
     {
       "day": 1,
       "kcalBudget": 1800,
-      "wpBudget": 7,
+      "wpBudget": 10,
       "availableFoods": [
-        { "id": "burger", "count": 1 },
-        { "id": "banana", "count": 1 }
+        { "id": "cookie", "count": 1 },
+        { "id": "milk", "count": 1 },
+        { "id": "chickpeas", "count": 1 }
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
-        { "id": "heavyrun", "count": 1 }
-      ]
+        { "id": "takeabreak", "count": 1 }
+      ],
+      "preplacedFoods": [
+        { "shipId": "burger", "slotIndex": 0 },
+        { "shipId": "banana", "slotIndex": 4 }
+      ],
+      "lockedSlots": [0, 1, 3, 4, 6, 7, 9, 10]
     }
   ]
 }
 ```
+
+### Level 01 Balance (v0.42.19)
+
+| Day | kcal | WP | Pre-placed | Gap | Locked | Free | Foods | Interventions | Meds | 3★ % |
+|-----|-----:|---:|-----------|-----|--------|------|-------|--------------|------|-----:|
+| 1 | 1800 | 10 | burger@0, banana@4 | 3 | [0,1,3,4,6,7,9,10] | [2,5,8,11] | cookie,milk,chickpeas | walk×1,break×1 | — | 14.6% |
+| 2 | 2000 | 10 | banana@0, muffin@5 | 4 | [1,3,6,8,11] | [2,4,7,9,10] | chickpeas,cookie,oatmeal | walk×2,break×1 | metformin | 12.3% |
+| 3 | 2000 | 10 | burger@0, muffin@2, oatmeal@5 | 1,2 | [0,2,3,5,6,8,9,11] | [1,4,7,10] | sandwich,cookie,banana,milk | walk×1,break×2 | met+glp1 | 0.6% |
+
+Key puzzle solutions:
+- **Day 1**: lightwalk@2 covers burger+banana overlap
+- **Day 2**: metformin + 2×lightwalk near muffin spike
+- **Day 3**: both meds + lightwalk@1 + sandwich@4, precise WP management
 
 ### Graph Configuration Constants
 | Constant | Value | Location |
@@ -489,17 +537,20 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 | TOTAL_COLUMNS | 48 | `types.ts` derived |
 | TOTAL_ROWS | 17 | `types.ts` derived |
 | CELL_SIZE | 18px (SVG) | `BgGraph.tsx` |
-| DECAY_RATE | 0.5 cubes/col | `cubeEngine.ts` |
+| DECAY_RATE | 0.5 cubes/col (Tier I) | `cubeEngine.ts` default |
+| PANCREAS_TOTAL_BARS | 1 | `types.ts` — BOOST uses per level |
 
 ### Cube Engine Details
 
 #### Ramp + Decay/Plateau Algorithm
 1. `peakCubes = Math.round(glucose / 20)`
 2. `riseCols = Math.round(duration / 15)`
-3. Rise phase (cols 0..riseCols-1): linear from 1 to peakCubes
-4. If decay ON: decline at 0.5 cubes/col until 0
-5. If decay OFF: flat plateau at peakCubes to right edge
+3. Rise phase (cols 0..riseCols-1): `height = round(peakCubes × (i+1)/riseCols − decayRate × (i+1))`
+   - Pancreas drains continuously FROM column 0 (not after peak)
+4. Post-peak (decay ON): `height = round(peakCubes − decayRate × (i+1))` until 0
+5. Post-peak (decay OFF): flat plateau at peakCubes to right edge
 6. Drop column = left edge (start of food absorption)
+7. Guarantee: at least 1 cube at peak for any food with glucose > 0
 
 #### Intervention Algorithm (v0.40.0)
 1. `depth` = cubes to remove during main phase
@@ -549,6 +600,8 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 ### Milestones
 - `alpha-1-stable` (v0.40.0) — Core gameplay: cubes, interventions, medications, markers, decay-based stacking
 - `alpha-2-stable` (v0.40.4) — Main menu, config screen, merged Actions panel, phased reveal animation, dynamic Y-axis
+- `alpha-3-stable` (v0.40.25) — WP remaining display, Take a Break/Rest interventions, bidirectional time blocking, level balancing
+- `alpha-4-stable` (v0.42.19) — Pre-placed foods, locked slots, balance solver, level-01 3-day puzzle design
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
