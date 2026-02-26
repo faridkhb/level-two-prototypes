@@ -13,6 +13,7 @@ interface ShipCardProps {
   ship: Ship;
   instanceId?: string;
   isPlaced?: boolean;
+  isLocked?: boolean;
   remainingCount?: number;
   wpDisabled?: boolean;
 }
@@ -21,14 +22,16 @@ export function ShipCard({
   ship,
   instanceId,
   isPlaced = false,
+  isLocked = false,
   remainingCount,
   wpDisabled = false,
 }: ShipCardProps) {
   const draggableId = instanceId ?? `inventory-${ship.id}`;
+  const disabled = wpDisabled || isLocked;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: draggableId,
-    disabled: wpDisabled,
+    disabled,
     data: {
       ship,
       isPlaced,
@@ -52,17 +55,19 @@ export function ShipCard({
         isPlaced && 'ship-card--placed',
         isDragging && 'ship-card--dragging',
         wpDisabled && 'ship-card--disabled',
+        isLocked && 'ship-card--locked',
       ]
         .filter(Boolean)
         .join(' ')}
       data-tooltip={getCardTooltip(ship)}
-      {...(wpDisabled ? {} : listeners)}
+      {...(disabled ? {} : listeners)}
       {...attributes}
     >
+      {isLocked && <span className="ship-card__lock">🔒</span>}
       <span className="ship-card__emoji">{ship.emoji}</span>
 
       {/* WP cost badge */}
-      {wpCost > 0 && (
+      {wpCost > 0 && !isLocked && (
         <span className="ship-card__badge ship-card__badge--wp">{wpCost}☀️</span>
       )}
 

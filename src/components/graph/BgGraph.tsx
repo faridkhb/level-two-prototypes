@@ -332,14 +332,9 @@ export function BgGraph({
       });
     }
 
-    // Assign colors: gray for pre-placed, progressive blue for player-placed
-    let playerIdx = 0;
+    // Assign progressive blue colors
     for (let i = 0; i < rawFoods.length; i++) {
-      if (rawFoods[i].placementId.startsWith('preplaced-')) {
-        rawFoods[i].color = '#9ca3af'; // gray-400
-      } else {
-        rawFoods[i].color = getFoodColor(playerIdx++);
-      }
+      rawFoods[i].color = getFoodColor(i);
     }
 
     // Dynamic Y-axis expansion: compute effectiveRows from max cube height
