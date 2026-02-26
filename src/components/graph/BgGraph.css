@@ -132,6 +132,24 @@
   pointer-events: none;
 }
 
+/* Intervention fall cubes: invisible → appear above food → fall → burn */
+@keyframes interventionFall {
+  0%   { opacity: 0; transform: translateY(0); }
+  15%  { opacity: 0; transform: translateY(0); }
+  22%  { opacity: 0.9; transform: translateY(0); }
+  50%  { opacity: 0.9; transform: translateY(var(--fall-dist)); }
+  60%  { opacity: 0.9; transform: translateY(var(--fall-dist)); }
+  75%  { opacity: 0.8; filter: brightness(2); transform: translateY(var(--fall-dist)) scale(1.1); }
+  100% { opacity: 0; transform: translateY(var(--fall-dist)) scale(0.3); }
+}
+
+.bg-graph__cube--intervention-fall {
+  animation: interventionFall 1.4s ease-in-out both;
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: none;
+}
+
 /* Cube burn-out animation (exit animation for food removal) */
 @keyframes cubeBurnOut {
   0%   { opacity: 1; filter: brightness(1); transform: scale(1); }

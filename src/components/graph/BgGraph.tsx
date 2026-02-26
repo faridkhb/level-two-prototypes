@@ -162,6 +162,18 @@ export function BgGraph({
   const [digestingFoodIds, setDigestingFoodIds] = useState<Set<string>>(new Set());
   const digestTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
+  // Intervention fall animation state
+  interface BurningIntervention {
+    id: string;
+    interventionId: string;
+    dropColumn: number;
+    reduction: number[];
+    color: string;
+  }
+  const [burningInterventions, setBurningInterventions] = useState<Map<string, BurningIntervention>>(new Map());
+  const burningIntTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const prevInterventionIdsRef = useRef<Set<string>>(new Set());
+
   // Calculate intervention reduction per column, split by type (walk/run)
   const interventionReductions = useMemo(() => {
     const walk = new Array(TOTAL_COLUMNS).fill(0);
@@ -584,23 +596,23 @@ export function BgGraph({
 
     const burnColor = previewIntervention.id === 'lightwalk' ? '#86efac' : '#22c55e';
     const { columnCaps } = graphRenderData;
-    const burnCubes: Array<{ col: number; row: number; color: string }> = [];
+    const wrapCubes: Array<{ col: number; row: number; color: string }> = [];
 
     for (let col = 0; col < TOTAL_COLUMNS; col++) {
       const reduction = previewReduction[col];
       if (reduction <= 0) continue;
       const currentTop = columnCaps[col];
       if (currentTop <= 0) continue;
-      const burnCount = Math.min(reduction, currentTop);
-      for (let i = 0; i < burnCount; i++) {
-        const row = currentTop - 1 - i;
-        if (row < 0) break;
-        burnCubes.push({ col, row, color: burnColor });
+      const wrapCount = Math.min(reduction, currentTop);
+      for (let i = 0; i < wrapCount; i++) {
+        const row = currentTop + i; // ABOVE food stack (wrap style)
+        if (row >= effectiveRows) break;
+        wrapCubes.push({ col, row, color: burnColor });
       }
     }
 
-    return { burnCubes, dropColumn: dropCol };
-  }, [previewIntervention, previewInterventionColumn, graphRenderData]);
+    return { wrapCubes, dropColumn: dropCol };
+  }, [previewIntervention, previewInterventionColumn, graphRenderData, effectiveRows]);
 
   // Detect removed food layers for exit animation
   useLayoutEffect(() => {
@@ -645,10 +657,60 @@ export function BgGraph({
     prevLayersRef.current = graphRenderData.layers;
   }, [graphRenderData.layers]);
 
+  // Detect added interventions → fall animation
+  useLayoutEffect(() => {
+    const currIds = new Set(placedInterventions.map(p => p.id));
+    const prevIds = prevInterventionIdsRef.current;
+
+    const added = placedInterventions.filter(p => !prevIds.has(p.id));
+    if (added.length > 0) {
+      const newBurning = new Map(burningInterventions);
+      for (const placed of added) {
+        const intervention = allInterventions.find(i => i.id === placed.interventionId);
+        if (!intervention || intervention.depth <= 0) continue;
+
+        const curve = calculateInterventionCurve(
+          intervention.depth, intervention.duration, placed.dropColumn,
+          intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+        );
+        const reduction = new Array(TOTAL_COLUMNS).fill(0);
+        for (const c of curve) {
+          const graphCol = placed.dropColumn + c.columnOffset;
+          if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+            reduction[graphCol] = c.cubeCount;
+          }
+        }
+
+        const color = intervention.id === 'lightwalk' ? '#86efac' : '#22c55e';
+        newBurning.set(placed.id, {
+          id: placed.id,
+          interventionId: intervention.id,
+          dropColumn: placed.dropColumn,
+          reduction,
+          color,
+        });
+
+        const timer = setTimeout(() => {
+          setBurningInterventions(prev => {
+            const next = new Map(prev);
+            next.delete(placed.id);
+            return next;
+          });
+          burningIntTimersRef.current.delete(placed.id);
+        }, 2000);
+        burningIntTimersRef.current.set(placed.id, timer);
+      }
+      setBurningInterventions(newBurning);
+    }
+
+    prevInterventionIdsRef.current = currIds;
+  }, [placedInterventions, allInterventions]);
+
   // Cleanup timers on unmount
   useEffect(() => () => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     for (const timer of digestTimersRef.current.values()) clearTimeout(timer);
+    for (const timer of burningIntTimersRef.current.values()) clearTimeout(timer);
   }, []);
 
   // Dynamic zone clip bands (Y-positions depend on cellHeight)
@@ -917,21 +979,62 @@ export function BgGraph({
         {/* Drag preview: intervention burn overlay — green cubes on food that would burn */}
         {interventionPreviewData && (
           <g pointerEvents="none">
-            {interventionPreviewData.burnCubes.map(cube => {
+            {interventionPreviewData.wrapCubes.map(cube => {
               const waveDelay = Math.abs(cube.col - interventionPreviewData.dropColumn) * 15;
               return (
                 <rect
-                  key={`preview-burn-${cube.col}-${cube.row}`}
+                  key={`preview-wrap-int-${cube.col}-${cube.row}`}
                   x={colToX(cube.col) + 0.5}
                   y={rowToY(cube.row) + 0.5}
                   width={CELL_SIZE - 1}
                   height={cellHeight - 1}
                   fill={cube.color}
+                  opacity={0.5}
                   rx={2}
-                  className="bg-graph__cube--preview-burn"
+                  className="bg-graph__cube--preview"
+                  stroke={cube.color === '#86efac' ? '#4ade80' : '#16a34a'}
+                  strokeWidth={0.5}
                   style={{ animationDelay: `${waveDelay}ms` }}
                 />
               );
+            })}
+          </g>
+        )}
+
+        {/* Intervention fall animation — green cubes falling into food */}
+        {burningInterventions.size > 0 && (
+          <g pointerEvents="none">
+            {Array.from(burningInterventions.values()).flatMap(bi => {
+              const { columnCaps } = graphRenderData;
+              return bi.reduction.flatMap((red, col) => {
+                if (red <= 0) return [];
+                const currentTop = columnCaps[col];
+                const effectiveRed = Math.min(red, currentTop + red);
+                if (effectiveRed <= 0) return [];
+
+                const fallDist = effectiveRed * cellHeight;
+                const waveDelay = Math.abs(col - bi.dropColumn) * 20;
+
+                return Array.from({ length: effectiveRed }, (_, i) => {
+                  const startRow = currentTop + effectiveRed + i;
+                  return (
+                    <rect
+                      key={`ifall-${bi.id}-${col}-${i}`}
+                      x={colToX(col) + 0.5}
+                      y={rowToY(startRow) + 0.5}
+                      width={CELL_SIZE - 1}
+                      height={cellHeight - 1}
+                      fill={bi.color}
+                      rx={2}
+                      className="bg-graph__cube--intervention-fall"
+                      style={{
+                        animationDelay: `${waveDelay}ms`,
+                        '--fall-dist': `${fallDist}px`,
+                      } as React.CSSProperties}
+                    />
+                  );
+                });
+              });
             })}
           </g>
         )}
