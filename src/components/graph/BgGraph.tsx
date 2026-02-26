@@ -942,13 +942,15 @@ export function BgGraph({
           <g key={`food-layer-${layer.placementId}`} className="bg-graph__food-group">
             {layer.cubes
               .filter(cube => {
+                // Hide exercise-burned cubes entirely (they disappear after intervention fall animation)
+                if (cube.status === 'burned') {
+                  const isExercise = cube.burnColor === '#86efac' || cube.burnColor === '#22c55e';
+                  if (isExercise) return false;
+                }
                 // During reveal, progressively show cube layers
                 if (revealPhase === undefined) return true;
                 if (cube.status === 'normal') return revealPhase >= 1;
-                if (cube.status === 'burned') {
-                  const isExercise = cube.burnColor === '#86efac' || cube.burnColor === '#22c55e';
-                  return isExercise ? revealPhase >= 3 : revealPhase >= 4;
-                }
+                if (cube.status === 'burned') return revealPhase >= 4; // only SGLT2 remains
                 return false;
               })
               .map(cube => {
