@@ -77,6 +77,22 @@ function SlotContainer({
   const showContent = content && !isDragging && !isParentDragging;
   const isMultiStart = content?.type === 'intervention' && (content.intervention.slotSize ?? 1) > 1;
 
+  // Build tooltip text
+  const tooltip = (() => {
+    const stressTag = isStressed ? 'Stress: insulin −2' : '';
+    if (showContent) {
+      const itemName = content.type === 'food'
+        ? `${content.ship.name} · ${content.ship.kcal} kcal`
+        : isContinuation ? '' : `${content.intervention.name} · ${content.intervention.duration}m`;
+      if (isLocked) return `Pre-placed · ${itemName}`;
+      if (stressTag && itemName) return `${stressTag} · ${itemName}`;
+      return itemName;
+    }
+    if (isLocked) return 'Locked';
+    if (stressTag) return stressTag;
+    return 'Drop food or action here';
+  })();
+
   return (
     <div
       ref={combinedRef}
@@ -93,6 +109,7 @@ function SlotContainer({
         (isStressed ? ' slot-container--stressed' : '') +
         ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
       }
+      data-tooltip={tooltip}
       onClick={content && !disabled && !isLocked && !isDragging ? onRemove : undefined}
       onMouseEnter={() => content && onHoverEnter(index)}
       onMouseLeave={onHoverLeave}
@@ -103,7 +120,7 @@ function SlotContainer({
       {showContent ? (
         <div className="slot-container__card">
           {isLocked && <span className="slot-container__lock">🔒</span>}
-          {isStressed && !isLocked && <span className="slot-container__stress-icon">😰</span>}
+          {isStressed && !isLocked && <span className="slot-container__stress-badge">Stress</span>}
           <span className="slot-container__emoji">
             {content.type === 'food' ? content.ship.emoji : content.intervention.emoji}
           </span>
@@ -131,7 +148,9 @@ function SlotContainer({
           </div>
         </div>
       ) : (
-        <div className="slot-container__empty">{isLocked ? '🔒' : isStressed ? '😰' : '+'}</div>
+        <div className="slot-container__empty">
+          {isLocked ? '🔒' : isStressed ? <span className="slot-container__stress-label">😰 Stress</span> : '+'}
+        </div>
       )}
     </div>
   );

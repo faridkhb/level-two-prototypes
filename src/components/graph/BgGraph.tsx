@@ -924,12 +924,15 @@ export function BgGraph({
             <text
               key={`stress-marker-${slotIndex}`}
               x={centerX}
-              y={PAD_TOP - 1}
+              y={PAD_TOP - 2}
               textAnchor="middle"
-              fontSize={10}
+              fontSize={8}
+              fontWeight={700}
+              fill="#ef4444"
+              opacity={0.7}
               pointerEvents="none"
             >
-              😰
+              STRESS
             </text>,
           ];
         })}
