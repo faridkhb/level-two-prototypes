@@ -36,6 +36,7 @@ interface RawLevelConfig {
     preplacedFoods?: Array<{ shipId: string; slotIndex: number }>;
     preplacedInterventions?: Array<{ interventionId: string; slotIndex: number; slotSize?: number }>;
     lockedSlots?: number[];
+    stressSlots?: number[];
     insulinProfile?: InsulinProfileConfig;
   }>;
 }
@@ -99,6 +100,7 @@ function transformLevel(raw: RawLevelConfig): LevelConfig {
       preplacedFoods: dc.preplacedFoods,
       preplacedInterventions: dc.preplacedInterventions,
       lockedSlots: dc.lockedSlots,
+      stressSlots: dc.stressSlots,
       insulinProfile: dc.insulinProfile,
     }));
   }
