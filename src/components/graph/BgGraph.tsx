@@ -66,7 +66,8 @@ interface FoodColumnSummary {
   baseRow: number;
   plateauCount: number;  // total cubes at plateau (before insulin eating)
   aliveCount: number;    // cubes remaining after insulin eating
-  eatenCount: number;    // cubes insulin ate
+  eatenCount: number;    // cubes insulin ate (cumulative)
+  drainCount: number;    // cubes insulin drains THIS column (incremental)
   topNormalRow: number;
   aliveTop: number;   // per-food alive boundary (unclamped — for markers)
   skylineRow: number;  // clamped by columnCaps (for skyline paths)
@@ -231,7 +232,7 @@ export function BgGraph({
       color: string;
       emoji: string;
       carbs: number;
-      columns: Array<{ col: number; baseRow: number; aliveCount: number; plateauCount: number; eatenCount: number }>;
+      columns: Array<{ col: number; baseRow: number; aliveCount: number; plateauCount: number; eatenCount: number; drainCount: number }>;
     }> = [];
 
     for (const placed of placedFoods) {
@@ -285,8 +286,9 @@ export function BgGraph({
       // Insulin eating: per-column during ramp-up, CUMULATIVE after peak
       const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
       let cumInsulin = 0; // accumulates only after ramp-up
+      let prevEatenCount = 0; // for computing incremental drain (legacy mode)
 
-      const cols: Array<{ col: number; baseRow: number; aliveCount: number; plateauCount: number; eatenCount: number }> = [];
+      const cols: Array<{ col: number; baseRow: number; aliveCount: number; plateauCount: number; eatenCount: number; drainCount: number }> = [];
       for (const pc of plateauCurve) {
         const graphCol = placed.dropColumn + pc.columnOffset;
         if (graphCol < 0 || graphCol >= TOTAL_COLUMNS) continue;
@@ -294,6 +296,7 @@ export function BgGraph({
         const plateauCount = pc.cubeCount;
 
         let eatenCount: number;
+        let drainCount: number;
         if (insulinRates) {
           const rate = graphCol < insulinRates.length ? insulinRates[graphCol] : 0;
           const absoluteTop = baseRow + plateauCount;
@@ -308,16 +311,21 @@ export function BgGraph({
             cumInsulin += rate;
             eatenCount = Math.min(cumInsulin, cubesAboveFloor);
           }
+          // Flat drain visualization: show insulin rate per column (constant depth)
+          drainCount = Math.min(rate, cubesAboveFloor);
         } else if (legacyDecayCurve) {
           // Legacy: use decay curve difference
           const decayCount = legacyDecayMap[graphCol] ?? plateauCount;
           eatenCount = Math.max(0, plateauCount - decayCount);
+          drainCount = eatenCount - prevEatenCount;
+          prevEatenCount = eatenCount;
         } else {
           eatenCount = 0;
+          drainCount = 0;
         }
 
         const aliveCount = plateauCount - eatenCount;
-        cols.push({ col: graphCol, baseRow, aliveCount, plateauCount, eatenCount });
+        cols.push({ col: graphCol, baseRow, aliveCount, plateauCount, eatenCount, drainCount });
         aliveStacks[graphCol] += aliveCount;
       }
 
@@ -405,11 +413,13 @@ export function BgGraph({
           cubes.push({ col: c.col, row, status, burnColor });
         }
 
-        // Digest cubes — what insulin ate (positioned directly above THIS food's alive zone)
-        for (let i = 0; i < c.eatenCount; i++) {
-          const row = c.baseRow + c.aliveCount + i;
-          if (row >= effectiveRows) break;
-          digestCubes.push({ col: c.col, row, status: 'normal' });
+        // Digest cubes — flat insulin drain (constant depth = rate per column, on top of alive zone)
+        if (c.aliveCount > 0) {
+          for (let i = 0; i < c.drainCount; i++) {
+            const row = c.baseRow + c.aliveCount + i;
+            if (row >= effectiveRows) break;
+            digestCubes.push({ col: c.col, row, status: 'normal' });
+          }
         }
 
         // aliveTop: food's own alive boundary (for markers — stable, independent)
@@ -423,6 +433,7 @@ export function BgGraph({
           plateauCount: c.plateauCount,
           aliveCount: c.aliveCount,
           eatenCount: c.eatenCount,
+          drainCount: c.drainCount,
           topNormalRow,
           aliveTop,
           skylineRow,
@@ -534,7 +545,7 @@ export function BgGraph({
   const cellHeight = GRAPH_H / effectiveRows;
   const rowToY = (row: number) => PAD_TOP + GRAPH_H - (row + 1) * cellHeight;
 
-  // Preview: food cubes at PLATEAU height + insulin wrap cubes on top of food
+  // Preview: alive cubes (post-insulin) + incremental drain layer on top of alive skyline
   const previewData = useMemo(() => {
     if (!previewShip || previewColumn === undefined) return null;
 
@@ -543,29 +554,52 @@ export function BgGraph({
 
     const { glucose, duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
     const plateauCurve = calculateCurve(glucose, duration, previewColumn, 0);
+    const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
 
     const { pancreasCaps } = graphRenderData;
     const foodCubes: Array<{ col: number; row: number }> = [];
     const wrapCubes: Array<{ col: number; row: number }> = [];
 
+    let cumInsulin = 0;
+
     for (const pc of plateauCurve) {
       const col = previewColumn + pc.columnOffset;
       if (col < 0 || col >= TOTAL_COLUMNS) continue;
-      const baseRow = pancreasCaps[col]; // stack on top of existing food
-      const plateauTop = baseRow + pc.cubeCount;
+      const baseRow = pancreasCaps[col];
+      const plateauCount = pc.cubeCount;
 
-      // Food cubes at full plateau height
-      for (let i = 0; i < pc.cubeCount; i++) {
+      // Compute insulin eating (same algorithm as main render)
+      let eatenCount = 0;
+      let drainCount = 0;
+      if (insulinRates) {
+        const rate = col < insulinRates.length ? insulinRates[col] : 0;
+        const absoluteTop = baseRow + plateauCount;
+        const effectiveFloor = Math.max(baseRow, INSULIN_FLOOR_ROW);
+        const cubesAboveFloor = Math.max(0, absoluteTop - effectiveFloor);
+
+        if (pc.columnOffset < riseCols) {
+          eatenCount = Math.min(rate, cubesAboveFloor);
+        } else {
+          cumInsulin += rate;
+          eatenCount = Math.min(cumInsulin, cubesAboveFloor);
+        }
+        // Flat drain visualization: constant depth = rate per column
+        drainCount = Math.min(rate, cubesAboveFloor);
+      }
+
+      const aliveCount = plateauCount - eatenCount;
+
+      // Alive cubes — final result after insulin eating
+      for (let i = 0; i < aliveCount; i++) {
         const row = baseRow + i;
         if (row >= effectiveRows) break;
         foodCubes.push({ col, row });
       }
 
-      // Insulin wrap cubes on top of food
-      if (insulinRates) {
-        const rate = col < insulinRates.length ? insulinRates[col] : 0;
-        for (let i = 0; i < rate; i++) {
-          const row = plateauTop + i;
+      // Insulin drain layer — flat rate on top of alive skyline (only where food exists)
+      if (aliveCount > 0) {
+        for (let i = 0; i < drainCount; i++) {
+          const row = baseRow + aliveCount + i;
           if (row >= effectiveRows) break;
           wrapCubes.push({ col, row });
         }
@@ -863,29 +897,7 @@ export function BgGraph({
           );
         })}
 
-        {/* Insulin profile bars — positioned above 100 mg/dL floor */}
-        {typeof decayOrInsulin !== 'number' && (
-          <g className="bg-graph__insulin-bars" pointerEvents="none">
-            {decayOrInsulin.rates.map((rate, col) => {
-              if (rate <= 0) return null;
-              const x = colToX(col) + 0.5;
-              const barHeight = rate * cellHeight;
-              const y = PAD_TOP + GRAPH_H - (INSULIN_FLOOR_ROW + rate) * cellHeight;
-              return (
-                <rect
-                  key={`insulin-${col}`}
-                  x={x}
-                  y={y}
-                  width={CELL_SIZE - 1}
-                  height={barHeight}
-                  fill="#f59e0b"
-                  opacity={0.35}
-                  rx={1}
-                />
-              );
-            })}
-          </g>
-        )}
+        {/* Insulin profile bars — disabled for now */}
 
         {/* SGLT2 drain threshold line */}
         {medicationModifiers.sglt2 && (revealPhase === undefined || revealPhase >= 4) && (
@@ -901,10 +913,10 @@ export function BgGraph({
           />
         )}
 
-        {/* Drag preview: food at full plateau height + insulin wrap on top */}
+        {/* Drag preview: alive cubes + incremental insulin drain layer */}
         {previewData && (
           <g className="bg-graph__preview" pointerEvents="none">
-            {/* Food cubes at full plateau height */}
+            {/* Alive cubes — final result after insulin eating */}
             {previewData.foodCubes.map(cube => (
               <rect
                 key={`preview-${cube.col}-${cube.row}`}
@@ -918,7 +930,7 @@ export function BgGraph({
                 className="bg-graph__cube--preview"
               />
             ))}
-            {/* Insulin wrap — amber cubes on top of food contour */}
+            {/* Insulin drain — amber cubes showing per-column drain depth */}
             {previewData.wrapCubes.map(cube => (
               <rect
                 key={`preview-wrap-${cube.col}-${cube.row}`}
@@ -1090,16 +1102,16 @@ export function BgGraph({
                 );
               })}
               {showFall && layer.colSummary
-                .filter(cs => cs.eatenCount > 0)
+                .filter(cs => cs.drainCount > 0)
                 .flatMap(cs => {
-                  const plateauTop = cs.baseRow + cs.plateauCount;
-                  const fallDist = cs.eatenCount * cellHeight;
+                  const drainTop = cs.baseRow + cs.aliveCount + cs.drainCount;
+                  const fallDist = cs.drainCount * cellHeight;
                   const waveDelay = Math.abs(cs.col - layer.dropColumn) * 20;
-                  return Array.from({ length: cs.eatenCount }, (_, i) => (
+                  return Array.from({ length: cs.drainCount }, (_, i) => (
                     <rect
                       key={`${layer.placementId}-ifall-${cs.col}-${i}`}
                       x={colToX(cs.col) + 0.5}
-                      y={rowToY(plateauTop + i) + 0.5}
+                      y={rowToY(drainTop + i) + 0.5}
                       width={CELL_SIZE - 1}
                       height={cellHeight - 1}
                       fill="#f59e0b"
