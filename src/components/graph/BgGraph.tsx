@@ -345,13 +345,26 @@ export function BgGraph({
       rawFoods[i].color = getFoodColor(i);
     }
 
-    // Dynamic Y-axis expansion: compute effectiveRows from max cube height
-    const maxHeight = hasMedEffect
-      ? Math.max(0, ...originalPlateauHeights)
-      : Math.max(0, ...plateauHeights);
-    const effectiveRows = maxHeight <= TOTAL_ROWS
+    // Dynamic Y-axis expansion: compute from ACTUAL visible heights (not raw plateau)
+    // Visible layers: alive cubes + drain cubes + medication cubes
+    let maxVisibleRow = 0;
+    for (const food of rawFoods) {
+      for (const c of food.columns) {
+        const topRow = c.baseRow + c.aliveCount + (c.aliveCount > 0 ? c.drainCount : 0);
+        if (topRow > maxVisibleRow) maxVisibleRow = topRow;
+      }
+    }
+    if (hasMedEffect) {
+      for (let col = 0; col < TOTAL_COLUMNS; col++) {
+        const medReduction = Math.max(0, originalPlateauHeights[col] - plateauHeights[col]);
+        const medTop = aliveStacks[col] + medReduction;
+        if (medTop > maxVisibleRow) maxVisibleRow = medTop;
+      }
+    }
+    maxVisibleRow += 5; // buffer for visual padding
+    const effectiveRows = maxVisibleRow <= TOTAL_ROWS
       ? TOTAL_ROWS
-      : TOTAL_ROWS + Math.ceil((maxHeight - TOTAL_ROWS) / 5) * 5;
+      : TOTAL_ROWS + Math.ceil((maxVisibleRow - TOTAL_ROWS) / 5) * 5;
     const cellHeight = GRAPH_H / effectiveRows;
 
     // pancreasCaps = sum of alive heights (after insulin eating)
