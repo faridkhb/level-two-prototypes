@@ -32,7 +32,7 @@ import './PlanningPhase.css';
 const REVEAL_INITIAL_DELAY = 300;
 const REVEAL_HOLD: Record<number, number> = {
   1: 1500,  // food cubes (longer — wave animation spans full graph)
-  2: 1200,  // pancreas
+  2: 1500,  // insulin (appear 350ms + burn 700ms + buffer)
   3: 1200,  // exercise
   4: 1200,  // medications
 };
