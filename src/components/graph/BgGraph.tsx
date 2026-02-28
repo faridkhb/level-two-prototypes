@@ -33,8 +33,8 @@ const ZONE_NORMAL = 140;
 const ZONE_ELEVATED = 200;
 const ZONE_HIGH = 300;
 
-// Insulin floor: insulin can eat all the way to graph baseline (60 mg/dL)
-const INSULIN_FLOOR_ROW = 0;
+// Insulin floor: insulin cannot eat below this row (100 mg/dL)
+const INSULIN_FLOOR_ROW = 2; // (100 - 60) / 20 = 2
 
 // Fixed blue palette: each food gets a progressively darker shade
 const FOOD_PALETTE = [
@@ -158,10 +158,9 @@ export function BgGraph({
   const [exitingCubes, setExitingCubes] = useState<ExitingCube[]>([]);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Placement animation state: 4-phase insulin eating sequence per food
-  type FoodAnimPhase = 'plateau' | 'insulin' | 'burn' | 'done';
-  const [foodAnimPhases, setFoodAnimPhases] = useState<Map<string, FoodAnimPhase>>(new Map());
-  const foodAnimTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>[]>>(new Map());
+  // Digest animation state: tracks foods currently in "insulin eating" animation
+  const [digestingFoodIds, setDigestingFoodIds] = useState<Set<string>>(new Set());
+  const digestTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Intervention fall animation state
   interface BurningIntervention {
@@ -338,30 +337,10 @@ export function BgGraph({
       rawFoods[i].color = getFoodColor(i);
     }
 
-    // Dynamic Y-axis expansion: compute effectiveRows from ACTUAL visible cube heights
-    // (not raw plateau sums which ignore insulin eating)
-    let maxVisibleRow = 0;
-    // 1. Alive cubes (after insulin eating) — main visual stack
-    for (let col = 0; col < TOTAL_COLUMNS; col++) {
-      maxVisibleRow = Math.max(maxVisibleRow, aliveStacks[col]);
-    }
-    // 2. Digest cubes per food — positioned above each food's alive zone
-    for (const food of rawFoods) {
-      for (const c of food.columns) {
-        const digestTop = c.baseRow + c.plateauCount; // baseRow + aliveCount + eatenCount
-        maxVisibleRow = Math.max(maxVisibleRow, digestTop);
-      }
-    }
-    // 3. Medication-prevented cubes — stacked above alive zone
-    if (hasMedEffect) {
-      for (let col = 0; col < TOTAL_COLUMNS; col++) {
-        const medReduction = Math.max(0, originalPlateauHeights[col] - plateauHeights[col]);
-        const medTop = aliveStacks[col] + medReduction;
-        maxVisibleRow = Math.max(maxVisibleRow, medTop);
-      }
-    }
-    // Add 5-row buffer (100 mg/dL) above highest visible cube
-    const maxHeight = maxVisibleRow + 5;
+    // Dynamic Y-axis expansion: compute effectiveRows from max cube height
+    const maxHeight = hasMedEffect
+      ? Math.max(0, ...originalPlateauHeights)
+      : Math.max(0, ...plateauHeights);
     const effectiveRows = maxHeight <= TOTAL_ROWS
       ? TOTAL_ROWS
       : TOTAL_ROWS + Math.ceil((maxHeight - TOTAL_ROWS) / 5) * 5;
@@ -555,7 +534,7 @@ export function BgGraph({
   const cellHeight = GRAPH_H / effectiveRows;
   const rowToY = (row: number) => PAD_TOP + GRAPH_H - (row + 1) * cellHeight;
 
-  // Preview: 3-layer model — alive cubes + to-be-eaten cubes + pulsing insulin overlay
+  // Preview: food cubes at PLATEAU height + insulin wrap cubes on top of food
   const previewData = useMemo(() => {
     if (!previewShip || previewColumn === undefined) return null;
 
@@ -564,62 +543,36 @@ export function BgGraph({
 
     const { glucose, duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
     const plateauCurve = calculateCurve(glucose, duration, previewColumn, 0);
-    const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
 
     const { pancreasCaps } = graphRenderData;
-    const aliveCubes: Array<{ col: number; row: number }> = [];
-    const eatenCubes: Array<{ col: number; row: number }> = [];
-    const insulinOverlay: Array<{ col: number; row: number }> = [];
-
-    let cumInsulin = 0;
+    const foodCubes: Array<{ col: number; row: number }> = [];
+    const wrapCubes: Array<{ col: number; row: number }> = [];
 
     for (const pc of plateauCurve) {
       const col = previewColumn + pc.columnOffset;
       if (col < 0 || col >= TOTAL_COLUMNS) continue;
-      const baseRow = pancreasCaps[col];
-      const plateauCount = pc.cubeCount;
+      const baseRow = pancreasCaps[col]; // stack on top of existing food
+      const plateauTop = baseRow + pc.cubeCount;
 
-      // Compute insulin eating (same algorithm as main render)
-      let eatenCount = 0;
-      if (insulinRates) {
-        const rate = col < insulinRates.length ? insulinRates[col] : 0;
-        const absoluteTop = baseRow + plateauCount;
-        const effectiveFloor = Math.max(baseRow, INSULIN_FLOOR_ROW);
-        const cubesAboveFloor = Math.max(0, absoluteTop - effectiveFloor);
-
-        if (pc.columnOffset < riseCols) {
-          eatenCount = Math.min(rate, cubesAboveFloor);
-        } else {
-          cumInsulin += rate;
-          eatenCount = Math.min(cumInsulin, cubesAboveFloor);
-        }
-      }
-
-      const aliveCount = plateauCount - eatenCount;
-
-      // Layer 1: alive cubes (final result)
-      for (let i = 0; i < aliveCount; i++) {
+      // Food cubes at full plateau height
+      for (let i = 0; i < pc.cubeCount; i++) {
         const row = baseRow + i;
         if (row >= effectiveRows) break;
-        aliveCubes.push({ col, row });
+        foodCubes.push({ col, row });
       }
 
-      // Layer 2: to-be-eaten food cubes (revealed when insulin pulses transparent)
-      for (let i = 0; i < eatenCount; i++) {
-        const row = baseRow + aliveCount + i;
-        if (row >= effectiveRows) break;
-        eatenCubes.push({ col, row });
-      }
-
-      // Layer 3: insulin overlay — same rows as eaten cubes (pulsing amber on top)
-      for (let i = 0; i < eatenCount; i++) {
-        const row = baseRow + aliveCount + i;
-        if (row >= effectiveRows) break;
-        insulinOverlay.push({ col, row });
+      // Insulin wrap cubes on top of food
+      if (insulinRates) {
+        const rate = col < insulinRates.length ? insulinRates[col] : 0;
+        for (let i = 0; i < rate; i++) {
+          const row = plateauTop + i;
+          if (row >= effectiveRows) break;
+          wrapCubes.push({ col, row });
+        }
       }
     }
 
-    return { aliveCubes, eatenCubes, insulinOverlay, dropColumn: previewColumn };
+    return { foodCubes, wrapCubes, dropColumn: previewColumn };
   }, [previewShip, previewColumn, medicationModifiers, decayOrInsulin, graphRenderData, effectiveRows]);
 
   // Preview: intervention burn overlay — green cubes on food that would be burned
@@ -680,36 +633,24 @@ export function BgGraph({
       exitTimerRef.current = setTimeout(() => setExitingCubes([]), 1200);
     }
 
-    // Detect added foods → 4-phase insulin eating animation
+    // Detect added foods → digest animation (insulin eating)
     const added = graphRenderData.layers.filter(l => !prevIds.has(l.placementId));
     if (added.length > 0) {
-      // Phase 1: plateau — all cubes appear at full height
-      setFoodAnimPhases(prev => {
-        const next = new Map(prev);
-        for (const a of added) next.set(a.placementId, 'plateau');
+      setDigestingFoodIds(prev => {
+        const next = new Set(prev);
+        for (const a of added) next.add(a.placementId);
         return next;
       });
-
       for (const a of added) {
-        const timers: ReturnType<typeof setTimeout>[] = [];
-        // Phase 2: insulin — insulin overlay appears on eating zone (after cubeAppear 350ms)
-        timers.push(setTimeout(() => {
-          setFoodAnimPhases(prev => new Map(prev).set(a.placementId, 'insulin'));
-        }, 350));
-        // Phase 3: burn — insulin + eaten food burn out together (after another 350ms)
-        timers.push(setTimeout(() => {
-          setFoodAnimPhases(prev => new Map(prev).set(a.placementId, 'burn'));
-        }, 700));
-        // Phase 4: done — only alive cubes remain (after burn 700ms)
-        timers.push(setTimeout(() => {
-          setFoodAnimPhases(prev => {
-            const next = new Map(prev);
+        const timer = setTimeout(() => {
+          setDigestingFoodIds(prev => {
+            const next = new Set(prev);
             next.delete(a.placementId);
             return next;
           });
-          foodAnimTimersRef.current.delete(a.placementId);
-        }, 1400));
-        foodAnimTimersRef.current.set(a.placementId, timers);
+          digestTimersRef.current.delete(a.placementId);
+        }, 2000); // 1.6s animation + buffer
+        digestTimersRef.current.set(a.placementId, timer);
       }
     }
 
@@ -768,7 +709,7 @@ export function BgGraph({
   // Cleanup timers on unmount
   useEffect(() => () => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
-    for (const timers of foodAnimTimersRef.current.values()) timers.forEach(t => clearTimeout(t));
+    for (const timer of digestTimersRef.current.values()) clearTimeout(timer);
     for (const timer of burningIntTimersRef.current.values()) clearTimeout(timer);
   }, []);
 
@@ -922,7 +863,7 @@ export function BgGraph({
           );
         })}
 
-        {/* Insulin profile bars — positioned from graph baseline */}
+        {/* Insulin profile bars — positioned above 100 mg/dL floor */}
         {typeof decayOrInsulin !== 'number' && (
           <g className="bg-graph__insulin-bars" pointerEvents="none">
             {decayOrInsulin.rates.map((rate, col) => {
@@ -960,13 +901,13 @@ export function BgGraph({
           />
         )}
 
-        {/* Drag preview: 3-layer model — alive + to-be-eaten + pulsing insulin overlay */}
+        {/* Drag preview: food at full plateau height + insulin wrap on top */}
         {previewData && (
           <g className="bg-graph__preview" pointerEvents="none">
-            {/* Layer 1: Alive cubes — final result after insulin eating */}
-            {previewData.aliveCubes.map(cube => (
+            {/* Food cubes at full plateau height */}
+            {previewData.foodCubes.map(cube => (
               <rect
-                key={`preview-alive-${cube.col}-${cube.row}`}
+                key={`preview-${cube.col}-${cube.row}`}
                 x={colToX(cube.col) + 0.5}
                 y={rowToY(cube.row) + 0.5}
                 width={CELL_SIZE - 1}
@@ -977,31 +918,18 @@ export function BgGraph({
                 className="bg-graph__cube--preview"
               />
             ))}
-            {/* Layer 2: To-be-eaten food cubes (revealed when insulin pulses transparent) */}
-            {previewData.eatenCubes.map(cube => (
+            {/* Insulin wrap — amber cubes on top of food contour */}
+            {previewData.wrapCubes.map(cube => (
               <rect
-                key={`preview-eaten-${cube.col}-${cube.row}`}
-                x={colToX(cube.col) + 0.5}
-                y={rowToY(cube.row) + 0.5}
-                width={CELL_SIZE - 1}
-                height={cellHeight - 1}
-                fill="#38bdf8"
-                opacity={0.25}
-                rx={2}
-                className="bg-graph__cube--preview"
-              />
-            ))}
-            {/* Layer 3: Insulin overlay — pulsing amber on to-be-eaten zone */}
-            {previewData.insulinOverlay.map(cube => (
-              <rect
-                key={`preview-insulin-${cube.col}-${cube.row}`}
+                key={`preview-wrap-${cube.col}-${cube.row}`}
                 x={colToX(cube.col) + 0.5}
                 y={rowToY(cube.row) + 0.5}
                 width={CELL_SIZE - 1}
                 height={cellHeight - 1}
                 fill="#f59e0b"
+                opacity={0.5}
                 rx={2}
-                className="bg-graph__cube--insulin-preview-pulse"
+                className="bg-graph__cube--preview"
                 stroke="#d97706"
                 strokeWidth={0.5}
               />
@@ -1125,33 +1053,23 @@ export function BgGraph({
           </g>
         )}
 
-        {/* Digest cubes — shown during placement animation phases and reveal */}
+        {/* Digest cubes + insulin fall animation (unified reveal/gameplay) */}
         {graphRenderData.layers.map(layer => {
           if (layer.digestCubes.length === 0) return null;
 
           const isReveal = revealPhase !== undefined;
-          const animPhase = foodAnimPhases.get(layer.placementId);
-          const isAnimating = animPhase && animPhase !== 'done';
-
-          // Show digest cubes only during animation or reveal
-          const showDigest = isReveal ? revealPhase! >= 1 : isAnimating;
+          const showDigest = isReveal ? revealPhase! >= 1 : digestingFoodIds.has(layer.placementId);
           if (!showDigest) return null;
 
-          // Determine CSS class based on phase
-          let digestCls: string;
-          if (isReveal) {
-            digestCls = revealPhase! >= 2 ? 'bg-graph__cube--insulin-burn' : 'bg-graph__cube';
-          } else if (animPhase === 'burn') {
-            digestCls = 'bg-graph__cube--insulin-burn';
-          } else {
-            // 'plateau' or 'insulin' phase: cubes visible as normal food
-            digestCls = 'bg-graph__cube';
-          }
+          // Phase 1 reveal: cubes appear as normal food. Phase 2+/gameplay: burn animation
+          const showFall = isReveal ? revealPhase! >= 2 : true;
+          const digestCls = showFall ? 'bg-graph__cube--digest-appear-burn' : 'bg-graph__cube';
 
           return (
             <g key={`digest-${layer.placementId}`} pointerEvents="none">
               {layer.digestCubes.map(cube => {
                 const waveDelay = Math.abs(cube.col - layer.dropColumn) * 20;
+                // Zone coloring for digest cubes during results
                 let fill = layer.color;
                 if (isReveal) {
                   if (cube.row >= PENALTY_RED_ROW) fill = '#f56565';
@@ -1171,80 +1089,17 @@ export function BgGraph({
                   />
                 );
               })}
-            </g>
-          );
-        })}
-
-        {/* Insulin overlay during placement animation ('insulin' and 'burn' phases) */}
-        {graphRenderData.layers.map(layer => {
-          if (layer.digestCubes.length === 0) return null;
-          const animPhase = foodAnimPhases.get(layer.placementId);
-          const isReveal = revealPhase !== undefined;
-
-          // Show insulin overlay during: gameplay 'insulin'/'burn' phases, or reveal phase 2+
-          const showOverlay = isReveal
-            ? revealPhase! >= 2
-            : (animPhase === 'insulin' || animPhase === 'burn');
-          if (!showOverlay) return null;
-
-          const overlayCls = (animPhase === 'burn' || (isReveal && revealPhase! >= 2))
-            ? 'bg-graph__cube--insulin-burn'
-            : 'bg-graph__cube--insulin-appear';
-
-          return (
-            <g key={`insulin-overlay-${layer.placementId}`} pointerEvents="none">
-              {layer.digestCubes.map(cube => {
-                const waveDelay = Math.abs(cube.col - layer.dropColumn) * 20;
-                return (
-                  <rect
-                    key={`insulin-${layer.placementId}-${cube.col}-${cube.row}`}
-                    x={colToX(cube.col) + 0.5}
-                    y={rowToY(cube.row) + 0.5}
-                    width={CELL_SIZE - 1}
-                    height={cellHeight - 1}
-                    fill="#f59e0b"
-                    rx={2}
-                    className={overlayCls}
-                    stroke="#d97706"
-                    strokeWidth={0.5}
-                    style={{ animationDelay: `${waveDelay}ms` }}
-                  />
-                );
-              })}
-            </g>
-          );
-        })}
-
-        {/* Excess insulin fall — cubes where insulin rate exceeds food height, fall to floor */}
-        {graphRenderData.layers.map(layer => {
-          if (layer.digestCubes.length === 0) return null;
-          const animPhase = foodAnimPhases.get(layer.placementId);
-          const isReveal = revealPhase !== undefined;
-          const showFall = isReveal ? revealPhase! >= 2 : animPhase === 'burn';
-          if (!showFall) return null;
-
-          const isInsulinProfile = typeof decayOrInsulin !== 'number';
-          const insulinRates = isInsulinProfile ? (decayOrInsulin as InsulinParams).rates : null;
-          if (!insulinRates) return null;
-
-          return (
-            <g key={`insulin-fall-${layer.placementId}`} pointerEvents="none">
-              {layer.colSummary
-                .filter(cs => {
-                  const rate = cs.col < insulinRates.length ? insulinRates[cs.col] : 0;
-                  return rate > cs.eatenCount && cs.eatenCount > 0;
-                })
+              {showFall && layer.colSummary
+                .filter(cs => cs.eatenCount > 0)
                 .flatMap(cs => {
-                  const rate = cs.col < insulinRates.length ? insulinRates[cs.col] : 0;
-                  const excessCount = rate - cs.eatenCount;
-                  const startRow = cs.baseRow + cs.plateauCount; // above food plateau
-                  const fallDist = (cs.plateauCount) * cellHeight; // fall to food base
+                  const plateauTop = cs.baseRow + cs.plateauCount;
+                  const fallDist = cs.eatenCount * cellHeight;
                   const waveDelay = Math.abs(cs.col - layer.dropColumn) * 20;
-                  return Array.from({ length: excessCount }, (_, i) => (
+                  return Array.from({ length: cs.eatenCount }, (_, i) => (
                     <rect
                       key={`${layer.placementId}-ifall-${cs.col}-${i}`}
                       x={colToX(cs.col) + 0.5}
-                      y={rowToY(startRow + i) + 0.5}
+                      y={rowToY(plateauTop + i) + 0.5}
                       width={CELL_SIZE - 1}
                       height={cellHeight - 1}
                       fill="#f59e0b"
