@@ -48,8 +48,8 @@
 
 .planning-phase__pancreas-overlay {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 32px;
+  right: 32px;
   z-index: 10;
 }
 
