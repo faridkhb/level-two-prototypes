@@ -172,3 +172,22 @@
   font-size: 12px;
   flex-shrink: 0;
 }
+
+/* Stress slot — player CAN place items, but insulin is reduced */
+.slot-container--stressed {
+  border-color: #ef4444;
+  border-style: dashed;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.slot-container--stressed.slot-container--filled {
+  border-color: #dc2626;
+  border-style: solid;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.slot-container__stress-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}

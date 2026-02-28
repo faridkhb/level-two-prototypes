@@ -60,7 +60,22 @@ interface DayConfig {
   preplacedFoods?: { shipId: string; slotIndex: number }[];
   preplacedInterventions?: { interventionId: string; slotIndex: number; slotSize?: number }[];
   lockedSlots?: number[];
+  stressSlots?: number[];
   insulinProfile?: InsulinProfileConfig;
+}
+
+const STRESS_INSULIN_REDUCTION = 2;
+
+function applyStressToRates(rates: number[], stressSlots: number[]): number[] {
+  const result = [...rates];
+  for (const slotIndex of stressSlots) {
+    const startCol = slotIndex * COLS_PER_SLOT;
+    const endCol = startCol + COLS_PER_SLOT;
+    for (let col = startCol; col < endCol && col < result.length; col++) {
+      result[col] = Math.max(0, result[col] - STRESS_INSULIN_REDUCTION);
+    }
+  }
+  return result;
 }
 
 interface MedMods {
@@ -250,6 +265,7 @@ function loadDayConfig(levelId: string, day: number): DayConfig & { totalDays: n
     availableMedications: dc.availableMedications,
     preplacedFoods: dc.preplacedFoods, preplacedInterventions: dc.preplacedInterventions,
     lockedSlots: dc.lockedSlots,
+    stressSlots: dc.stressSlots,
     insulinProfile: dc.insulinProfile,
     totalDays: raw.days ?? raw.dayConfigs?.length ?? 1,
   };
@@ -268,9 +284,14 @@ function runCalc(args: Record<string, string>) {
   if (args['level']) {
     const loaded = loadDayConfig(args['level'], +(args['day'] ?? '1'));
     if (loaded.insulinProfile) {
-      const rates = expandInsulinProfile(loaded.insulinProfile);
+      let rates = expandInsulinProfile(loaded.insulinProfile);
+      if (loaded.stressSlots?.length) {
+        rates = applyStressToRates(rates, loaded.stressSlots);
+        insulinLabel = `insulin profile (${loaded.insulinProfile.mode}) + stress slots [${loaded.stressSlots.join(', ')}]`;
+      } else {
+        insulinLabel = `insulin profile (${loaded.insulinProfile.mode})`;
+      }
       decayParam = { rates, mode: loaded.insulinProfile.mode };
-      insulinLabel = `insulin profile (${loaded.insulinProfile.mode})`;
     }
   }
 
@@ -368,9 +389,14 @@ function runSolve(args: Record<string, string>) {
     if (!args['last-day']) isLastDay = loaded.day === loaded.totalDays;
     // Auto-load insulin profile from level config (--decay overrides)
     if (loaded.insulinProfile && !args['decay']) {
-      const rates = expandInsulinProfile(loaded.insulinProfile);
+      let rates = expandInsulinProfile(loaded.insulinProfile);
+      if (loaded.stressSlots?.length) {
+        rates = applyStressToRates(rates, loaded.stressSlots);
+        insulinLabel = `insulin profile (${loaded.insulinProfile.mode}) + stress slots [${loaded.stressSlots.join(', ')}]`;
+      } else {
+        insulinLabel = `insulin profile (${loaded.insulinProfile.mode})`;
+      }
       decayParam = { rates, mode: loaded.insulinProfile.mode };
-      insulinLabel = `insulin profile (${loaded.insulinProfile.mode})`;
     }
   } else {
     const parse = (s: string) => s.split(',').filter(Boolean).map(x => { const [id, c] = x.split(':'); return { id, count: +(c ?? '1') }; });
@@ -443,6 +469,7 @@ function runSolve(args: Record<string, string>) {
   if (preFoods.length) console.log(`Pre-placed foods: ${preFoods.map(f => `${f.id}@${f.slot}`).join(', ')}`);
   if (preInts.length) console.log(`Pre-placed interventions: ${preInts.map(i => `${i.id}@${i.slot}`).join(', ')}`);
   if (useBoost) console.log(`BOOST: active (threshold=200, rate=${boost!.extraRate})`);
+  if (dayConfig.stressSlots?.length) console.log(`Stress slots: [${dayConfig.stressSlots.join(', ')}] (-${STRESS_INSULIN_REDUCTION} insulin rate)`);
   if (isLastDay) console.log(`⚠️  Last day — unspent WP penalty: +${WP_PENALTY_WEIGHT} per unspent WP`);
   console.log('\nSearching...');
 

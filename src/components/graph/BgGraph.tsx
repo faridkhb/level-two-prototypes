@@ -124,6 +124,7 @@ interface BgGraphProps {
   previewColumn?: number;    // target column for preview
   previewIntervention?: Intervention;   // intervention being dragged
   previewInterventionColumn?: number;   // target column for intervention preview
+  stressSlots?: Set<number>;            // slot indices with stress (reduced insulin)
 }
 
 // Convert column to SVG x
@@ -151,6 +152,7 @@ export function BgGraph({
   previewColumn,
   previewIntervention,
   previewInterventionColumn,
+  stressSlots,
 }: BgGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -835,6 +837,23 @@ export function BgGraph({
           opacity={0.2}
         />
 
+        {/* Stress zone column bands */}
+        {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).map(slotIndex => {
+          const startCol = slotIndex * 4;
+          return (
+            <rect
+              key={`stress-zone-${slotIndex}`}
+              x={colToX(startCol)}
+              y={PAD_TOP}
+              width={CELL_SIZE * 4}
+              height={GRAPH_H}
+              fill="#ef4444"
+              opacity={0.08}
+              pointerEvents="none"
+            />
+          );
+        })}
+
         {/* Grid lines - vertical (time) */}
         {Array.from({ length: TOTAL_COLUMNS + 1 }, (_, i) => (
           <line
@@ -871,6 +890,49 @@ export function BgGraph({
           stroke="#a0aec0"
           strokeWidth={1}
         />
+
+        {/* Stress zone boundary lines and markers */}
+        {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).flatMap(slotIndex => {
+          const startCol = slotIndex * 4;
+          const endCol = startCol + 4;
+          const centerX = colToX(startCol) + (CELL_SIZE * 4) / 2;
+          return [
+            <line
+              key={`stress-left-${slotIndex}`}
+              x1={colToX(startCol)}
+              y1={PAD_TOP}
+              x2={colToX(startCol)}
+              y2={PAD_TOP + GRAPH_H}
+              stroke="#ef4444"
+              strokeWidth={1}
+              strokeDasharray="4 3"
+              opacity={0.4}
+              pointerEvents="none"
+            />,
+            <line
+              key={`stress-right-${slotIndex}`}
+              x1={colToX(endCol)}
+              y1={PAD_TOP}
+              x2={colToX(endCol)}
+              y2={PAD_TOP + GRAPH_H}
+              stroke="#ef4444"
+              strokeWidth={1}
+              strokeDasharray="4 3"
+              opacity={0.4}
+              pointerEvents="none"
+            />,
+            <text
+              key={`stress-marker-${slotIndex}`}
+              x={centerX}
+              y={PAD_TOP - 1}
+              textAnchor="middle"
+              fontSize={10}
+              pointerEvents="none"
+            >
+              😰
+            </text>,
+          ];
+        })}
 
         {/* Y axis labels */}
         {yTicks.map(tick => {

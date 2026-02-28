@@ -10,7 +10,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BoostConfig } from '../../core/types';
-import { TOTAL_SLOTS, expandInsulinProfile, PENALTY_ORANGE_ROW, slotToColumn } from '../../core/types';
+import { TOTAL_SLOTS, expandInsulinProfile, applyStressToRates, PENALTY_ORANGE_ROW, slotToColumn } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { useConfigStore } from '../../store/configStore';
@@ -167,11 +167,20 @@ export function PlanningPhase() {
   const effectiveWpBudget = Math.max(rawWpBudget - wpPenalty + satietyPenalty.wpDelta, wpFloor);
   const wpRemaining = effectiveWpBudget - wpUsed;
 
-  // Insulin profile system
+  // Stress slots
+  const stressSlotSet = useMemo(() => {
+    return new Set<number>(dayConfig?.stressSlots ?? []);
+  }, [dayConfig]);
+
+  // Insulin profile system (with stress slot reduction applied)
   const insulinParams: InsulinParams | number = useMemo(() => {
     if (dayConfig?.insulinProfile) {
+      let rates = expandInsulinProfile(dayConfig.insulinProfile);
+      if (dayConfig.stressSlots && dayConfig.stressSlots.length > 0) {
+        rates = applyStressToRates(rates, dayConfig.stressSlots);
+      }
       return {
-        rates: expandInsulinProfile(dayConfig.insulinProfile),
+        rates,
         mode: dayConfig.insulinProfile.mode,
       };
     }
@@ -537,6 +546,7 @@ export function PlanningPhase() {
               previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}
               previewIntervention={activeIntervention && previewSlot !== null ? activeIntervention : undefined}
               previewInterventionColumn={activeIntervention && previewSlot !== null ? slotToColumn(previewSlot) : undefined}
+              stressSlots={stressSlotSet}
             />
             {isPlanning && (
               <div className="planning-phase__pancreas-overlay">
@@ -559,6 +569,7 @@ export function PlanningPhase() {
             onRemoveFromSlot={removeFromSlot}
             disabled={!isPlanning}
             lockedSlots={effectiveLockedSlots}
+            stressSlots={stressSlotSet}
           />
 
           {isPlanning && (

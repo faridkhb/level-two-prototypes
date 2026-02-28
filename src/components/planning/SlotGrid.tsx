@@ -13,6 +13,7 @@ interface SlotGridProps {
   onRemoveFromSlot: (slotIndex: number) => void;
   disabled?: boolean;
   lockedSlots?: Set<number>;
+  stressSlots?: Set<number>;
 }
 
 type SlotContent =
@@ -28,6 +29,7 @@ function SlotContainer({
   onRemove,
   disabled,
   isLocked,
+  isStressed,
   isParentDragging,
   isGroupHovered,
   isDropTarget,
@@ -40,6 +42,7 @@ function SlotContainer({
   onRemove: () => void;
   disabled?: boolean;
   isLocked?: boolean;
+  isStressed?: boolean;
   isParentDragging?: boolean;
   isGroupHovered?: boolean;
   isDropTarget?: boolean;
@@ -87,6 +90,7 @@ function SlotContainer({
         (isDropTarget ? ' slot-container--over' : '') +
         (disabled ? ' slot-container--disabled' : '') +
         (isLocked ? ' slot-container--locked' : '') +
+        (isStressed ? ' slot-container--stressed' : '') +
         ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
       }
       onClick={content && !disabled && !isLocked && !isDragging ? onRemove : undefined}
@@ -99,6 +103,7 @@ function SlotContainer({
       {showContent ? (
         <div className="slot-container__card">
           {isLocked && <span className="slot-container__lock">🔒</span>}
+          {isStressed && !isLocked && <span className="slot-container__stress-icon">😰</span>}
           <span className="slot-container__emoji">
             {content.type === 'food' ? content.ship.emoji : content.intervention.emoji}
           </span>
@@ -126,7 +131,7 @@ function SlotContainer({
           </div>
         </div>
       ) : (
-        <div className="slot-container__empty">{isLocked ? '🔒' : '+'}</div>
+        <div className="slot-container__empty">{isLocked ? '🔒' : isStressed ? '😰' : '+'}</div>
       )}
     </div>
   );
@@ -141,6 +146,7 @@ export function SlotGrid({
   onRemoveFromSlot,
   disabled,
   lockedSlots,
+  stressSlots,
 }: SlotGridProps) {
   // Track which slots are being dragged and drop targets (for multi-slot visual)
   const { active, over } = useDndContext();
@@ -246,6 +252,7 @@ export function SlotGrid({
                   onRemove={() => onRemoveFromSlot(slotIndex)}
                   disabled={disabled}
                   isLocked={lockedSlots?.has(slotIndex)}
+                  isStressed={stressSlots?.has(slotIndex)}
                   isParentDragging={draggingSlots.has(slotIndex)}
                   isGroupHovered={!lockedSlots?.has(slotIndex) && hoveredGroup.has(slotIndex)}
                   isDropTarget={dropTargetSlots.has(slotIndex)}
