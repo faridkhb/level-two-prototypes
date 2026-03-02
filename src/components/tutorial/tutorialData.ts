@@ -59,7 +59,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-3',
-    bubble: { type: 'dialogue', text: 'Food turns into glucose "cubes" on the graph. Each cube = 20 mg/dL. More carbs = more cubes = higher peak.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'When you eat, carbs in food raise your blood glucose. More carbs = higher peak on the graph. The glycemic index controls the speed \u2014 high-GI foods spike fast, low-GI foods rise gradually.', expression: 'neutral' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -76,7 +76,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-5',
-    bubble: { type: 'success', text: 'Great! See the blue cubes? That\'s glucose from the banana. The curve rises, then insulin brings it down.', expression: 'happy' },
+    bubble: { type: 'success', text: 'Great! See the glucose curve? The banana\'s carbs raised your blood glucose. It rises during absorption, then insulin brings it back down.', expression: 'happy' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -116,7 +116,7 @@ const L1D2: TutorialStep[] = [
   },
   {
     id: 'L1D2-3',
-    bubble: { type: 'dialogue', text: 'Pick your foods wisely! \ud83c\udf6a Cookie has 6 cubes but costs 2 WP. \ud83c\udf4c Banana has 9 cubes but only 1 WP.', expression: 'thinking' },
+    bubble: { type: 'dialogue', text: 'Pick your foods wisely! \ud83c\udf6a Cookie has 14g carbs but costs 2 WP. \ud83c\udf4c Banana has 23g carbs but only 1 WP. More carbs = higher glucose spike!', expression: 'thinking' },
     highlight: 'ship-inventory',
     highlightType: 'spotlight',
     advanceOn: 'tap',
@@ -168,7 +168,7 @@ const L1D3: TutorialStep[] = [
 const L2D1: TutorialStep[] = [
   {
     id: 'L2D1-1',
-    bubble: { type: 'dialogue', text: 'Level 2 \u2014 Exercise! The \ud83d\udeb6 Light Walk burns cubes from the top of the graph. It removes 3 cubes per column for 4 columns.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Level 2 \u2014 Exercise! The \ud83d\udeb6 Light Walk burns glucose for energy, lowering the curve from the top. It works for 1 hour \u2014 great for flattening spikes!', expression: 'neutral' },
     highlight: 'intervention-inventory',
     highlightType: 'spotlight',
     advanceOn: 'tap',
@@ -176,7 +176,7 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-2',
-    bubble: { type: 'dialogue', text: 'The \ud83c\udf54 Burger is pre-placed at slot 2. It has 14 cubes \u2014 that\'s a big spike! Drag the walk near the burger to burn the peak.', expression: 'thinking' },
+    bubble: { type: 'dialogue', text: 'The \ud83c\udf54 Burger is pre-placed at slot 2. Its 20g of carbs create a big glucose spike! Drag the walk nearby to bring the peak down.', expression: 'thinking' },
     highlight: ['intervention:lightwalk', 'slot:3'],
     highlightType: 'pulse',
     cta: { type: 'drag-arrow', source: 'intervention:lightwalk', dest: 'slot:3' },
@@ -185,7 +185,7 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-3',
-    bubble: { type: 'success', text: 'When you drag an intervention over the graph, green overlays show exactly which cubes will be burned. Nice!', expression: 'happy' },
+    bubble: { type: 'success', text: 'When you drag an intervention over the graph, green overlays show exactly how much glucose will be reduced. Nice!', expression: 'happy' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -227,7 +227,7 @@ const L2D2: TutorialStep[] = [
 const L2D3: TutorialStep[] = [
   {
     id: 'L2D3-1',
-    bubble: { type: 'dialogue', text: 'New: \ud83c\udfc3 Heavy Run! It burns 5 cubes per column for 12 columns \u2014 much deeper and wider than a walk. But it costs 4 WP and takes 2 slots!', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'New: \ud83c\udfc3 Heavy Run! It reduces glucose much more than a walk \u2014 deeper and over a longer period (3 hours). But it costs 4 WP and takes 2 slots!', expression: 'neutral' },
     highlight: 'intervention-inventory',
     highlightType: 'spotlight',
     advanceOn: 'tap',
@@ -369,7 +369,7 @@ const L4D2: TutorialStep[] = [
   },
   {
     id: 'L4D2-2',
-    bubble: { type: 'hint', text: '\ud83d\udca1 Oatmeal (10 cubes, 8 cols) works great in the morning with rate 3 insulin. Chickpeas (9 cubes, 6 cols) mid-day at rate 2.', expression: 'thinking' },
+    bubble: { type: 'hint', text: '\ud83d\udca1 Oatmeal (24g carbs, absorbs over 2h) works great in the morning with rate 3 insulin. Chickpeas (23g carbs, 90 min) are good mid-day with rate 2.', expression: 'thinking' },
     advanceOn: 'tap',
   },
   {
@@ -403,7 +403,7 @@ const L5D1: TutorialStep[] = [
   },
   {
     id: 'L5D1-3',
-    bubble: { type: 'dialogue', text: 'Look at the muffin \u2014 18 cubes without medication. Toggle Metformin ON and watch what happens!', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'The muffin has 44g of carbs \u2014 a massive glucose spike! Toggle Metformin ON and watch what happens!', expression: 'neutral' },
     highlight: 'medication:metformin',
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'medication:metformin' },
@@ -412,7 +412,7 @@ const L5D1: TutorialStep[] = [
   },
   {
     id: 'L5D1-4',
-    bubble: { type: 'success', text: 'The muffin dropped from 18 to 14 cubes! That\'s 4 fewer cubes in the penalty zone. Metformin affects ALL foods.', expression: 'happy' },
+    bubble: { type: 'success', text: 'The glucose peak dropped by 20%! That\'s a big reduction in the danger zone. Metformin reduces glucose from ALL foods.', expression: 'happy' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -468,7 +468,7 @@ const L6D1: TutorialStep[] = [
   },
   {
     id: 'L6D1-2',
-    bubble: { type: 'dialogue', text: 'SGLT2 drains up to 3 cubes per column \u2014 but ONLY above 200 mg/dL. See the purple dashed line on the graph? That\'s the threshold.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'SGLT2 removes excess glucose through the kidneys \u2014 but ONLY above 200 mg/dL. See the purple dashed line on the graph? That\'s the threshold.', expression: 'neutral' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -490,7 +490,7 @@ const L6D1: TutorialStep[] = [
   },
   {
     id: 'L6D1-5',
-    bubble: { type: 'success', text: 'The peak dropped! SGLT2 removed cubes above 200 mg/dL.', expression: 'happy' },
+    bubble: { type: 'success', text: 'The peak dropped! SGLT2 flushed out excess glucose above 200 mg/dL.', expression: 'happy' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -717,7 +717,7 @@ const L8D3: TutorialStep[] = [
   },
   {
     id: 'L8D3-3',
-    bubble: { type: 'dialogue', text: 'BOOST supercharges your insulin, but ONLY above 200 mg/dL. It adds 4 extra cubes of absorption per column in the danger zone.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'BOOST supercharges your insulin, but ONLY above 200 mg/dL. It dramatically increases glucose absorption in the danger zone.', expression: 'neutral' },
     highlight: 'boost-btn',
     highlightType: 'glow',
     advanceOn: 'tap',
