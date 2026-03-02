@@ -100,16 +100,16 @@ const L1D1: TutorialStep[] = [
 const L1D2: TutorialStep[] = [
   {
     id: 'L1D2-1',
-    bubble: { type: 'dialogue', text: 'Day 2! You have 3 foods today. Each costs \u2600\ufe0f WP (Willpower). Check your WP budget at the top.', expression: 'neutral' },
-    highlight: 'wp-counter',
+    bubble: { type: 'dialogue', text: 'Day 2! You have 3 foods today. Each costs \u2600\ufe0f WP (Willpower). Check your WP budget at the top.', expression: 'neutral', position: 'center' },
+    highlight: 'header',
     highlightType: 'glow',
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L1D2-2',
-    bubble: { type: 'dialogue', text: 'The kcal bar shows how much you\'ve eaten. Stay in the green zone \u2014 not too little, not too much!', expression: 'neutral' },
-    highlight: 'kcal-bar',
+    bubble: { type: 'dialogue', text: 'The kcal bar shows how much you\'ve eaten. Stay in the green zone \u2014 not too little, not too much!', expression: 'neutral', position: 'center' },
+    highlight: 'header',
     highlightType: 'glow',
     advanceOn: 'tap',
     blockInteraction: true,
