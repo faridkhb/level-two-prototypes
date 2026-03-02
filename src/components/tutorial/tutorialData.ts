@@ -21,14 +21,23 @@ export interface TutorialCTA {
   dest?: string;
 }
 
+export interface ExpectedAction {
+  type: 'place-food' | 'place-intervention' | 'toggle-medication' | 'toggle-boost' | 'click-submit';
+  foodId?: string;
+  slotIndex?: number;
+  interventionId?: string;
+  medicationId?: string;
+}
+
 export interface TutorialStep {
   id: string;
   bubble?: TutorialBubble;
-  highlight?: string;
+  highlight?: string | string[];
   highlightType?: HighlightType;
   cta?: TutorialCTA;
   advanceOn: AdvanceOn;
   blockInteraction?: boolean;
+  expectedAction?: ExpectedAction;
 }
 
 // ======= LEVEL 1 — First Steps =======
@@ -59,10 +68,11 @@ const L1D1: TutorialStep[] = [
   {
     id: 'L1D1-4',
     bubble: { type: 'dialogue', text: 'Drag the \ud83c\udf4c Banana onto the graph! Place it in slot 2 (10:00 AM).', expression: 'happy' },
-    highlight: 'slot:2',
+    highlight: ['food:banana', 'slot:2'],
     highlightType: 'pulse',
     cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:2' },
     advanceOn: 'action',
+    expectedAction: { type: 'place-food', foodId: 'banana', slotIndex: 2 },
   },
   {
     id: 'L1D1-5',
@@ -78,6 +88,7 @@ const L1D1: TutorialStep[] = [
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'submit-btn' },
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
   {
     id: 'L1D1-7',
@@ -113,7 +124,10 @@ const L1D2: TutorialStep[] = [
   {
     id: 'L1D2-4',
     bubble: { type: 'dialogue', text: 'Place your foods and submit when ready!', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -142,7 +156,10 @@ const L1D3: TutorialStep[] = [
   {
     id: 'L1D3-4',
     bubble: { type: 'dialogue', text: 'Place your food and submit!', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -160,10 +177,11 @@ const L2D1: TutorialStep[] = [
   {
     id: 'L2D1-2',
     bubble: { type: 'dialogue', text: 'The \ud83c\udf54 Burger is pre-placed at slot 2. It has 14 cubes \u2014 that\'s a big spike! Drag the walk near the burger to burn the peak.', expression: 'thinking' },
-    highlight: 'slot:3',
+    highlight: ['intervention:lightwalk', 'slot:3'],
     highlightType: 'pulse',
     cta: { type: 'drag-arrow', source: 'intervention:lightwalk', dest: 'slot:3' },
     advanceOn: 'action',
+    expectedAction: { type: 'place-intervention', interventionId: 'lightwalk', slotIndex: 3 },
   },
   {
     id: 'L2D1-3',
@@ -175,7 +193,10 @@ const L2D1: TutorialStep[] = [
   {
     id: 'L2D1-4',
     bubble: { type: 'dialogue', text: 'Place your food and submit!', expression: 'neutral' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -196,7 +217,10 @@ const L2D2: TutorialStep[] = [
   {
     id: 'L2D2-3',
     bubble: { type: 'dialogue', text: 'Place everything and submit!', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -217,7 +241,10 @@ const L2D3: TutorialStep[] = [
   {
     id: 'L2D3-3',
     bubble: { type: 'dialogue', text: 'Place everything and submit!', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -243,7 +270,10 @@ const L3D1: TutorialStep[] = [
   {
     id: 'L3D1-3',
     bubble: { type: 'dialogue', text: 'Plan your meal within the WP budget. Remember: Break gives you +1 WP back!', expression: 'thinking' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -267,7 +297,10 @@ const L3D2: TutorialStep[] = [
   {
     id: 'L3D2-3',
     bubble: { type: 'dialogue', text: 'Plan wisely! The \ud83c\udf55 Pizza looks tempting but check its kcal...', expression: 'thinking' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -291,7 +324,10 @@ const L3D3: TutorialStep[] = [
   {
     id: 'L3D3-3',
     bubble: { type: 'dialogue', text: 'The burger is pre-placed. Use your tools to manage the spike and submit!', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -317,7 +353,10 @@ const L4D1: TutorialStep[] = [
   {
     id: 'L4D1-3',
     bubble: { type: 'dialogue', text: 'You have 2 bananas. Try placing one in the morning and one in the evening \u2014 see the difference!', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -336,7 +375,10 @@ const L4D2: TutorialStep[] = [
   {
     id: 'L4D2-3',
     bubble: { type: 'dialogue', text: 'Place your food, walk, and submit!', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -366,6 +408,7 @@ const L5D1: TutorialStep[] = [
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'medication:metformin' },
     advanceOn: 'action',
+    expectedAction: { type: 'toggle-medication', medicationId: 'metformin' },
   },
   {
     id: 'L5D1-4',
@@ -377,7 +420,10 @@ const L5D1: TutorialStep[] = [
   {
     id: 'L5D1-5',
     bubble: { type: 'dialogue', text: 'Place your foods and submit.', expression: 'neutral' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -401,7 +447,10 @@ const L5D2: TutorialStep[] = [
   {
     id: 'L5D2-3',
     bubble: { type: 'dialogue', text: 'Place a \ud83d\udeb6 Walk near each peak. Fill in your food and submit!', expression: 'neutral' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -437,6 +486,7 @@ const L6D1: TutorialStep[] = [
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'medication:sglt2' },
     advanceOn: 'action',
+    expectedAction: { type: 'toggle-medication', medicationId: 'sglt2' },
   },
   {
     id: 'L6D1-5',
@@ -448,7 +498,10 @@ const L6D1: TutorialStep[] = [
   {
     id: 'L6D1-6',
     bubble: { type: 'dialogue', text: 'Place your food and walk, then submit.', expression: 'neutral' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -489,7 +542,10 @@ const L6D2: TutorialStep[] = [
   {
     id: 'L6D2-6',
     bubble: { type: 'dialogue', text: 'Plan carefully and submit!', expression: 'neutral' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -512,6 +568,7 @@ const L7D1: TutorialStep[] = [
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'medication:glp1' },
     advanceOn: 'action',
+    expectedAction: { type: 'toggle-medication', medicationId: 'glp1' },
   },
   {
     id: 'L7D1-3',
@@ -549,7 +606,10 @@ const L7D1: TutorialStep[] = [
   {
     id: 'L7D1-8',
     bubble: { type: 'dialogue', text: 'Place your food and walk, then submit.', expression: 'neutral' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -579,7 +639,10 @@ const L7D2: TutorialStep[] = [
   {
     id: 'L7D2-4',
     bubble: { type: 'dialogue', text: 'Place your food, walk, and break. Submit when ready!', expression: 'neutral' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -605,7 +668,10 @@ const L8D1: TutorialStep[] = [
   {
     id: 'L8D1-4',
     bubble: { type: 'dialogue', text: 'Good luck! No more hand-holding \u2014 show me what you\'ve learned!', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -624,7 +690,10 @@ const L8D2: TutorialStep[] = [
   {
     id: 'L8D2-3',
     bubble: { type: 'dialogue', text: 'Go!', expression: 'neutral' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
 ];
 
@@ -667,6 +736,7 @@ const L8D3: TutorialStep[] = [
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'boost-btn' },
     advanceOn: 'action',
+    expectedAction: { type: 'toggle-boost' },
   },
   {
     id: 'L8D3-6',
@@ -696,6 +766,7 @@ const L8D3: TutorialStep[] = [
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'submit-btn' },
     advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
   },
   {
     id: 'L8D3-10',

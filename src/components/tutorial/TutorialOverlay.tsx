@@ -76,34 +76,32 @@ function getBubbleIcon(type: string): string {
   }
 }
 
+// Resolve highlight targets to DOMRects
+function resolveHighlightRects(highlight: string | string[] | undefined): DOMRect[] {
+  if (!highlight) return [];
+  const targets = Array.isArray(highlight) ? highlight : [highlight];
+  const rects: DOMRect[] = [];
+  for (const target of targets) {
+    const selector = getHighlightSelector(target);
+    if (!selector) continue;
+    const el = document.querySelector(selector);
+    if (!el) continue;
+    rects.push(el.getBoundingClientRect());
+  }
+  return rects;
+}
+
 export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
+  const [spotlightRects, setSpotlightRects] = useState<DOMRect[]>([]);
 
   // For 'action' steps: overlay is pass-through, user interacts with game
   const isPassthrough = step.advanceOn === 'action';
 
-  // Compute spotlight position
+  // Compute spotlight positions for all highlight targets
   useEffect(() => {
-    if (!step.highlight) {
-      setSpotlightRect(null);
-      return;
-    }
-
-    const selector = getHighlightSelector(step.highlight);
-    if (!selector) {
-      setSpotlightRect(null);
-      return;
-    }
-
-    const el = document.querySelector(selector);
-    if (!el) {
-      setSpotlightRect(null);
-      return;
-    }
-
-    const rect = el.getBoundingClientRect();
-    setSpotlightRect(rect);
+    const rects = resolveHighlightRects(step.highlight);
+    setSpotlightRects(rects);
   }, [step]);
 
   // Handle click on overlay to advance on tap
@@ -113,41 +111,51 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
     }
   }, [step.advanceOn, onAdvance]);
 
-  // Handle click on bubble — always advances (for action steps: user taps "Done")
+  // Handle click on bubble — only advances for tap steps, NOT action steps
   const handleBubbleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    onAdvance();
-  }, [onAdvance]);
+    if (step.advanceOn === 'tap' || step.advanceOn === 'auto') {
+      onAdvance();
+    }
+    // action steps: bubble click is a no-op
+  }, [step.advanceOn, onAdvance]);
 
   // Bubble CSS class
   const bubbleType = step.bubble?.type ?? 'dialogue';
   const bubblePosition = step.bubble?.position ?? 'bottom';
 
-  // Position bubble near spotlight if available, otherwise center
+  // Position bubble near first spotlight rect if available, otherwise center
+  const primaryRect = spotlightRects[0] ?? null;
   const bubbleStyle: React.CSSProperties = {};
-  if (spotlightRect && bubblePosition !== 'center') {
-    if (bubblePosition === 'top' || spotlightRect.top > window.innerHeight * 0.5) {
+  if (primaryRect && bubblePosition !== 'center') {
+    if (bubblePosition === 'top' || primaryRect.top > window.innerHeight * 0.5) {
       // Show bubble above the spotlight
-      bubbleStyle.bottom = `${window.innerHeight - spotlightRect.top + 16}px`;
-      bubbleStyle.left = `${Math.max(16, Math.min(spotlightRect.left, window.innerWidth - 340))}px`;
+      bubbleStyle.bottom = `${window.innerHeight - primaryRect.top + 16}px`;
+      bubbleStyle.left = `${Math.max(16, Math.min(primaryRect.left, window.innerWidth - 340))}px`;
     } else {
       // Show bubble below the spotlight
-      bubbleStyle.top = `${spotlightRect.bottom + 16}px`;
-      bubbleStyle.left = `${Math.max(16, Math.min(spotlightRect.left, window.innerWidth - 340))}px`;
+      bubbleStyle.top = `${primaryRect.bottom + 16}px`;
+      bubbleStyle.left = `${Math.max(16, Math.min(primaryRect.left, window.innerWidth - 340))}px`;
     }
   }
 
-  // Spotlight clip path for dark overlay
-  const clipPath = spotlightRect
-    ? `polygon(
-        0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
-        ${spotlightRect.left - 8}px ${spotlightRect.top - 8}px,
-        ${spotlightRect.left - 8}px ${spotlightRect.bottom + 8}px,
-        ${spotlightRect.right + 8}px ${spotlightRect.bottom + 8}px,
-        ${spotlightRect.right + 8}px ${spotlightRect.top - 8}px,
-        ${spotlightRect.left - 8}px ${spotlightRect.top - 8}px
-      )`
-    : undefined;
+  // Build clip-path polygon that cuts out ALL highlighted areas
+  const buildClipPath = (rects: DOMRect[]): string | undefined => {
+    if (rects.length === 0) return undefined;
+    const PAD = 8;
+    // Start with full screen, then cut out each rect (using evenodd rule)
+    let path = '0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%';
+    for (const rect of rects) {
+      const l = rect.left - PAD;
+      const t = rect.top - PAD;
+      const r = rect.right + PAD;
+      const b = rect.bottom + PAD;
+      path += `, ${l}px ${t}px, ${l}px ${b}px, ${r}px ${b}px, ${r}px ${t}px, ${l}px ${t}px`;
+    }
+    return `polygon(evenodd, ${path})`;
+  };
+
+  const clipPath = buildClipPath(spotlightRects);
 
   return (
     <div
@@ -155,7 +163,7 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
       className={`tutorial-overlay ${isPassthrough ? 'tutorial-overlay--passthrough' : ''}`}
       onClick={isPassthrough ? undefined : handleOverlayClick}
     >
-      {/* Dark backdrop with spotlight cutout — hidden in passthrough mode */}
+      {/* Dark backdrop with spotlight cutouts — hidden in passthrough mode */}
       {!isPassthrough && (
         <div
           className="tutorial-overlay__backdrop"
@@ -163,23 +171,25 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
         />
       )}
 
-      {/* Spotlight highlight border — shown even in passthrough */}
-      {spotlightRect && !isPassthrough && (
+      {/* Spotlight highlight borders — shown on ALL targets */}
+      {spotlightRects.map((rect, i) => (
         <div
+          key={i}
           className={`tutorial-overlay__spotlight tutorial-overlay__spotlight--${step.highlightType ?? 'spotlight'}`}
           style={{
-            top: spotlightRect.top - 8,
-            left: spotlightRect.left - 8,
-            width: spotlightRect.width + 16,
-            height: spotlightRect.height + 16,
+            top: rect.top - 8,
+            left: rect.left - 8,
+            width: rect.width + 16,
+            height: rect.height + 16,
+            pointerEvents: 'none',
           }}
         />
-      )}
+      ))}
 
-      {/* Bubble — always visible, always clickable */}
+      {/* Bubble — always visible, only clickable for tap steps */}
       {step.bubble && (
         <div
-          className={`tutorial-bubble tutorial-bubble--${bubbleType} ${bubblePosition === 'center' ? 'tutorial-bubble--center' : ''}`}
+          className={`tutorial-bubble tutorial-bubble--${bubbleType} ${bubblePosition === 'center' ? 'tutorial-bubble--center' : ''} ${isPassthrough ? 'tutorial-bubble--action' : ''}`}
           style={bubblePosition !== 'center' ? bubbleStyle : undefined}
           onClick={handleBubbleClick}
         >
@@ -194,29 +204,29 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
               <span className="tutorial-bubble__tap-hint">Tap to continue</span>
             )}
             {step.advanceOn === 'action' && (
-              <span className="tutorial-bubble__tap-hint">Tap here when done</span>
+              <span className="tutorial-bubble__tap-hint">Complete the action above</span>
             )}
           </div>
         </div>
       )}
 
-      {/* CTA animations */}
-      {step.cta?.type === 'tap-pulse' && spotlightRect && (
+      {/* CTA animations — use first spotlight rect */}
+      {step.cta?.type === 'tap-pulse' && primaryRect && (
         <div
           className="tutorial-cta tutorial-cta--tap-pulse"
           style={{
-            top: spotlightRect.top + spotlightRect.height / 2,
-            left: spotlightRect.left + spotlightRect.width / 2,
+            top: primaryRect.top + primaryRect.height / 2,
+            left: primaryRect.left + primaryRect.width / 2,
           }}
         />
       )}
 
-      {step.cta?.type === 'bounce' && spotlightRect && (
+      {step.cta?.type === 'bounce' && primaryRect && (
         <div
           className="tutorial-cta tutorial-cta--bounce"
           style={{
-            top: spotlightRect.top - 20,
-            left: spotlightRect.left + spotlightRect.width / 2,
+            top: primaryRect.top - 20,
+            left: primaryRect.left + primaryRect.width / 2,
           }}
         >
           {'\u261d\ufe0f'}

@@ -95,7 +95,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const { boostOverride } = useConfigStore();
 
   // Tutorial overlay system
-  const { currentStep: tutorialStep, advance: advanceTutorial, isActive: isTutorialActive } = useTutorial(
+  const { currentStep: tutorialStep, advance: advanceTutorial, notifyAction: notifyTutorialAction, isActive: isTutorialActive } = useTutorial(
     isTutorial ? tutorialLevelId : null,
     currentDay,
   );
@@ -242,6 +242,12 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     return [...base, { id: SATIETY_PENALTY_FOOD_ID, count: freeCount }];
   }, [dayConfig, satietyPenalty.freeFood]);
 
+  // Tutorial-aware medication toggle wrapper
+  const handleMedicationToggle = useCallback((medId: string) => {
+    toggleMedication(medId);
+    notifyTutorialAction({ type: 'toggle-medication', medicationId: medId });
+  }, [toggleMedication, notifyTutorialAction]);
+
   // DnD sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -341,6 +347,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             }
             if (intervention.wpCost > wpRemaining) return;
             placeInterventionInSlot(intervention.id, targetSlot, slotSize);
+            notifyTutorialAction({ type: 'place-intervention', interventionId: intervention.id, slotIndex: targetSlot });
             return;
           }
         }
@@ -378,22 +385,25 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           if (intervention.wpCost > effectiveWp) return;
           if (targetOccupied) removeFromSlot(targetSlot);
           placeInterventionInSlot(intervention.id, targetSlot);
+          notifyTutorialAction({ type: 'place-intervention', interventionId: intervention.id, slotIndex: targetSlot });
         } else {
           const ship = activeData?.ship as Ship | undefined;
           if (!ship) return;
           if ((ship.wpCost ?? 0) > effectiveWp) return;
           if (targetOccupied) removeFromSlot(targetSlot);
           placeFoodInSlot(ship.id, targetSlot);
+          notifyTutorialAction({ type: 'place-food', foodId: ship.id, slotIndex: targetSlot });
         }
       }
     },
-    [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions, effectiveLockedSlots]
+    [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions, effectiveLockedSlots, notifyTutorialAction]
   );
 
   const handleToggleBoost = useCallback(() => {
     if (!isBoostActive && barsAvailable <= 0) return;
     toggleBoost(currentDay);
-  }, [isBoostActive, barsAvailable, currentDay, toggleBoost]);
+    notifyTutorialAction({ type: 'toggle-boost' });
+  }, [isBoostActive, barsAvailable, currentDay, toggleBoost, notifyTutorialAction]);
 
   // === Submit handler: start reveal animation (no graph clear) ===
   const handleSubmit = useCallback(() => {
@@ -418,11 +428,14 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     if (activeMedications.length > 0) phases.push(4); // medications
     revealSequenceRef.current = phases;
 
+    // Notify tutorial system before phase change
+    notifyTutorialAction({ type: 'click-submit' });
+
     // Start reveal — graph stays populated, revealPhase controls layer visibility
     setGamePhase('replaying');
     setRevealPhase(0);
     setPenaltyResult(null);
-  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, kcalUsed, effectiveKcalBudget, setSatietyPenalty, insulinParams, placedInterventions.length, activeMedications.length]);
+  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, kcalUsed, effectiveKcalBudget, setSatietyPenalty, insulinParams, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
 
   // === Reveal animation effect — progressive layer reveal (skips empty phases) ===
   useEffect(() => {
@@ -629,7 +642,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                   allMedications={allMedications}
                   availableMedicationIds={dayConfig?.availableMedications ?? []}
                   activeMedications={activeMedications}
-                  onMedicationToggle={toggleMedication}
+                  onMedicationToggle={handleMedicationToggle}
                 />
               </div>
             </InventoryDropZone>

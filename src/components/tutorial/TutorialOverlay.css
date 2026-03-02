@@ -129,6 +129,12 @@
   background: #0f1a12;
 }
 
+/* Action bubble: not clickable to advance, visual distinction */
+.tutorial-bubble--action {
+  cursor: default;
+  opacity: 0.92;
+}
+
 .tutorial-bubble__avatar {
   font-size: 28px;
   flex-shrink: 0;
