@@ -26,6 +26,8 @@ import { ResultPanel } from './ResultPanel';
 import { SlotGrid } from './SlotGrid';
 import { ShipCardOverlay } from './ShipCard';
 import { InterventionCardOverlay } from './InterventionCard';
+import { TutorialOverlay } from '../tutorial/TutorialOverlay';
+import { useTutorial } from '../tutorial/useTutorial';
 import './PlanningPhase.css';
 
 // Reveal: hold time (ms) after showing each phase before advancing
@@ -49,7 +51,19 @@ function InventoryDropZone({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function PlanningPhase() {
+interface PlanningPhaseProps {
+  isTutorial?: boolean;
+  onBackToTutorials?: () => void;
+  onNextLevel?: (nextLevelId: string) => void;
+}
+
+// Tutorial level order for "Next Level" navigation
+const TUTORIAL_LEVEL_ORDER = [
+  'tutorial-01', 'tutorial-02', 'tutorial-03', 'tutorial-04',
+  'tutorial-05', 'tutorial-06', 'tutorial-07', 'tutorial-08',
+];
+
+export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: PlanningPhaseProps = {}) {
   const {
     placedFoods,
     placeFoodInSlot,
@@ -75,9 +89,16 @@ export function PlanningPhase() {
     submitDayWp,
     satietyPenaltyPerDay,
     setSatietyPenalty,
+    tutorialLevelId,
   } = useGameStore();
 
   const { boostOverride } = useConfigStore();
+
+  // Tutorial overlay system
+  const { currentStep: tutorialStep, advance: advanceTutorial, isActive: isTutorialActive } = useTutorial(
+    isTutorial ? tutorialLevelId : null,
+    currentDay,
+  );
 
   const [allShips, setAllShips] = useState<Ship[]>([]);
   const [allInterventions, setAllInterventions] = useState<Intervention[]>([]);
@@ -487,6 +508,24 @@ export function PlanningPhase() {
     setPenaltyResult(null);
   }, [goToDay]);
 
+  // Tutorial: next level handler
+  const handleNextTutorialLevel = useCallback(() => {
+    if (!tutorialLevelId || !onNextLevel) return;
+    const idx = TUTORIAL_LEVEL_ORDER.indexOf(tutorialLevelId);
+    if (idx < 0 || idx >= TUTORIAL_LEVEL_ORDER.length - 1) return;
+    const nextId = TUTORIAL_LEVEL_ORDER[idx + 1];
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    setGamePhase('planning');
+    setRevealPhase(undefined);
+    setPenaltyResult(null);
+    onNextLevel(nextId);
+  }, [tutorialLevelId, onNextLevel]);
+
+  // Is this the last tutorial level?
+  const isLastTutorialLevel = tutorialLevelId
+    ? TUTORIAL_LEVEL_ORDER.indexOf(tutorialLevelId) >= TUTORIAL_LEVEL_ORDER.length - 1
+    : false;
+
   if (isLoading || !currentLevel) {
     return (
       <div className="planning-phase planning-phase--loading">
@@ -605,11 +644,14 @@ export function PlanningPhase() {
               satietyResult={satietyResult}
               onRetry={handleRetry}
               onNextDay={handleNextDay}
+              isTutorial={isTutorial}
+              onNextLevel={!isLastTutorialLevel ? handleNextTutorialLevel : undefined}
+              onBackToTutorials={onBackToTutorials}
             />
           )}
 
-          {/* Day navigation (cheat buttons) — only in planning */}
-          {isPlanning && (
+          {/* Day navigation (cheat buttons) — only in planning, hidden in tutorial */}
+          {isPlanning && !isTutorial && (
             <div className="planning-phase__day-nav">
               {Array.from({ length: currentLevel.days }, (_, i) => i + 1).map(day => (
                 <button
@@ -630,6 +672,14 @@ export function PlanningPhase() {
         {activeShip && <ShipCardOverlay ship={activeShip} />}
         {activeIntervention && <InterventionCardOverlay intervention={activeIntervention} />}
       </DragOverlay>
+
+      {/* Tutorial overlay */}
+      {isTutorialActive && tutorialStep && (
+        <TutorialOverlay
+          step={tutorialStep}
+          onAdvance={advanceTutorial}
+        />
+      )}
     </DndContext>
   );
 }

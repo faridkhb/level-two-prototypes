@@ -1,0 +1,60 @@
+{
+  "id": "tutorial-07",
+  "name": "GLP-1",
+  "description": "The complex medication with four simultaneous effects.",
+  "days": 2,
+  "dayConfigs": [
+    {
+      "day": 1,
+      "kcalBudget": 1200,
+      "wpBudget": 6,
+      "availableFoods": [
+        { "id": "oatmeal", "count": 1 },
+        { "id": "banana", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 }
+      ],
+      "availableMedications": ["glp1"],
+      "preplacedFoods": [
+        { "shipId": "burger", "slotIndex": 0 }
+      ],
+      "lockedSlots": [0, 1, 4, 5, 8, 9, 10, 11],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 23, "rate": 2 },
+          { "from": 24, "to": 47, "rate": 1 }
+        ]
+      }
+    },
+    {
+      "day": 2,
+      "kcalBudget": 1600,
+      "wpBudget": 8,
+      "availableFoods": [
+        { "id": "banana", "count": 1 },
+        { "id": "cookie", "count": 1 },
+        { "id": "chicken", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 },
+        { "id": "takeabreak", "count": 1 }
+      ],
+      "availableMedications": ["metformin", "sglt2", "glp1"],
+      "preplacedFoods": [
+        { "shipId": "chocolatemuffin", "slotIndex": 1 },
+        { "shipId": "rice", "slotIndex": 6 }
+      ],
+      "lockedSlots": [0, 1, 4, 6, 8, 10, 11],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 15, "rate": 3 },
+          { "from": 16, "to": 31, "rate": 2 },
+          { "from": 32, "to": 47, "rate": 1 }
+        ]
+      }
+    }
+  ]
+}

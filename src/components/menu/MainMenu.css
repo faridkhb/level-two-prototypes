@@ -46,15 +46,14 @@
   box-shadow: 0 0 20px rgba(49, 130, 206, 0.6);
 }
 
-.main-menu__btn--story {
-  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-  opacity: 0.5;
-  cursor: not-allowed;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
+.main-menu__btn--tutorial {
+  background: linear-gradient(135deg, #38a169 0%, #276749 100%);
+  border-color: #48bb78;
+  box-shadow: 0 0 12px rgba(72, 187, 120, 0.4);
+}
+
+.main-menu__btn--tutorial:hover {
+  box-shadow: 0 0 20px rgba(72, 187, 120, 0.6);
 }
 
 .main-menu__btn--config {

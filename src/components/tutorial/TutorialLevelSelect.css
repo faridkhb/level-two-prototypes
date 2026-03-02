@@ -1,0 +1,108 @@
+.tutorial-select {
+  padding: 24px 16px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.tutorial-select__back {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-bottom: 12px;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+
+.tutorial-select__back:hover {
+  color: #e2e8f0;
+}
+
+.tutorial-select__title {
+  color: #e2e8f0;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 20px 0;
+  letter-spacing: 0.5px;
+}
+
+.tutorial-select__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tutorial-select__card {
+  position: relative;
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  height: 120px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+  padding: 0;
+}
+
+.tutorial-select__card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.tutorial-select__card:active {
+  transform: scale(0.98);
+}
+
+.tutorial-select__card-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.85;
+}
+
+.tutorial-select__card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  height: 100%;
+  padding: 10px 14px;
+  color: white;
+}
+
+.tutorial-select__card-number {
+  font-size: 28px;
+  font-weight: 800;
+  opacity: 0.35;
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  line-height: 1;
+}
+
+.tutorial-select__card-emoji {
+  font-size: 32px;
+  align-self: center;
+  margin-top: 8px;
+}
+
+.tutorial-select__card-name {
+  font-size: 14px;
+  font-weight: 700;
+  align-self: center;
+  text-align: center;
+  width: 100%;
+}
+
+.tutorial-select__card-days {
+  font-size: 11px;
+  opacity: 0.7;
+  align-self: center;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 8px;
+  border-radius: 8px;
+}

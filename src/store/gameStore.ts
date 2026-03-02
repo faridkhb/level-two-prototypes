@@ -51,6 +51,10 @@ interface GameState {
   currentLevel: LevelConfig | null;
   currentDay: number;
 
+  // Tutorial mode
+  isTutorial: boolean;
+  tutorialLevelId: string | null;
+
   // Planning (graph-based)
   placedFoods: PlacedFood[];
   placedInterventions: PlacedIntervention[];
@@ -71,6 +75,7 @@ interface GameState {
 
   // Actions
   setLevel: (level: LevelConfig) => void;
+  setTutorialMode: (isTutorial: boolean, levelId: string | null) => void;
   placeFoodInSlot: (shipId: string, slotIndex: number) => void;
   placeInterventionInSlot: (interventionId: string, slotIndex: number, slotSize?: number) => void;
   removeFromSlot: (slotIndex: number) => void;
@@ -94,6 +99,8 @@ export const useGameStore = create<GameState>()(
       // Initial state
       currentLevel: null,
       currentDay: 1,
+      isTutorial: false,
+      tutorialLevelId: null,
       placedFoods: [],
       placedInterventions: [],
       activeMedications: [],
@@ -104,6 +111,9 @@ export const useGameStore = create<GameState>()(
       settings: DEFAULT_SETTINGS,
 
       // Actions
+      setTutorialMode: (isTutorial, levelId) =>
+        set({ isTutorial, tutorialLevelId: levelId }),
+
       setLevel: (level) => {
         const dc = getDayConfig(level, 1);
         const pre = getPreplacedItems(dc);
