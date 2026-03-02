@@ -194,6 +194,23 @@
   white-space: nowrap;
 }
 
+/* When kcal bar is wrapped in Tooltip, the tooltip-wrapper becomes the flex child */
+.planning-header > .tooltip-wrapper {
+  flex: 1;
+  min-width: 100px;
+  max-width: 50%;
+  margin: 0 auto;
+}
+
+/* Reset kcal-bar-wrap properties when nested inside tooltip-wrapper */
+.tooltip-wrapper > .planning-header__kcal-bar-wrap {
+  flex: none;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  width: 100%;
+}
+
 /* Submit button */
 .planning-header__submit {
   margin-left: auto;
