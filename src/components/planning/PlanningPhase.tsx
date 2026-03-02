@@ -568,6 +568,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           medicationModifiers={medicationModifiers}
           submitEnabled={submitEnabled}
           onSubmit={handleSubmit}
+          hideKcal={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
         />
 
         {isPlanning && (

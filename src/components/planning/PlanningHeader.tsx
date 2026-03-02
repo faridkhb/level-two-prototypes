@@ -18,6 +18,7 @@ interface PlanningHeaderProps {
   medicationModifiers?: MedicationModifiers;
   submitEnabled: boolean;
   onSubmit: () => void;
+  hideKcal?: boolean;
 }
 
 export function PlanningHeader({
@@ -30,6 +31,7 @@ export function PlanningHeader({
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   submitEnabled,
   onSubmit,
+  hideKcal,
 }: PlanningHeaderProps) {
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier)
     + satietyPenalty.kcalDelta;
@@ -160,11 +162,11 @@ export function PlanningHeader({
 
       {wpSection}
 
-      {kcalTooltip ? (
+      {!hideKcal && (kcalTooltip ? (
         <Tooltip text={kcalTooltip} position="bottom">
           {kcalSection}
         </Tooltip>
-      ) : kcalSection}
+      ) : kcalSection)}
 
       <button
         className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'}`}
