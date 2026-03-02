@@ -7,6 +7,11 @@
   pointer-events: auto;
 }
 
+/* Passthrough mode: overlay lets clicks reach the game underneath */
+.tutorial-overlay--passthrough {
+  pointer-events: none;
+}
+
 .tutorial-overlay__backdrop {
   position: absolute;
   inset: 0;

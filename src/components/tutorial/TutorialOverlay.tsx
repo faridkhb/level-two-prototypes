@@ -80,6 +80,9 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
 
+  // For 'action' steps: overlay is pass-through, user interacts with game
+  const isPassthrough = step.advanceOn === 'action';
+
   // Compute spotlight position
   useEffect(() => {
     if (!step.highlight) {
@@ -103,12 +106,18 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
     setSpotlightRect(rect);
   }, [step]);
 
-  // Handle click to advance on tap
-  const handleClick = useCallback(() => {
+  // Handle click on overlay to advance on tap
+  const handleOverlayClick = useCallback(() => {
     if (step.advanceOn === 'tap' || step.advanceOn === 'auto') {
       onAdvance();
     }
   }, [step.advanceOn, onAdvance]);
+
+  // Handle click on bubble — always advances (for action steps: user taps "Done")
+  const handleBubbleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAdvance();
+  }, [onAdvance]);
 
   // Bubble CSS class
   const bubbleType = step.bubble?.type ?? 'dialogue';
@@ -143,17 +152,19 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
   return (
     <div
       ref={overlayRef}
-      className="tutorial-overlay"
-      onClick={handleClick}
+      className={`tutorial-overlay ${isPassthrough ? 'tutorial-overlay--passthrough' : ''}`}
+      onClick={isPassthrough ? undefined : handleOverlayClick}
     >
-      {/* Dark backdrop with spotlight cutout */}
-      <div
-        className="tutorial-overlay__backdrop"
-        style={clipPath ? { clipPath } : undefined}
-      />
+      {/* Dark backdrop with spotlight cutout — hidden in passthrough mode */}
+      {!isPassthrough && (
+        <div
+          className="tutorial-overlay__backdrop"
+          style={clipPath ? { clipPath } : undefined}
+        />
+      )}
 
-      {/* Spotlight highlight border */}
-      {spotlightRect && (
+      {/* Spotlight highlight border — shown even in passthrough */}
+      {spotlightRect && !isPassthrough && (
         <div
           className={`tutorial-overlay__spotlight tutorial-overlay__spotlight--${step.highlightType ?? 'spotlight'}`}
           style={{
@@ -165,11 +176,12 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
         />
       )}
 
-      {/* Bubble */}
+      {/* Bubble — always visible, always clickable */}
       {step.bubble && (
         <div
           className={`tutorial-bubble tutorial-bubble--${bubbleType} ${bubblePosition === 'center' ? 'tutorial-bubble--center' : ''}`}
           style={bubblePosition !== 'center' ? bubbleStyle : undefined}
+          onClick={handleBubbleClick}
         >
           <span className="tutorial-bubble__avatar">
             {getExpressionEmoji(step.bubble.expression)}
@@ -182,7 +194,7 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
               <span className="tutorial-bubble__tap-hint">Tap to continue</span>
             )}
             {step.advanceOn === 'action' && (
-              <span className="tutorial-bubble__tap-hint">Do the action to continue</span>
+              <span className="tutorial-bubble__tap-hint">Tap here when done</span>
             )}
           </div>
         </div>
