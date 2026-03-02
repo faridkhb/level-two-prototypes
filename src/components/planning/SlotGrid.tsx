@@ -13,6 +13,7 @@ interface SlotGridProps {
   onRemoveFromSlot: (slotIndex: number) => void;
   disabled?: boolean;
   lockedSlots?: Set<number>;
+  stressSlots?: Set<number>;
 }
 
 type SlotContent =
@@ -28,6 +29,7 @@ function SlotContainer({
   onRemove,
   disabled,
   isLocked,
+  isStressed,
   isParentDragging,
   isGroupHovered,
   isDropTarget,
@@ -40,6 +42,7 @@ function SlotContainer({
   onRemove: () => void;
   disabled?: boolean;
   isLocked?: boolean;
+  isStressed?: boolean;
   isParentDragging?: boolean;
   isGroupHovered?: boolean;
   isDropTarget?: boolean;
@@ -74,6 +77,22 @@ function SlotContainer({
   const showContent = content && !isDragging && !isParentDragging;
   const isMultiStart = content?.type === 'intervention' && (content.intervention.slotSize ?? 1) > 1;
 
+  // Build tooltip text
+  const tooltip = (() => {
+    const stressTag = isStressed ? 'Stress: insulin −2' : '';
+    if (showContent) {
+      const itemName = content.type === 'food'
+        ? `${content.ship.name} · ${content.ship.kcal} kcal`
+        : isContinuation ? '' : `${content.intervention.name} · ${content.intervention.duration}m`;
+      if (isLocked) return `Pre-placed · ${itemName}`;
+      if (stressTag && itemName) return `${stressTag} · ${itemName}`;
+      return itemName;
+    }
+    if (isLocked) return 'Locked';
+    if (stressTag) return stressTag;
+    return 'Drop food or action here';
+  })();
+
   return (
     <div
       ref={combinedRef}
@@ -87,8 +106,10 @@ function SlotContainer({
         (isDropTarget ? ' slot-container--over' : '') +
         (disabled ? ' slot-container--disabled' : '') +
         (isLocked ? ' slot-container--locked' : '') +
+        (isStressed ? ' slot-container--stressed' : '') +
         ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
       }
+      data-tooltip={tooltip}
       onClick={content && !disabled && !isLocked && !isDragging ? onRemove : undefined}
       onMouseEnter={() => content && onHoverEnter(index)}
       onMouseLeave={onHoverLeave}
@@ -99,6 +120,7 @@ function SlotContainer({
       {showContent ? (
         <div className="slot-container__card">
           {isLocked && <span className="slot-container__lock">🔒</span>}
+          {isStressed && !isLocked && <span className="slot-container__stress-badge">Stress</span>}
           <span className="slot-container__emoji">
             {content.type === 'food' ? content.ship.emoji : content.intervention.emoji}
           </span>
@@ -126,7 +148,9 @@ function SlotContainer({
           </div>
         </div>
       ) : (
-        <div className="slot-container__empty">{isLocked ? '🔒' : '+'}</div>
+        <div className="slot-container__empty">
+          {isLocked ? '🔒' : isStressed ? <span className="slot-container__stress-label">😰 Stress</span> : '+'}
+        </div>
       )}
     </div>
   );
@@ -141,6 +165,7 @@ export function SlotGrid({
   onRemoveFromSlot,
   disabled,
   lockedSlots,
+  stressSlots,
 }: SlotGridProps) {
   // Track which slots are being dragged and drop targets (for multi-slot visual)
   const { active, over } = useDndContext();
@@ -246,6 +271,7 @@ export function SlotGrid({
                   onRemove={() => onRemoveFromSlot(slotIndex)}
                   disabled={disabled}
                   isLocked={lockedSlots?.has(slotIndex)}
+                  isStressed={stressSlots?.has(slotIndex)}
                   isParentDragging={draggingSlots.has(slotIndex)}
                   isGroupHovered={!lockedSlots?.has(slotIndex) && hoveredGroup.has(slotIndex)}
                   isDropTarget={dropTargetSlots.has(slotIndex)}

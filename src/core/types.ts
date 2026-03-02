@@ -53,6 +53,9 @@ export const PANCREAS_TIERS: Record<PancreasTier, { decayRate: number; cost: num
 
 export const PANCREAS_TOTAL_BARS = 1;
 
+/** Stress slot: insulin rate reduction per column within stressed slot */
+export const STRESS_INSULIN_REDUCTION = 2;
+
 // === Insulin Profile System ===
 
 export type InsulinMode = 'cumulative' | 'per-column';
@@ -83,6 +86,22 @@ export function expandInsulinProfile(config: InsulinProfileConfig): number[] {
     }
   }
   return rates;
+}
+
+/** Apply stress slot reduction to insulin rates.
+ *  Reduces rate by STRESS_INSULIN_REDUCTION in columns covered by stress slots.
+ *  Rate cannot go below 0.
+ */
+export function applyStressToRates(rates: number[], stressSlots: number[]): number[] {
+  const result = [...rates];
+  for (const slotIndex of stressSlots) {
+    const startCol = slotIndex * COLS_PER_SLOT;
+    const endCol = startCol + COLS_PER_SLOT;
+    for (let col = startCol; col < endCol && col < result.length; col++) {
+      result[col] = Math.max(0, result[col] - STRESS_INSULIN_REDUCTION);
+    }
+  }
+  return result;
 }
 
 /** Create a uniform insulin profile from a legacy decayRate value */
@@ -221,6 +240,7 @@ export interface DayConfig {
   preplacedFoods?: PreplacedFood[];
   preplacedInterventions?: PreplacedIntervention[];
   lockedSlots?: number[];
+  stressSlots?: number[];
   insulinProfile?: InsulinProfileConfig;
 }
 
