@@ -80,6 +80,7 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   cursor: grab;
+  padding-bottom: 8px;
 }
 
 .planning-phase__scroll-viewport::-webkit-scrollbar {
@@ -93,6 +94,10 @@
 .planning-phase__scroll-viewport::-webkit-scrollbar-thumb {
   background: #4a5568;
   border-radius: 2px;
+}
+
+.planning-phase__scroll-viewport::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
 }
 
 .planning-phase__scroll-content {
