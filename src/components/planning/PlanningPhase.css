@@ -45,13 +45,9 @@
   min-height: 0;
 }
 
-/* Graph wrapper: relative container for pancreas overlay, fills available height */
+/* Graph wrapper: relative container for pancreas overlay */
 .planning-phase__graph-wrapper {
   position: relative;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .planning-phase__pancreas-overlay {
