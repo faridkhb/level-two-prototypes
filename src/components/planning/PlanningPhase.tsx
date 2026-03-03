@@ -137,6 +137,25 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     effectiveRows: 8, cellHeight: 18, graphH: 144, padTop: 8,
   });
 
+  // Scroll arrow indicators
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const updateScrollArrows = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateScrollArrows, { passive: true });
+    updateScrollArrows();
+    return () => el.removeEventListener('scroll', updateScrollArrows);
+  }, [updateScrollArrows, cellSize]);
+
   // Drag-to-scroll (disabled when DnD active)
   const isDndActive = activeShip !== null || activeIntervention !== null;
   const scrollDragState = useRef({ dragging: false, startX: 0, startScrollLeft: 0 });
@@ -686,6 +705,18 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                 />
               </div>
             </div>
+
+            {/* Scroll arrow indicators */}
+            {canScrollLeft && (
+              <div className="planning-phase__scroll-arrow planning-phase__scroll-arrow--left" style={{ left: Y_AXIS_WIDTH }}>
+                <span>‹</span>
+              </div>
+            )}
+            {canScrollRight && (
+              <div className="planning-phase__scroll-arrow planning-phase__scroll-arrow--right">
+                <span>›</span>
+              </div>
+            )}
 
             {/* Pinned overlays */}
             {isPlanning && (
