@@ -780,11 +780,11 @@ export function BgGraph({
       yTop: PAD_TOP - 3, yBot: PAD_TOP + GRAPH_H - 12 * cellHeight + 3 },
   ];
 
-  // Dynamic Y-axis tick labels (extend beyond 400 when graph expands)
+  // Dynamic Y-axis tick labels (extend beyond default ticks when graph expands)
   const yTicks = [...DEFAULT_Y_TICKS];
   const maxMgDl = GRAPH_CONFIG.bgMin + effectiveRows * GRAPH_CONFIG.cellHeightMgDl;
-  for (let tick = 500; tick <= maxMgDl; tick += 100) {
-    yTicks.push(tick);
+  for (let tick = 400; tick <= maxMgDl; tick += 100) {
+    if (!yTicks.includes(tick)) yTicks.push(tick);
   }
 
 
@@ -794,7 +794,7 @@ export function BgGraph({
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${localSvgH}`}
         className="bg-graph__svg"
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio={isMobile ? "none" : "xMidYMid meet"}
       >
         <defs>
           {/* Zone clip paths for skyline coloring */}
