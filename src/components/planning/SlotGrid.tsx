@@ -129,8 +129,8 @@ function SlotContainer({
             {isLocked ? '🔒' : isStressed ? '😰' : '+'}
           </div>
         )}
+        <div className="slot-container__time">{timeLabel}</div>
       </div>
-      <div className="slot-container__time">{timeLabel}</div>
     </div>
   );
 }

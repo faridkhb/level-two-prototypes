@@ -17,19 +17,21 @@
   width: 100%;
 }
 
-/* Individual slot — compact square, centered in cell */
+/* Individual slot — vertical layout: emoji + time inside */
 .slot-container {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 56px;
   border-radius: 8px;
   border: 1.5px dashed #4a5568;
   background: rgba(45, 55, 72, 0.4);
   transition: all 0.15s ease;
   cursor: default;
+  gap: 1px;
 }
 
 .slot-container--filled {
@@ -89,13 +91,13 @@
   opacity: 0.75;
 }
 
-/* Time label below the slot */
+/* Time label inside the slot */
 .slot-container__time {
-  font-size: 8px;
+  font-size: 9px;
   color: #718096;
-  margin-top: 2px;
   white-space: nowrap;
   user-select: none;
+  line-height: 1;
 }
 
 /* Card: centered emoji */
@@ -188,7 +190,7 @@
 @media (max-width: 480px) {
   .slot-container {
     width: 44px;
-    height: 44px;
+    height: 52px;
     border-radius: 6px;
   }
 
@@ -201,6 +203,6 @@
   }
 
   .slot-container__time {
-    font-size: 7px;
+    font-size: 8px;
   }
 }
