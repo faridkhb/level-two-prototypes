@@ -1,7 +1,7 @@
 .planning-phase {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   padding: 4px 8px 40px;
   max-width: 1200px;
   margin: 0 auto;
@@ -122,7 +122,7 @@
 @media (max-width: 480px) {
   .planning-phase {
     padding: 8px;
-    gap: 8px;
+    gap: 16px;
   }
 
   .planning-phase__content {
