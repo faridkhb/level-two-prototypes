@@ -4,28 +4,21 @@ import {
   TOTAL_COLUMNS,
   TOTAL_ROWS,
   DEFAULT_X_TICKS,
-  DEFAULT_Y_TICKS,
   DEFAULT_MEDICATION_MODIFIERS,
   PENALTY_ORANGE_ROW,
   PENALTY_RED_ROW,
   GRAPH_CONFIG,
   columnToTimeString,
-  formatBgValue,
 } from '../../core/types';
 import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, calculateSglt2Reduction, calculateBoostReduction } from '../../core/cubeEngine';
 import type { InsulinParams } from '../../core/cubeEngine';
 import './BgGraph.css';
 
 // SVG layout constants
-const CELL_SIZE = 18;
-const PAD_LEFT = 38;
 const PAD_TOP = 8;
-const PAD_RIGHT = 8;
 const PAD_BOTTOM = 18;
-
-const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
-const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
-const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
+const BASE_CELL_HEIGHT = 18; // desktop Y-axis cell height
+const MOBILE_CELL_HEIGHT = 30; // mobile Y-axis cell height
 // BG zone thresholds (mg/dL)
 const ZONE_NORMAL = 140;
 const ZONE_ELEVATED = 200;
@@ -107,6 +100,13 @@ interface ExitingCube {
   dropColumn: number;
 }
 
+export interface GraphLayoutInfo {
+  effectiveRows: number;
+  cellHeight: number;
+  graphH: number;
+  padTop: number;
+}
+
 interface BgGraphProps {
   placedFoods: PlacedFood[];
   allShips: Ship[];
@@ -124,11 +124,8 @@ interface BgGraphProps {
   previewInterventionColumn?: number;   // target column for intervention preview
   stressSlots?: Set<number>;            // slot indices with stress (reduced insulin)
   isMobile?: boolean;                    // mobile-responsive sizing
-}
-
-// Convert column to SVG x
-function colToX(col: number): number {
-  return PAD_LEFT + col * CELL_SIZE;
+  cellSize: number;                      // dynamic column width in px
+  onLayoutChange?: (info: GraphLayoutInfo) => void;
 }
 
 // Convert mg/dL to row index
@@ -153,9 +150,18 @@ export function BgGraph({
   previewInterventionColumn,
   stressSlots,
   isMobile = false,
+  cellSize,
+  onLayoutChange,
 }: BgGraphProps) {
+  // Dynamic graph dimensions from cellSize prop
+  const graphW = TOTAL_COLUMNS * cellSize;
+  const svgW = graphW;
+
+  // Column-to-X helper (no left padding — Y-axis is external)
+  const colToX = (col: number) => col * cellSize;
+
   // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
-  const graphH = isMobile ? TOTAL_ROWS * 30 : GRAPH_H;  // 510 vs 306 — taller cells on mobile
+  const graphH = isMobile ? TOTAL_ROWS * MOBILE_CELL_HEIGHT : TOTAL_ROWS * BASE_CELL_HEIGHT;
   const axisFontSize = isMobile ? 16 : 7;
   const padBottom = isMobile ? 30 : PAD_BOTTOM;
   const localSvgH = PAD_TOP + graphH + padBottom;
@@ -487,7 +493,7 @@ export function BgGraph({
           } else {
             parts.push(`V ${y}`);
           }
-          parts.push(`H ${x + CELL_SIZE}`);
+          parts.push(`H ${x + cellSize}`);
           lastBaseY = baseY;
           prevCol = cs.col;
         }
@@ -531,7 +537,7 @@ export function BgGraph({
           mainParts.push(`V ${y}`);
         }
       }
-      mainParts.push(`H ${colToX(col) + CELL_SIZE}`);
+      mainParts.push(`H ${colToX(col) + cellSize}`);
     }
     if (inSegment) mainParts.push(`V ${bottomY}`);
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
@@ -566,6 +572,11 @@ export function BgGraph({
   const { effectiveRows } = graphRenderData;
   const cellHeight = graphH / effectiveRows;
   const rowToY = (row: number) => PAD_TOP + graphH - (row + 1) * cellHeight;
+
+  // Notify parent about layout for pinned Y-axis
+  useEffect(() => {
+    onLayoutChange?.({ effectiveRows, cellHeight, graphH, padTop: PAD_TOP });
+  }, [effectiveRows, cellHeight, graphH, onLayoutChange]);
 
   // Preview: alive cubes (post-insulin) + incremental drain layer on top of alive skyline
   const previewData = useMemo(() => {
@@ -781,27 +792,21 @@ export function BgGraph({
       yTop: PAD_TOP - 3, yBot: PAD_TOP + graphH - 12 * cellHeight + 3 },
   ];
 
-  // Dynamic Y-axis tick labels (extend beyond default ticks when graph expands)
-  const yTicks = [...DEFAULT_Y_TICKS];
-  const maxMgDl = GRAPH_CONFIG.bgMin + effectiveRows * GRAPH_CONFIG.cellHeightMgDl;
-  for (let tick = 400; tick <= maxMgDl; tick += 100) {
-    if (!yTicks.includes(tick)) yTicks.push(tick);
-  }
 
 
   return (
     <div className="bg-graph">
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${SVG_W} ${localSvgH}`}
+        viewBox={`0 0 ${svgW} ${localSvgH}`}
         className="bg-graph__svg"
-        preserveAspectRatio="xMidYMid meet"
+        style={{ width: svgW, height: localSvgH }}
       >
         <defs>
           {/* Zone clip paths for skyline coloring */}
           {zoneClipBands.map(z => (
             <clipPath key={z.id} id={z.id}>
-              <rect x={0} y={z.yTop} width={SVG_W} height={z.yBot - z.yTop} />
+              <rect x={0} y={z.yTop} width={svgW} height={z.yBot - z.yTop} />
             </clipPath>
           ))}
           {/* Food marker drop shadow */}
@@ -812,33 +817,33 @@ export function BgGraph({
 
         {/* Zone backgrounds */}
         <rect
-          x={PAD_LEFT}
+          x={0}
           y={rowToY(mgdlToRow(ZONE_NORMAL) - 1)}
-          width={GRAPH_W}
+          width={graphW}
           height={(mgdlToRow(ZONE_NORMAL) - 0) * cellHeight}
           fill="#c6f6d5"
           opacity={0.3}
         />
         <rect
-          x={PAD_LEFT}
+          x={0}
           y={rowToY(mgdlToRow(ZONE_ELEVATED) - 1)}
-          width={GRAPH_W}
+          width={graphW}
           height={(mgdlToRow(ZONE_ELEVATED) - mgdlToRow(ZONE_NORMAL)) * cellHeight}
           fill="#fefcbf"
           opacity={0.3}
         />
         <rect
-          x={PAD_LEFT}
+          x={0}
           y={rowToY(mgdlToRow(ZONE_HIGH) - 1)}
-          width={GRAPH_W}
+          width={graphW}
           height={(mgdlToRow(ZONE_HIGH) - mgdlToRow(ZONE_ELEVATED)) * cellHeight}
           fill="#fed7d7"
           opacity={0.3}
         />
         <rect
-          x={PAD_LEFT}
+          x={0}
           y={PAD_TOP}
-          width={GRAPH_W}
+          width={graphW}
           height={(effectiveRows - mgdlToRow(ZONE_HIGH)) * cellHeight}
           fill="#fc8181"
           opacity={0.2}
@@ -852,7 +857,7 @@ export function BgGraph({
               key={`stress-zone-${slotIndex}`}
               x={colToX(startCol)}
               y={PAD_TOP}
-              width={CELL_SIZE * 4}
+              width={cellSize * 4}
               height={graphH}
               fill="#ef4444"
               opacity={0.08}
@@ -878,9 +883,9 @@ export function BgGraph({
         {Array.from({ length: effectiveRows + 1 }, (_, i) => (
           <line
             key={`h-${i}`}
-            x1={PAD_LEFT}
+            x1={0}
             y1={PAD_TOP + i * cellHeight}
-            x2={PAD_LEFT + GRAPH_W}
+            x2={graphW}
             y2={PAD_TOP + i * cellHeight}
             stroke="#e2e8f0"
             strokeWidth={0.3}
@@ -889,9 +894,9 @@ export function BgGraph({
 
         {/* Graph border */}
         <rect
-          x={PAD_LEFT}
+          x={0}
           y={PAD_TOP}
-          width={GRAPH_W}
+          width={graphW}
           height={graphH}
           fill="none"
           stroke="#a0aec0"
@@ -902,7 +907,7 @@ export function BgGraph({
         {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).flatMap(slotIndex => {
           const startCol = slotIndex * 4;
           const endCol = startCol + 4;
-          const centerX = colToX(startCol) + (CELL_SIZE * 4) / 2;
+          const centerX = colToX(startCol) + (cellSize * 4) / 2;
           return [
             <line
               key={`stress-left-${slotIndex}`}
@@ -944,25 +949,7 @@ export function BgGraph({
           ];
         })}
 
-        {/* Y axis labels */}
-        {yTicks.map(tick => {
-          const row = mgdlToRow(tick);
-          if (row > effectiveRows) return null;
-          const y = rowToY(row - 1) + cellHeight / 2;
-          return (
-            <text
-              key={`y-${tick}`}
-              x={PAD_LEFT - 3}
-              y={y}
-              textAnchor="end"
-              dominantBaseline="middle"
-              fontSize={axisFontSize}
-              fill="#718096"
-            >
-              {formatBgValue(tick, settings.bgUnit)}
-            </text>
-          );
-        })}
+        {/* Y axis labels removed — rendered by external YAxis component */}
 
         {/* X axis labels */}
         {DEFAULT_X_TICKS.map(hour => {
@@ -987,9 +974,9 @@ export function BgGraph({
         {/* SGLT2 drain threshold line */}
         {medicationModifiers.sglt2 && (revealPhase === undefined || revealPhase >= 4) && (
           <line
-            x1={PAD_LEFT}
+            x1={0}
             y1={rowToY(medicationModifiers.sglt2.floorRow - 1)}
-            x2={PAD_LEFT + GRAPH_W}
+            x2={graphW}
             y2={rowToY(medicationModifiers.sglt2.floorRow - 1)}
             stroke="#b794f4"
             strokeWidth={1.5}
@@ -1007,7 +994,7 @@ export function BgGraph({
                 key={`preview-${cube.col}-${cube.row}`}
                 x={colToX(cube.col) + 0.5}
                 y={rowToY(cube.row) + 0.5}
-                width={CELL_SIZE - 1}
+                width={cellSize - 1}
                 height={cellHeight - 1}
                 fill="#38bdf8"
                 opacity={0.35}
@@ -1021,7 +1008,7 @@ export function BgGraph({
                 key={`preview-wrap-${cube.col}-${cube.row}`}
                 x={colToX(cube.col) + 0.5}
                 y={rowToY(cube.row) + 0.5}
-                width={CELL_SIZE - 1}
+                width={cellSize - 1}
                 height={cellHeight - 1}
                 fill="#f59e0b"
                 opacity={0.5}
@@ -1075,7 +1062,7 @@ export function BgGraph({
                   key={`${layer.placementId}-${cube.col}-${cube.row}`}
                   x={colToX(cube.col) + 0.5}
                   y={rowToY(cube.row) + 0.5}
-                  width={CELL_SIZE - 1}
+                  width={cellSize - 1}
                   height={cellHeight - 1}
                   fill={cubeFill}
                   rx={2}
@@ -1097,7 +1084,7 @@ export function BgGraph({
                   key={`preview-wrap-int-${cube.col}-${cube.row}`}
                   x={colToX(cube.col) + 0.5}
                   y={rowToY(cube.row) + 0.5}
-                  width={CELL_SIZE - 1}
+                  width={cellSize - 1}
                   height={cellHeight - 1}
                   fill={cube.color}
                   opacity={0.5}
@@ -1133,7 +1120,7 @@ export function BgGraph({
                       key={`ifall-${bi.id}-${col}-${i}`}
                       x={colToX(col) + 0.5}
                       y={rowToY(startRow) + 0.5}
-                      width={CELL_SIZE - 1}
+                      width={cellSize - 1}
                       height={cellHeight - 1}
                       fill={bi.color}
                       rx={2}
@@ -1177,7 +1164,7 @@ export function BgGraph({
                     key={`${layer.placementId}-digest-${cube.col}-${cube.row}`}
                     x={colToX(cube.col) + 0.5}
                     y={rowToY(cube.row) + 0.5}
-                    width={CELL_SIZE - 1}
+                    width={cellSize - 1}
                     height={cellHeight - 1}
                     fill={fill}
                     rx={2}
@@ -1197,7 +1184,7 @@ export function BgGraph({
                       key={`${layer.placementId}-ifall-${cs.col}-${i}`}
                       x={colToX(cs.col) + 0.5}
                       y={rowToY(drainTop + i) + 0.5}
-                      width={CELL_SIZE - 1}
+                      width={cellSize - 1}
                       height={cellHeight - 1}
                       fill="#f59e0b"
                       rx={2}
@@ -1243,7 +1230,7 @@ export function BgGraph({
                     key={`reveal-ifall-${placed.id}-${col}-${i}`}
                     x={colToX(col) + 0.5}
                     y={rowToY(currentTop + effectiveRed + i) + 0.5}
-                    width={CELL_SIZE - 1}
+                    width={cellSize - 1}
                     height={cellHeight - 1}
                     fill={color}
                     rx={2}
@@ -1272,7 +1259,7 @@ export function BgGraph({
                   key={`med-${mc.col}-${mc.row}`}
                   x={colToX(mc.col) + 0.5}
                   y={rowToY(mc.row) + 0.5}
-                  width={CELL_SIZE - 1}
+                  width={cellSize - 1}
                   height={cellHeight - 1}
                   fill={mc.color}
                   rx={2}
@@ -1295,7 +1282,7 @@ export function BgGraph({
                   key={`exit-${i}`}
                   x={colToX(cube.col) + 0.5}
                   y={rowToY(cube.row) + 0.5}
-                  width={CELL_SIZE - 1}
+                  width={cellSize - 1}
                   height={cellHeight - 1}
                   fill={cube.color}
                   rx={2}
@@ -1375,7 +1362,7 @@ export function BgGraph({
                   key={`penalty-${layer.placementId}-${cube.col}-${cube.row}`}
                   x={colToX(cube.col) + 0.5}
                   y={rowToY(cube.row) + 0.5}
-                  width={CELL_SIZE - 1}
+                  width={cellSize - 1}
                   height={cellHeight - 1}
                   fill={isRed ? 'rgba(245, 101, 101, 0.7)' : 'rgba(237, 137, 54, 0.6)'}
                   rx={2}
@@ -1390,9 +1377,9 @@ export function BgGraph({
         {/* Penalty threshold line at 200 mg/dL (shown during results) */}
         {showPenaltyHighlight && (
           <line
-            x1={PAD_LEFT}
+            x1={0}
             y1={rowToY(PENALTY_ORANGE_ROW - 1)}
-            x2={PAD_LEFT + GRAPH_W}
+            x2={graphW}
             y2={rowToY(PENALTY_ORANGE_ROW - 1)}
             stroke="#e53e3e"
             strokeWidth={1.5}
@@ -1401,30 +1388,7 @@ export function BgGraph({
           />
         )}
 
-        {/* Reveal phase label overlay */}
-        {revealPhase !== undefined && revealPhase >= 1 && (() => {
-          const labels: Record<number, { emoji: string; text: string }> = {
-            1: { emoji: '🍽️', text: 'Food Cubes' },
-            2: { emoji: '🫠', text: 'Insulin' },
-            3: { emoji: '🏃', text: 'Exercise' },
-            4: { emoji: '💊', text: 'Medications' },
-          };
-          const label = labels[revealPhase];
-          if (!label) return null;
-          return (
-            <foreignObject
-              x={PAD_LEFT + GRAPH_W - 175}
-              y={PAD_TOP + 6}
-              width={170}
-              height={36}
-            >
-              <div key={revealPhase} className="bg-graph__reveal-label">
-                <span className="reveal-label__emoji">{label.emoji}</span>
-                <span className="reveal-label__text">{label.text}</span>
-              </div>
-            </foreignObject>
-          );
-        })()}
+        {/* Reveal phase label — rendered externally by PlanningPhase */}
       </svg>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useDroppable, useDraggable, useDndContext } from '@dnd-kit/core';
 import type { Ship, Intervention, PlacedFood, PlacedIntervention, GameSettings } from '../../core/types';
-import { TOTAL_SLOTS, slotTimeLabel } from '../../core/types';
+import { TOTAL_SLOTS, COLS_PER_SLOT, slotTimeLabel } from '../../core/types';
 import './SlotGrid.css';
 
 interface SlotGridProps {
@@ -14,6 +14,7 @@ interface SlotGridProps {
   disabled?: boolean;
   lockedSlots?: Set<number>;
   stressSlots?: Set<number>;
+  cellSize: number; // column width in px — slot width = cellSize × COLS_PER_SLOT
 }
 
 type SlotContent =
@@ -94,7 +95,7 @@ function SlotContainer({
   })();
 
   return (
-    <div className="slot-container-wrap">
+    <div className="slot-container-wrap" style={{ flexShrink: 0 }}>
       <div
         ref={combinedRef}
         className={
@@ -145,7 +146,9 @@ export function SlotGrid({
   disabled,
   lockedSlots,
   stressSlots,
+  cellSize,
 }: SlotGridProps) {
+  const slotWidth = cellSize * COLS_PER_SLOT;
   // Track which slots are being dragged and drop targets (for multi-slot visual)
   const { active, over } = useDndContext();
   const draggingSlots = useMemo(() => {
@@ -232,7 +235,7 @@ export function SlotGrid({
   };
 
   return (
-    <div className="slot-grid">
+    <div className="slot-grid" style={{ width: TOTAL_SLOTS * slotWidth }}>
       {Array.from({ length: TOTAL_SLOTS }, (_, slotIndex) => (
         <SlotContainer
           key={slotIndex}

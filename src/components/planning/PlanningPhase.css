@@ -46,16 +46,74 @@
   min-height: 0;
 }
 
-/* Graph wrapper: relative container for pancreas overlay */
-.planning-phase__graph-wrapper {
+/* Graph area: contains pinned Y-axis + scrollable graph/slots */
+.planning-phase__graph-area {
   position: relative;
 }
 
+/* Pinned Y-axis — stays visible during scroll */
+.planning-phase__y-axis {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Y-axis label positioning */
+.y-axis {
+  position: relative;
+}
+
+.y-axis__label {
+  position: absolute;
+  right: 3px;
+  transform: translateY(-50%);
+  color: #718096;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Scrollable viewport — contains graph + slot row */
+.planning-phase__scroll-viewport {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+
+.planning-phase__scroll-viewport::-webkit-scrollbar {
+  height: 4px;
+}
+
+.planning-phase__scroll-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.planning-phase__scroll-viewport::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 2px;
+}
+
+.planning-phase__scroll-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pancreas overlay — pinned to graph area viewport */
 .planning-phase__pancreas-overlay {
   position: absolute;
   top: 12px;
   right: 12px;
   z-index: 10;
+}
+
+/* Reveal label — pinned to graph area viewport (moved from SVG foreignObject) */
+.planning-phase__reveal-label {
+  position: absolute;
+  top: 18px;
+  right: 12px;
+  z-index: 15;
 }
 
 /* Inventory drop zone (accepts cards dragged back from slots) */

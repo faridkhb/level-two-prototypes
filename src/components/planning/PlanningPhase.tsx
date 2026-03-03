@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
 import {
   DndContext,
@@ -19,6 +19,10 @@ import { computeMedicationModifiers, calculatePenaltyFromState } from '../../cor
 import type { InsulinParams } from '../../core/cubeEngine';
 import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
 import { BgGraph } from '../graph';
+import type { GraphLayoutInfo } from '../graph/BgGraph';
+import { YAxis } from '../graph/YAxis';
+import { useContainerWidth } from '../../hooks/useContainerWidth';
+import { TOTAL_COLUMNS } from '../../core/types';
 import { PlanningHeader } from './PlanningHeader';
 import { TabbedInventory } from './TabbedInventory';
 import { PancreasButton } from './PancreasButton';
@@ -117,6 +121,48 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [revealPhase, setRevealPhase] = useState<number | undefined>(undefined);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealSequenceRef = useRef<number[]>([]);
+
+  // Scrollable graph: container measurement + dynamic cellSize
+  const Y_AXIS_WIDTH = 38;
+  const VISIBLE_COLUMNS = 12; // half of 24 visible at once
+  const graphAreaRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const containerWidth = useContainerWidth(graphAreaRef);
+  const cellSize = containerWidth > 0
+    ? Math.floor((containerWidth - Y_AXIS_WIDTH) / VISIBLE_COLUMNS)
+    : 30; // fallback
+
+  // Y-axis layout state (updated by BgGraph callback)
+  const [graphLayout, setGraphLayout] = useState<GraphLayoutInfo>({
+    effectiveRows: 8, cellHeight: 18, graphH: 144, padTop: 8,
+  });
+
+  // Drag-to-scroll (disabled when DnD active)
+  const isDndActive = activeShip !== null || activeIntervention !== null;
+  const scrollDragState = useRef({ dragging: false, startX: 0, startScrollLeft: 0 });
+
+  const handleScrollPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (isDndActive || !scrollRef.current) return;
+    scrollDragState.current = {
+      dragging: true,
+      startX: e.clientX,
+      startScrollLeft: scrollRef.current.scrollLeft,
+    };
+    scrollRef.current.style.cursor = 'grabbing';
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [isDndActive]);
+
+  const handleScrollPointerMove = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!scrollDragState.current.dragging || !scrollRef.current) return;
+    const dx = e.clientX - scrollDragState.current.startX;
+    scrollRef.current.scrollLeft = scrollDragState.current.startScrollLeft - dx;
+  }, []);
+
+  const handleScrollPointerUp = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    scrollDragState.current.dragging = false;
+    if (scrollRef.current) scrollRef.current.style.cursor = 'grab';
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+  }, []);
 
   // Load configs on mount
   useEffect(() => {
@@ -581,25 +627,67 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
         )}
 
         <div className="planning-phase__content">
-          <div className="planning-phase__graph-wrapper">
-            <BgGraph
-              placedFoods={placedFoods}
-              allShips={allShips}
-              placedInterventions={placedInterventions}
-              allInterventions={allInterventions}
-              settings={settings}
-              decayOrInsulin={insulinParams}
-              boostConfig={boostConfig}
-              medicationModifiers={medicationModifiers}
-              showPenaltyHighlight={showResults}
-              revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
-              previewShip={activeShip && previewSlot !== null ? activeShip : undefined}
-              previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}
-              previewIntervention={activeIntervention && previewSlot !== null ? activeIntervention : undefined}
-              previewInterventionColumn={activeIntervention && previewSlot !== null ? slotToColumn(previewSlot) : undefined}
-              stressSlots={stressSlotSet}
-              isMobile={isMobile}
-            />
+          <div className="planning-phase__graph-area" ref={graphAreaRef}>
+            {/* Pinned Y-axis */}
+            <div className="planning-phase__y-axis" style={{ width: Y_AXIS_WIDTH }}>
+              <YAxis
+                effectiveRows={graphLayout.effectiveRows}
+                cellHeight={graphLayout.cellHeight}
+                graphH={graphLayout.graphH}
+                padTop={graphLayout.padTop}
+                settings={settings}
+                isMobile={isMobile}
+              />
+            </div>
+
+            {/* Scrollable graph + slots */}
+            <div
+              className="planning-phase__scroll-viewport"
+              ref={scrollRef}
+              style={{ marginLeft: Y_AXIS_WIDTH }}
+              onPointerDown={handleScrollPointerDown}
+              onPointerMove={handleScrollPointerMove}
+              onPointerUp={handleScrollPointerUp}
+              onPointerCancel={handleScrollPointerUp}
+            >
+              <div className="planning-phase__scroll-content" style={{ width: TOTAL_COLUMNS * cellSize }}>
+                <BgGraph
+                  placedFoods={placedFoods}
+                  allShips={allShips}
+                  placedInterventions={placedInterventions}
+                  allInterventions={allInterventions}
+                  settings={settings}
+                  decayOrInsulin={insulinParams}
+                  boostConfig={boostConfig}
+                  medicationModifiers={medicationModifiers}
+                  showPenaltyHighlight={showResults}
+                  revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
+                  previewShip={activeShip && previewSlot !== null ? activeShip : undefined}
+                  previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}
+                  previewIntervention={activeIntervention && previewSlot !== null ? activeIntervention : undefined}
+                  previewInterventionColumn={activeIntervention && previewSlot !== null ? slotToColumn(previewSlot) : undefined}
+                  stressSlots={stressSlotSet}
+                  isMobile={isMobile}
+                  cellSize={cellSize}
+                  onLayoutChange={setGraphLayout}
+                />
+
+                <SlotGrid
+                  allShips={allShips}
+                  allInterventions={allInterventions}
+                  placedFoods={placedFoods}
+                  placedInterventions={placedInterventions}
+                  settings={settings}
+                  onRemoveFromSlot={removeFromSlot}
+                  disabled={!isPlanning}
+                  lockedSlots={effectiveLockedSlots}
+                  stressSlots={stressSlotSet}
+                  cellSize={cellSize}
+                />
+              </div>
+            </div>
+
+            {/* Pinned overlays */}
             {isPlanning && (
               <div className="planning-phase__pancreas-overlay">
                 <PancreasButton
@@ -610,19 +698,27 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                 />
               </div>
             )}
-          </div>
 
-          <SlotGrid
-            allShips={allShips}
-            allInterventions={allInterventions}
-            placedFoods={placedFoods}
-            placedInterventions={placedInterventions}
-            settings={settings}
-            onRemoveFromSlot={removeFromSlot}
-            disabled={!isPlanning}
-            lockedSlots={effectiveLockedSlots}
-            stressSlots={stressSlotSet}
-          />
+            {/* Reveal phase label (moved from SVG foreignObject) */}
+            {gamePhase === 'replaying' && revealPhase !== undefined && revealPhase >= 1 && (() => {
+              const labels: Record<number, { emoji: string; text: string }> = {
+                1: { emoji: '🍽️', text: 'Food Cubes' },
+                2: { emoji: '🫠', text: 'Insulin' },
+                3: { emoji: '🏃', text: 'Exercise' },
+                4: { emoji: '💊', text: 'Medications' },
+              };
+              const label = labels[revealPhase];
+              if (!label) return null;
+              return (
+                <div className="planning-phase__reveal-label">
+                  <div key={revealPhase} className="bg-graph__reveal-label">
+                    <span className="reveal-label__emoji">{label.emoji}</span>
+                    <span className="reveal-label__text">{label.text}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
 
           {isPlanning && (
             <div className="planning-phase__hint">
