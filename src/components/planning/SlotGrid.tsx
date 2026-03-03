@@ -27,6 +27,7 @@ function SlotContainer({
   index,
   content,
   timeLabel,
+  slotWidth,
   onRemove,
   disabled,
   isLocked,
@@ -40,6 +41,7 @@ function SlotContainer({
   index: number;
   content: SlotContent;
   timeLabel: string;
+  slotWidth: number;
   onRemove: () => void;
   disabled?: boolean;
   isLocked?: boolean;
@@ -95,7 +97,7 @@ function SlotContainer({
   })();
 
   return (
-    <div className="slot-container-wrap" style={{ flexShrink: 0 }}>
+    <div className="slot-container-wrap" style={{ flexShrink: 0, width: slotWidth }}>
       <div
         ref={combinedRef}
         className={
@@ -242,6 +244,7 @@ export function SlotGrid({
           index={slotIndex}
           content={getSlotContent(slotIndex)}
           timeLabel={slotTimeLabel(slotIndex, settings.timeFormat)}
+          slotWidth={slotWidth}
           onRemove={() => onRemoveFromSlot(slotIndex)}
           disabled={disabled}
           isLocked={lockedSlots?.has(slotIndex)}
