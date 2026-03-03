@@ -106,7 +106,7 @@
   align-items: center;
   justify-content: center;
   z-index: 8;
-  pointer-events: none;
+  cursor: pointer;
   color: rgba(255, 255, 255, 0.7);
   font-size: 22px;
   font-weight: 700;

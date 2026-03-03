@@ -139,7 +139,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
 
   // Scroll arrow indicators
   const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const updateScrollArrows = useCallback(() => {
     const el = scrollRef.current;
@@ -152,9 +152,20 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     const el = scrollRef.current;
     if (!el) return;
     el.addEventListener('scroll', updateScrollArrows, { passive: true });
-    updateScrollArrows();
+    // Run after layout settles (content width depends on cellSize)
+    requestAnimationFrame(updateScrollArrows);
     return () => el.removeEventListener('scroll', updateScrollArrows);
   }, [updateScrollArrows, cellSize]);
+
+  const handleScrollToStart = useCallback(() => {
+    scrollRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleScrollToEnd = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: el.scrollWidth - el.clientWidth, behavior: 'smooth' });
+  }, []);
 
   // Drag-to-scroll (disabled when DnD active)
   const isDndActive = activeShip !== null || activeIntervention !== null;
@@ -708,12 +719,19 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
 
             {/* Scroll arrow indicators */}
             {canScrollLeft && (
-              <div className="planning-phase__scroll-arrow planning-phase__scroll-arrow--left" style={{ left: Y_AXIS_WIDTH }}>
+              <div
+                className="planning-phase__scroll-arrow planning-phase__scroll-arrow--left"
+                style={{ left: Y_AXIS_WIDTH }}
+                onClick={handleScrollToStart}
+              >
                 <span>‹</span>
               </div>
             )}
             {canScrollRight && (
-              <div className="planning-phase__scroll-arrow planning-phase__scroll-arrow--right">
+              <div
+                className="planning-phase__scroll-arrow planning-phase__scroll-arrow--right"
+                onClick={handleScrollToEnd}
+              >
                 <span>›</span>
               </div>
             )}
