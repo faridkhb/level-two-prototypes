@@ -1,7 +1,4 @@
 .ship-inventory {
-  background: #2d3748;
-  border-radius: 12px;
-  padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -31,11 +28,6 @@
 
 /* Mobile portrait */
 @media (max-width: 480px) {
-  .ship-inventory {
-    padding: 8px;
-    border-radius: 10px;
-  }
-
   .ship-inventory__title {
     font-size: 11px;
   }

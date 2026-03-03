@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 4px 8px 40px;
   max-width: 1200px;
   margin: 0 auto;
   flex: 1;
@@ -73,14 +73,19 @@
   background: rgba(251, 191, 36, 0.06);
 }
 
-/* Day navigation (cheat buttons) */
+/* Day navigation — fixed to bottom of screen */
 .planning-phase__day-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding: 4px 0;
+  padding: 6px 0;
+  background: #1a202c;
   border-top: 1px solid #4a5568;
-  margin-top: 2px;
+  z-index: 50;
 }
 
 .planning-phase__day-btn {
