@@ -1,39 +1,43 @@
 .planning-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  gap: 6px;
+  padding: 4px 8px;
   background: #2d3748;
   border-radius: 10px;
 }
 
 .planning-header__day {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
   color: #e2e8f0;
   white-space: nowrap;
+  padding: 3px 8px;
+  background: #1a202c;
+  border-radius: 6px;
+  border: 1px solid #4a5568;
 }
 
 /* WP Budget */
 .planning-header__wp {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  gap: 3px;
+  padding: 3px 8px;
   background: #1a202c;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #4a5568;
 }
 
 .planning-header__wp-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   color: #a0aec0;
   text-transform: uppercase;
 }
 
 .planning-header__wp-value {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #fbbf24;
 }
@@ -43,7 +47,7 @@
 }
 
 .planning-header__wp-icon {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 /* Satiety penalty badges */
@@ -210,12 +214,12 @@
 .planning-header__submit {
   margin-left: auto;
   flex-shrink: 0;
-  padding: 6px 18px;
+  padding: 4px 14px;
   border: 2px solid #48bb78;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #48bb78;
   color: #fff;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
@@ -267,23 +271,22 @@
 /* Mobile portrait */
 @media (max-width: 480px) {
   .planning-header {
-    gap: 8px;
-    padding: 8px 10px;
+    gap: 4px;
+    padding: 3px 6px;
   }
 
   .planning-header__day {
-    font-size: 14px;
-    flex: 1;
-    text-align: center;
+    font-size: 11px;
+    padding: 2px 6px;
   }
 
   .planning-header__submit {
-    padding: 5px 14px;
-    font-size: 12px;
+    padding: 3px 10px;
+    font-size: 11px;
   }
 
   .planning-header__kcal-bar-wrap {
-    padding: 4px 10px 2px;
+    padding: 2px 8px 1px;
   }
 
   .planning-header__kcal-bar-zone-label {
