@@ -376,7 +376,7 @@ export function formatBgValue(mgdl: number, unit: 'mg/dL' | 'mmol/L'): string {
 
 export const SLOTS_PER_MEAL = 4;
 export const TOTAL_SLOTS = 12;
-export const COLS_PER_SLOT = 4; // 1 hour = 4 columns of 15 min
+export const COLS_PER_SLOT = 2; // 1 hour = 2 columns of 30 min
 
 export type MealSegment = 'breakfast' | 'lunch' | 'dinner';
 
@@ -394,7 +394,7 @@ export const MEAL_SEGMENTS: MealSegmentConfig[] = [
   { id: 'dinner',    label: 'Dinner',    emoji: '🌙', startSlot: 8, slotCount: 4 },
 ];
 
-/** Convert slot index (0-11) to graph column (0,4,8,...,44) */
+/** Convert slot index (0-11) to graph column (0,2,4,...,22) */
 export function slotToColumn(slotIndex: number): number {
   return slotIndex * COLS_PER_SLOT;
 }
