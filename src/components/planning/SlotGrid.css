@@ -1,24 +1,30 @@
-/* Horizontal single-row slot grid: 3 meal groups × 4 slots */
+/* Horizontal slot strip aligned with BgGraph columns.
+   BgGraph SVG: PAD_LEFT=55, PAD_RIGHT=12, SVG_W=931.
+   .bg-graph: border 2px + padding 4px = 6px each side.
+   Calc: 6px + (100% - 12px) * PAD / SVG_W */
 .slot-grid {
   display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 6px 0;
+  padding: 2px 0;
+  padding-left: calc(6px + (100% - 12px) * 0.05906);
+  padding-right: calc(6px + (100% - 12px) * 0.01289);
 }
 
 .slot-grid__meal {
   display: flex;
-  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Wrapper: slot + time label stacked vertically */
 .slot-container-wrap {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 0;
 }
 
-/* Individual slot — compact square */
+/* Individual slot — compact square, centered in column */
 .slot-container {
   position: relative;
   display: flex;
@@ -187,29 +193,21 @@
 
 /* Mobile portrait */
 @media (max-width: 480px) {
-  .slot-grid {
-    gap: 10px;
-  }
-
-  .slot-grid__meal {
-    gap: 3px;
-  }
-
   .slot-container {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 6px;
   }
 
   .slot-container__emoji {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .slot-container__empty {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .slot-container__time {
-    font-size: 7px;
+    font-size: 6px;
   }
 }
