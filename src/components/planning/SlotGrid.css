@@ -1,12 +1,12 @@
 /* Horizontal slot strip aligned with BgGraph columns.
-   BgGraph SVG: PAD_LEFT=38, PAD_RIGHT=8, SVG_W=910.
+   BgGraph SVG: PAD_LEFT=55, PAD_RIGHT=12, SVG_W=931.
    .bg-graph: border 2px + padding 4px = 6px each side.
    Calc: 6px + (100% - 12px) * PAD / SVG_W */
 .slot-grid {
   display: flex;
   padding: 2px 0;
-  padding-left: calc(6px + (100% - 12px) * 0.04176);
-  padding-right: calc(6px + (100% - 12px) * 0.00879);
+  padding-left: calc(6px + (100% - 12px) * 0.05906);
+  padding-right: calc(6px + (100% - 12px) * 0.01289);
 }
 
 .slot-grid__meal {

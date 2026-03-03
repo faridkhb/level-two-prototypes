@@ -18,10 +18,10 @@ import './BgGraph.css';
 
 // SVG layout constants
 const CELL_SIZE = 18;
-const PAD_LEFT = 38;
-const PAD_TOP = 8;
-const PAD_RIGHT = 8;
-const PAD_BOTTOM = 18;
+const PAD_LEFT = 55;
+const PAD_TOP = 12;
+const PAD_RIGHT = 12;
+const PAD_BOTTOM = 28;
 
 const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
 const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
@@ -945,11 +945,11 @@ export function BgGraph({
           return (
             <text
               key={`y-${tick}`}
-              x={PAD_LEFT - 3}
+              x={PAD_LEFT - 5}
               y={y}
               textAnchor="end"
               dominantBaseline="middle"
-              fontSize={7}
+              fontSize={9}
               fill="#718096"
             >
               {formatBgValue(tick, settings.bgUnit)}
@@ -965,9 +965,9 @@ export function BgGraph({
             <text
               key={`x-${hour}`}
               x={x}
-              y={PAD_TOP + GRAPH_H + 12}
+              y={PAD_TOP + GRAPH_H + 16}
               textAnchor="middle"
-              fontSize={7}
+              fontSize={9}
               fill="#718096"
             >
               {columnToTimeString(col, settings.timeFormat)}
