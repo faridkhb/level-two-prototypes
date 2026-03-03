@@ -82,76 +82,55 @@ function SlotContainer({
     const stressTag = isStressed ? 'Stress: insulin −2' : '';
     if (showContent) {
       const itemName = content.type === 'food'
-        ? `${content.ship.name} · ${content.ship.kcal} kcal`
+        ? `${content.ship.name} · ${content.ship.kcal} kcal · ${content.ship.carbs ?? 0}g`
         : isContinuation ? '' : `${content.intervention.name} · ${content.intervention.duration}m`;
-      if (isLocked) return `Pre-placed · ${itemName}`;
+      if (isLocked) return `🔒 ${itemName}`;
       if (stressTag && itemName) return `${stressTag} · ${itemName}`;
       return itemName;
     }
     if (isLocked) return 'Locked';
     if (stressTag) return stressTag;
-    return 'Drop food or action here';
+    return timeLabel;
   })();
 
   return (
-    <div
-      ref={combinedRef}
-      className={
-        'slot-container' +
-        (showContent ? ' slot-container--filled' : '') +
-        (showContent && (content.type === 'intervention' || content.type === 'continuation') ? ' slot-container--intervention' : '') +
-        (showContent && isContinuation ? ' slot-container--continuation' : '') +
-        (showContent && isMultiStart ? ' slot-container--multi-start' : '') +
-        (showContent && isGroupHovered ? ' slot-container--hover' : '') +
-        (isDropTarget ? ' slot-container--over' : '') +
-        (disabled ? ' slot-container--disabled' : '') +
-        (isLocked ? ' slot-container--locked' : '') +
-        (isStressed ? ' slot-container--stressed' : '') +
-        ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
-      }
-      data-tooltip={tooltip}
-      onClick={content && !disabled && !isLocked && !isDragging ? onRemove : undefined}
-      onMouseEnter={() => content && onHoverEnter(index)}
-      onMouseLeave={onHoverLeave}
-      {...(content && !disabled && !isContinuation && !isLocked ? listeners : {})}
-      {...attributes}
-    >
-      <div className="slot-container__time">{timeLabel}</div>
-      {showContent ? (
-        <div className="slot-container__card">
-          {isLocked && <span className="slot-container__lock">🔒</span>}
-          {isStressed && !isLocked && <span className="slot-container__stress-badge">Stress</span>}
-          <span className="slot-container__emoji">
-            {content.type === 'food' ? content.ship.emoji : content.intervention.emoji}
-          </span>
-          <div className="slot-container__info">
-            <span className={`slot-container__name${isContinuation ? ' slot-container__name--dim' : ''}`}>
-              {content.type === 'food' ? content.ship.name
-                : isContinuation ? '⋯' : content.intervention.name}
+    <div className="slot-container-wrap">
+      <div
+        ref={combinedRef}
+        className={
+          'slot-container' +
+          (showContent ? ' slot-container--filled' : '') +
+          (showContent && (content.type === 'intervention' || content.type === 'continuation') ? ' slot-container--intervention' : '') +
+          (showContent && isContinuation ? ' slot-container--continuation' : '') +
+          (showContent && isMultiStart ? ' slot-container--multi-start' : '') +
+          (showContent && isGroupHovered ? ' slot-container--hover' : '') +
+          (isDropTarget ? ' slot-container--over' : '') +
+          (disabled ? ' slot-container--disabled' : '') +
+          (isLocked ? ' slot-container--locked' : '') +
+          (isStressed ? ' slot-container--stressed' : '') +
+          ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
+        }
+        data-tooltip={tooltip}
+        onClick={content && !disabled && !isLocked && !isDragging ? onRemove : undefined}
+        onMouseEnter={() => content && onHoverEnter(index)}
+        onMouseLeave={onHoverLeave}
+        {...(content && !disabled && !isContinuation && !isLocked ? listeners : {})}
+        {...attributes}
+      >
+        {showContent ? (
+          <div className="slot-container__card">
+            {isLocked && <span className="slot-container__lock">🔒</span>}
+            <span className="slot-container__emoji">
+              {content.type === 'food' ? content.ship.emoji : content.intervention.emoji}
             </span>
-            {!isContinuation && (
-              <span className="slot-container__stats">
-                {content.type === 'food' ? (
-                  <>
-                    {content.ship.kcal} kcal · {content.ship.carbs ?? 0}g
-                    {(content.ship.wpCost ?? 0) > 0 && <> · {content.ship.wpCost}☀️</>}
-                  </>
-                ) : (
-                  <>
-                    {content.intervention.isBreak
-                      ? `+${Math.abs(content.intervention.wpCost)}☀️`
-                      : `${content.intervention.duration}m · -${content.intervention.depth} · ${content.intervention.wpCost}☀️`}
-                  </>
-                )}
-              </span>
-            )}
           </div>
-        </div>
-      ) : (
-        <div className="slot-container__empty">
-          {isLocked ? '🔒' : isStressed ? <span className="slot-container__stress-label">😰 Stress</span> : '+'}
-        </div>
-      )}
+        ) : (
+          <div className="slot-container__empty">
+            {isLocked ? '🔒' : isStressed ? '😰' : '+'}
+          </div>
+        )}
+      </div>
+      <div className="slot-container__time">{timeLabel}</div>
     </div>
   );
 }
@@ -256,31 +235,26 @@ export function SlotGrid({
     <div className="slot-grid">
       {MEAL_SEGMENTS.map(segment => (
         <div key={segment.id} className="slot-grid__meal">
-          <div className="slot-grid__meal-header">
-            <span>{segment.emoji}</span> {segment.label}
-          </div>
-          <div className="slot-grid__meal-slots">
-            {Array.from({ length: segment.slotCount }, (_, i) => {
-              const slotIndex = segment.startSlot + i;
-              return (
-                <SlotContainer
-                  key={slotIndex}
-                  index={slotIndex}
-                  content={getSlotContent(slotIndex)}
-                  timeLabel={slotTimeLabel(slotIndex, settings.timeFormat)}
-                  onRemove={() => onRemoveFromSlot(slotIndex)}
-                  disabled={disabled}
-                  isLocked={lockedSlots?.has(slotIndex)}
-                  isStressed={stressSlots?.has(slotIndex)}
-                  isParentDragging={draggingSlots.has(slotIndex)}
-                  isGroupHovered={!lockedSlots?.has(slotIndex) && hoveredGroup.has(slotIndex)}
-                  isDropTarget={dropTargetSlots.has(slotIndex)}
-                  onHoverEnter={handleSlotHover}
-                  onHoverLeave={handleSlotLeave}
-                />
-              );
-            })}
-          </div>
+          {Array.from({ length: segment.slotCount }, (_, i) => {
+            const slotIndex = segment.startSlot + i;
+            return (
+              <SlotContainer
+                key={slotIndex}
+                index={slotIndex}
+                content={getSlotContent(slotIndex)}
+                timeLabel={slotTimeLabel(slotIndex, settings.timeFormat)}
+                onRemove={() => onRemoveFromSlot(slotIndex)}
+                disabled={disabled}
+                isLocked={lockedSlots?.has(slotIndex)}
+                isStressed={stressSlots?.has(slotIndex)}
+                isParentDragging={draggingSlots.has(slotIndex)}
+                isGroupHovered={!lockedSlots?.has(slotIndex) && hoveredGroup.has(slotIndex)}
+                isDropTarget={dropTargetSlots.has(slotIndex)}
+                onHoverEnter={handleSlotHover}
+                onHoverLeave={handleSlotLeave}
+              />
+            );
+          })}
         </div>
       ))}
     </div>
