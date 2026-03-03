@@ -8,6 +8,7 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  closestCenter,
 } from '@dnd-kit/core';
 import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BoostConfig } from '../../core/types';
 import { TOTAL_SLOTS, expandInsulinProfile, applyStressToRates, PENALTY_ORANGE_ROW, slotToColumn } from '../../core/types';
@@ -554,6 +555,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
