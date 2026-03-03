@@ -1,10 +1,9 @@
 /* Two-row slot grid: 6 columns × 2 rows (vertical-layout) */
 .slot-grid {
   display: grid;
-  grid-template-columns: repeat(6, auto);
-  gap: 10px 10px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px 6px;
   padding: 4px 8px;
-  justify-content: center;
   margin-top: 12px;
 }
 
@@ -24,7 +23,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 48px;
+  width: 100%;
   height: 56px;
   border-radius: 8px;
   border: 1.5px dashed #4a5568;
@@ -32,6 +31,7 @@
   transition: all 0.15s ease;
   cursor: default;
   gap: 1px;
+  box-sizing: border-box;
 }
 
 .slot-container--filled {
@@ -188,8 +188,12 @@
 
 /* Mobile portrait */
 @media (max-width: 480px) {
+  .slot-grid {
+    gap: 6px 4px;
+    padding: 4px 8px;
+  }
+
   .slot-container {
-    width: 44px;
     height: 52px;
     border-radius: 6px;
   }
