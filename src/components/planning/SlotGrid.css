@@ -1,10 +1,10 @@
 /* Two-row slot grid: 6 columns × 2 rows (vertical-layout) */
 .slot-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px 2px;
+  grid-template-columns: repeat(6, auto);
+  gap: 10px 10px;
   padding: 4px 8px;
-  justify-items: center;
+  justify-content: center;
 }
 
 /* Wrapper: slot + time label stacked vertically */
@@ -186,20 +186,20 @@
 /* Mobile portrait */
 @media (max-width: 480px) {
   .slot-container {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     border-radius: 6px;
   }
 
   .slot-container__emoji {
-    font-size: 16px;
+    font-size: 20px;
   }
 
   .slot-container__empty {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .slot-container__time {
-    font-size: 6px;
+    font-size: 7px;
   }
 }
