@@ -573,11 +573,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           hideKcal={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
         />
 
-        {isPlanning && (
-          <div className="planning-phase__hint">
-            Drag food cards into meal slots to plan your day!
-          </div>
-        )}
         {gamePhase === 'replaying' && (
           <div className="planning-phase__hint planning-phase__hint--replay">
             Reviewing your meal plan...
@@ -627,6 +622,12 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             lockedSlots={effectiveLockedSlots}
             stressSlots={stressSlotSet}
           />
+
+          {isPlanning && (
+            <div className="planning-phase__hint">
+              Drag food cards into meal slots to plan your day!
+            </div>
+          )}
 
           {isPlanning && (
             <InventoryDropZone>
