@@ -24,13 +24,13 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 56px;
+  height: 70px;
   border-radius: 8px;
   border: 1.5px dashed #4a5568;
   background: rgba(45, 55, 72, 0.4);
   transition: all 0.15s ease;
   cursor: default;
-  gap: 3px;
+  gap: 6px;
   box-sizing: border-box;
 }
 
@@ -194,7 +194,7 @@
   }
 
   .slot-container {
-    height: 52px;
+    height: 65px;
     border-radius: 6px;
   }
 
