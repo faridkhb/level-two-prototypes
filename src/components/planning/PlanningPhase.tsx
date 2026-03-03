@@ -137,9 +137,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     effectiveRows: 8, cellHeight: 18, graphH: 144, padTop: 8,
   });
 
-  // Scroll arrow indicators
+  // Scroll arrow indicators (right=true by default — graph is always wider than viewport)
   const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
   const updateScrollArrows = useCallback(() => {
     const el = scrollRef.current;
@@ -152,10 +152,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     const el = scrollRef.current;
     if (!el) return;
     el.addEventListener('scroll', updateScrollArrows, { passive: true });
-    // Run after layout settles (content width depends on cellSize)
-    requestAnimationFrame(updateScrollArrows);
+    updateScrollArrows();
     return () => el.removeEventListener('scroll', updateScrollArrows);
-  }, [updateScrollArrows, cellSize]);
+  }, [updateScrollArrows, cellSize, isLoading]);
 
   const handleScrollToStart = useCallback(() => {
     scrollRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
