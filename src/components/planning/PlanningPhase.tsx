@@ -28,6 +28,7 @@ import { ShipCardOverlay } from './ShipCard';
 import { InterventionCardOverlay } from './InterventionCard';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { useTutorial } from '../tutorial/useTutorial';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import './PlanningPhase.css';
 
 // Reveal: hold time (ms) after showing each phase before advancing
@@ -64,6 +65,7 @@ const TUTORIAL_LEVEL_ORDER = [
 ];
 
 export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: PlanningPhaseProps = {}) {
+  const isMobile = useIsMobile();
   const {
     placedFoods,
     placeFoodInSlot,
@@ -571,11 +573,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           hideKcal={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
         />
 
-        {isPlanning && (
-          <div className="planning-phase__hint">
-            Drag food cards into meal slots to plan your day!
-          </div>
-        )}
         {gamePhase === 'replaying' && (
           <div className="planning-phase__hint planning-phase__hint--replay">
             Reviewing your meal plan...
@@ -600,6 +597,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               previewIntervention={activeIntervention && previewSlot !== null ? activeIntervention : undefined}
               previewInterventionColumn={activeIntervention && previewSlot !== null ? slotToColumn(previewSlot) : undefined}
               stressSlots={stressSlotSet}
+              isMobile={isMobile}
             />
             {isPlanning && (
               <div className="planning-phase__pancreas-overlay">
@@ -624,6 +622,12 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             lockedSlots={effectiveLockedSlots}
             stressSlots={stressSlotSet}
           />
+
+          {isPlanning && (
+            <div className="planning-phase__hint">
+              Drag food cards into meal slots to plan your day!
+            </div>
+          )}
 
           {isPlanning && (
             <InventoryDropZone>

@@ -18,16 +18,14 @@ import './BgGraph.css';
 
 // SVG layout constants
 const CELL_SIZE = 18;
-const PAD_LEFT = 55;
-const PAD_TOP = 12;
-const PAD_RIGHT = 12;
-const PAD_BOTTOM = 28;
+const PAD_LEFT = 38;
+const PAD_TOP = 8;
+const PAD_RIGHT = 8;
+const PAD_BOTTOM = 18;
 
 const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
 const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
 const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
-const SVG_H = PAD_TOP + GRAPH_H + PAD_BOTTOM;
-
 // BG zone thresholds (mg/dL)
 const ZONE_NORMAL = 140;
 const ZONE_ELEVATED = 200;
@@ -125,6 +123,7 @@ interface BgGraphProps {
   previewIntervention?: Intervention;   // intervention being dragged
   previewInterventionColumn?: number;   // target column for intervention preview
   stressSlots?: Set<number>;            // slot indices with stress (reduced insulin)
+  isMobile?: boolean;                    // mobile-responsive sizing
 }
 
 // Convert column to SVG x
@@ -153,7 +152,15 @@ export function BgGraph({
   previewIntervention,
   previewInterventionColumn,
   stressSlots,
+  isMobile = false,
 }: BgGraphProps) {
+  // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
+  const graphH = isMobile ? TOTAL_ROWS * 30 : GRAPH_H;  // 510 vs 306 — taller cells on mobile
+  const axisFontSize = isMobile ? 16 : 7;
+  const padBottom = isMobile ? 30 : PAD_BOTTOM;
+  const localSvgH = PAD_TOP + graphH + padBottom;
+  const xLabelY = PAD_TOP + graphH + (isMobile ? 20 : 12);
+
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Exit animation state
@@ -367,7 +374,7 @@ export function BgGraph({
     const effectiveRows = maxVisibleRow <= TOTAL_ROWS
       ? TOTAL_ROWS
       : TOTAL_ROWS + Math.ceil((maxVisibleRow - TOTAL_ROWS) / 5) * 5;
-    const cellHeight = GRAPH_H / effectiveRows;
+    const cellHeight = graphH / effectiveRows;
 
     // pancreasCaps = sum of alive heights (after insulin eating)
     const pancreasCaps = aliveStacks;
@@ -388,7 +395,7 @@ export function BgGraph({
     // Phase 4: Per-food layers — stamp cubes, compute markers and skylines
     // Alive cubes use decay-stacked positions. Digest cubes (insulin-eaten) positioned above food's own alive zone.
     const hasMultipleFoods = rawFoods.length >= 2;
-    const bottomY = PAD_TOP + GRAPH_H;
+    const bottomY = PAD_TOP + graphH;
     const layers: FoodRenderLayer[] = rawFoods.map((food) => {
       const cubes: FoodRenderCube[] = [];
       const digestCubes: FoodRenderCube[] = [];
@@ -464,13 +471,13 @@ export function BgGraph({
         let prevCol = -2;
         let lastBaseY = bottomY;
         for (const cs of colSummary) {
-          const baseY = PAD_TOP + GRAPH_H - cs.baseRow * cellHeight;
+          const baseY = PAD_TOP + graphH - cs.baseRow * cellHeight;
           if (cs.skylineRow <= cs.baseRow) {
             if (inSeg) { parts.push(`V ${lastBaseY}`); inSeg = false; }
             prevCol = cs.col;
             continue;
           }
-          const y = PAD_TOP + GRAPH_H - cs.skylineRow * cellHeight;
+          const y = PAD_TOP + graphH - cs.skylineRow * cellHeight;
           const x = colToX(cs.col);
           if (!inSeg || cs.col !== prevCol + 1) {
             if (inSeg) parts.push(`V ${lastBaseY}`);
@@ -513,7 +520,7 @@ export function BgGraph({
         if (inSegment) { mainParts.push(`V ${bottomY}`); inSegment = false; }
         continue;
       }
-      const y = PAD_TOP + GRAPH_H - h * cellHeight;
+      const y = PAD_TOP + graphH - h * cellHeight;
       if (!inSegment) {
         mainParts.push(`M ${colToX(col)} ${bottomY}`);
         mainParts.push(`V ${y}`);
@@ -557,8 +564,8 @@ export function BgGraph({
 
   // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
   const { effectiveRows } = graphRenderData;
-  const cellHeight = GRAPH_H / effectiveRows;
-  const rowToY = (row: number) => PAD_TOP + GRAPH_H - (row + 1) * cellHeight;
+  const cellHeight = graphH / effectiveRows;
+  const rowToY = (row: number) => PAD_TOP + graphH - (row + 1) * cellHeight;
 
   // Preview: alive cubes (post-insulin) + incremental drain layer on top of alive skyline
   const previewData = useMemo(() => {
@@ -765,20 +772,20 @@ export function BgGraph({
   // Dynamic zone clip bands (Y-positions depend on cellHeight)
   const zoneClipBands = [
     { id: 'zone-clip-green', color: '#48bb78',
-      yTop: PAD_TOP + GRAPH_H - 4 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H + 3 },
+      yTop: PAD_TOP + graphH - 4 * cellHeight - 3, yBot: PAD_TOP + graphH + 3 },
     { id: 'zone-clip-yellow', color: '#ecc94b',
-      yTop: PAD_TOP + GRAPH_H - 7 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - 4 * cellHeight + 3 },
+      yTop: PAD_TOP + graphH - 7 * cellHeight - 3, yBot: PAD_TOP + graphH - 4 * cellHeight + 3 },
     { id: 'zone-clip-orange', color: '#ed8936',
-      yTop: PAD_TOP + GRAPH_H - 12 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - 7 * cellHeight + 3 },
+      yTop: PAD_TOP + graphH - 12 * cellHeight - 3, yBot: PAD_TOP + graphH - 7 * cellHeight + 3 },
     { id: 'zone-clip-red', color: '#fc8181',
-      yTop: PAD_TOP - 3, yBot: PAD_TOP + GRAPH_H - 12 * cellHeight + 3 },
+      yTop: PAD_TOP - 3, yBot: PAD_TOP + graphH - 12 * cellHeight + 3 },
   ];
 
-  // Dynamic Y-axis tick labels (extend beyond 400 when graph expands)
+  // Dynamic Y-axis tick labels (extend beyond default ticks when graph expands)
   const yTicks = [...DEFAULT_Y_TICKS];
   const maxMgDl = GRAPH_CONFIG.bgMin + effectiveRows * GRAPH_CONFIG.cellHeightMgDl;
-  for (let tick = 500; tick <= maxMgDl; tick += 100) {
-    yTicks.push(tick);
+  for (let tick = 400; tick <= maxMgDl; tick += 100) {
+    if (!yTicks.includes(tick)) yTicks.push(tick);
   }
 
 
@@ -786,7 +793,7 @@ export function BgGraph({
     <div className="bg-graph">
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+        viewBox={`0 0 ${SVG_W} ${localSvgH}`}
         className="bg-graph__svg"
         preserveAspectRatio="xMidYMid meet"
       >
@@ -846,7 +853,7 @@ export function BgGraph({
               x={colToX(startCol)}
               y={PAD_TOP}
               width={CELL_SIZE * 4}
-              height={GRAPH_H}
+              height={graphH}
               fill="#ef4444"
               opacity={0.08}
               pointerEvents="none"
@@ -861,7 +868,7 @@ export function BgGraph({
             x1={colToX(i)}
             y1={PAD_TOP}
             x2={colToX(i)}
-            y2={PAD_TOP + GRAPH_H}
+            y2={PAD_TOP + graphH}
             stroke="#e2e8f0"
             strokeWidth={i % 4 === 0 ? 0.8 : 0.3}
           />
@@ -885,7 +892,7 @@ export function BgGraph({
           x={PAD_LEFT}
           y={PAD_TOP}
           width={GRAPH_W}
-          height={GRAPH_H}
+          height={graphH}
           fill="none"
           stroke="#a0aec0"
           strokeWidth={1}
@@ -902,7 +909,7 @@ export function BgGraph({
               x1={colToX(startCol)}
               y1={PAD_TOP}
               x2={colToX(startCol)}
-              y2={PAD_TOP + GRAPH_H}
+              y2={PAD_TOP + graphH}
               stroke="#ef4444"
               strokeWidth={1}
               strokeDasharray="4 3"
@@ -914,7 +921,7 @@ export function BgGraph({
               x1={colToX(endCol)}
               y1={PAD_TOP}
               x2={colToX(endCol)}
-              y2={PAD_TOP + GRAPH_H}
+              y2={PAD_TOP + graphH}
               stroke="#ef4444"
               strokeWidth={1}
               strokeDasharray="4 3"
@@ -945,11 +952,11 @@ export function BgGraph({
           return (
             <text
               key={`y-${tick}`}
-              x={PAD_LEFT - 5}
+              x={PAD_LEFT - 3}
               y={y}
               textAnchor="end"
               dominantBaseline="middle"
-              fontSize={9}
+              fontSize={axisFontSize}
               fill="#718096"
             >
               {formatBgValue(tick, settings.bgUnit)}
@@ -965,9 +972,9 @@ export function BgGraph({
             <text
               key={`x-${hour}`}
               x={x}
-              y={PAD_TOP + GRAPH_H + 16}
+              y={xLabelY}
               textAnchor="middle"
-              fontSize={9}
+              fontSize={axisFontSize}
               fill="#718096"
             >
               {columnToTimeString(col, settings.timeFormat)}

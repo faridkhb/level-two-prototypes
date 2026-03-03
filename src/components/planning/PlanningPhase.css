@@ -1,10 +1,12 @@
 .planning-phase {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 4px 8px;
   max-width: 1200px;
   margin: 0 auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .planning-phase__hint {
@@ -37,8 +39,10 @@
 .planning-phase__content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 /* Graph wrapper: relative container for pancreas overlay */
@@ -48,8 +52,8 @@
 
 .planning-phase__pancreas-overlay {
   position: absolute;
-  top: 32px;
-  right: 32px;
+  top: 12px;
+  right: 12px;
   z-index: 10;
 }
 
@@ -58,6 +62,10 @@
   border: 1.5px dashed transparent;
   border-radius: 8px;
   transition: all 0.15s ease;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .planning-phase__inventory-zone--over {
@@ -114,4 +122,36 @@
 
 .planning-phase__day-btn:disabled {
   opacity: 0.7;
+}
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .planning-phase {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .planning-phase__content {
+    gap: 8px;
+  }
+
+  .planning-phase__hint {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+
+  .planning-phase__interventions-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .planning-phase__day-nav {
+    padding: 6px 0;
+    gap: 6px;
+  }
+
+  .planning-phase__day-btn {
+    padding: 5px 12px;
+    font-size: 11px;
+  }
 }

@@ -57,6 +57,7 @@ export function PlanningHeader({
 
   const wpSection = (
     <div className="planning-header__wp">
+      <span className="planning-header__wp-label">WP</span>
       <span className="planning-header__wp-icon">{'\u2600\uFE0F'}</span>
       <span className={`planning-header__wp-value ${wpOver ? 'planning-header__wp-value--over' : ''}`}>
         {wpRemaining}
@@ -95,34 +96,36 @@ export function PlanningHeader({
   const kcalSection = (
     <div className="planning-header__kcal-bar-wrap">
       <div className="planning-header__kcal-bar-header">
-        <span className="planning-header__kcal-value">{kcalUsed}</span>
-        <span className="planning-header__kcal-unit">
-          /{effectiveKcalBudget} kcal
-          {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
-        </span>
-        {satietyPenalty.kcalDelta > 0 && (
-          <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
-            +{satietyPenalty.kcalDelta}
+        <div className="planning-header__kcal-left">
+          <span className="planning-header__kcal-value">{kcalUsed}</span>
+          <span className="planning-header__kcal-unit">
+            /{effectiveKcalBudget} kcal
+            {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
           </span>
-        )}
-        {forecastBadge && (
-          <Tooltip text={forecastTooltip} position="bottom">
-            <span
-              className="planning-header__assessment-badge"
-              style={{
-                background: `${assessment.color}22`,
-                borderColor: `${assessment.color}44`,
-              }}
-            >
-              {forecastBadge}
+          {satietyPenalty.kcalDelta > 0 && (
+            <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
+              +{satietyPenalty.kcalDelta}
             </span>
-          </Tooltip>
-        )}
-        {!forecastTooltip && kcalUsed === 0 && (
-          <span className="planning-header__assessment-badge planning-header__assessment-badge--fasting">
-            Fasting
-          </span>
-        )}
+          )}
+        </div>
+        <span className="planning-header__kcal-zone-name" style={kcalUsed > 0 ? { color: assessment.color } : undefined}>
+          {kcalUsed > 0 ? assessment.label : ''}
+        </span>
+        <div className="planning-header__kcal-right">
+          {forecastBadge && (
+            <Tooltip text={forecastTooltip} position="bottom">
+              <span
+                className="planning-header__assessment-badge"
+                style={{
+                  background: `${assessment.color}22`,
+                  borderColor: `${assessment.color}44`,
+                }}
+              >
+                {forecastBadge}
+              </span>
+            </Tooltip>
+          )}
+        </div>
       </div>
       <div className="planning-header__kcal-bar">
         <div
@@ -157,25 +160,27 @@ export function PlanningHeader({
   );
 
   return (
-    <div className="planning-header">
-      <div className="planning-header__day">{dayLabel}</div>
+    <>
+      <div className="planning-header">
+        <div className="planning-header__day">{dayLabel}</div>
 
-      {wpSection}
+        {wpSection}
+
+        <button
+          className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'}`}
+          onClick={onSubmit}
+          disabled={!submitEnabled}
+          title={submitEnabled ? 'Submit your meal plan' : 'Place food to reach Optimal zone (50%+)'}
+        >
+          Submit
+        </button>
+      </div>
 
       {!hideKcal && (kcalTooltip ? (
         <Tooltip text={kcalTooltip} position="bottom">
           {kcalSection}
         </Tooltip>
       ) : kcalSection)}
-
-      <button
-        className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'}`}
-        onClick={onSubmit}
-        disabled={!submitEnabled}
-        title={submitEnabled ? 'Submit your meal plan' : 'Place food to reach Optimal zone (50%+)'}
-      >
-        Submit
-      </button>
-    </div>
+    </>
   );
 }

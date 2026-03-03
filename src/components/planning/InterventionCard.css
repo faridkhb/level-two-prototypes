@@ -150,3 +150,30 @@
 .intervention-card:not(.intervention-card--dragging):hover[data-tooltip]::after {
   opacity: 1;
 }
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .intervention-card {
+    width: auto;
+    min-width: 0;
+    height: 48px;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .intervention-card__emoji {
+    font-size: 20px;
+  }
+
+  .intervention-card__name {
+    font-size: 10px;
+  }
+
+  .intervention-card__info {
+    font-size: 9px;
+  }
+
+  .intervention-card__badge {
+    font-size: 11px;
+  }
+}

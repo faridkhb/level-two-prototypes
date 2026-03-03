@@ -1,6 +1,7 @@
 .bg-graph {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   background: #fff;
   border-radius: 8px;
   border: 2px solid #e2e8f0;
@@ -275,4 +276,32 @@
 
 .bg-graph__drag-card-name {
   color: #fc8181;
+}
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .bg-graph {
+    padding: 4px;
+    border-radius: 6px;
+    border-width: 1.5px;
+  }
+
+  .bg-graph__reveal-label {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .reveal-label__emoji {
+    font-size: 14px;
+  }
+
+  .bg-graph__drag-card {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .bg-graph__drag-card-emoji {
+    font-size: 18px;
+  }
 }
