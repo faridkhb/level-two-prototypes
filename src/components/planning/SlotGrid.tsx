@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useDroppable, useDraggable, useDndContext } from '@dnd-kit/core';
 import type { Ship, Intervention, PlacedFood, PlacedIntervention, GameSettings } from '../../core/types';
-import { MEAL_SEGMENTS, TOTAL_SLOTS, slotTimeLabel } from '../../core/types';
+import { TOTAL_SLOTS, slotTimeLabel } from '../../core/types';
 import './SlotGrid.css';
 
 interface SlotGridProps {
@@ -233,29 +233,22 @@ export function SlotGrid({
 
   return (
     <div className="slot-grid">
-      {MEAL_SEGMENTS.map(segment => (
-        <div key={segment.id} className="slot-grid__meal">
-          {Array.from({ length: segment.slotCount }, (_, i) => {
-            const slotIndex = segment.startSlot + i;
-            return (
-              <SlotContainer
-                key={slotIndex}
-                index={slotIndex}
-                content={getSlotContent(slotIndex)}
-                timeLabel={slotTimeLabel(slotIndex, settings.timeFormat)}
-                onRemove={() => onRemoveFromSlot(slotIndex)}
-                disabled={disabled}
-                isLocked={lockedSlots?.has(slotIndex)}
-                isStressed={stressSlots?.has(slotIndex)}
-                isParentDragging={draggingSlots.has(slotIndex)}
-                isGroupHovered={!lockedSlots?.has(slotIndex) && hoveredGroup.has(slotIndex)}
-                isDropTarget={dropTargetSlots.has(slotIndex)}
-                onHoverEnter={handleSlotHover}
-                onHoverLeave={handleSlotLeave}
-              />
-            );
-          })}
-        </div>
+      {Array.from({ length: TOTAL_SLOTS }, (_, slotIndex) => (
+        <SlotContainer
+          key={slotIndex}
+          index={slotIndex}
+          content={getSlotContent(slotIndex)}
+          timeLabel={slotTimeLabel(slotIndex, settings.timeFormat)}
+          onRemove={() => onRemoveFromSlot(slotIndex)}
+          disabled={disabled}
+          isLocked={lockedSlots?.has(slotIndex)}
+          isStressed={stressSlots?.has(slotIndex)}
+          isParentDragging={draggingSlots.has(slotIndex)}
+          isGroupHovered={!lockedSlots?.has(slotIndex) && hoveredGroup.has(slotIndex)}
+          isDropTarget={dropTargetSlots.has(slotIndex)}
+          onHoverEnter={handleSlotHover}
+          onHoverLeave={handleSlotLeave}
+        />
       ))}
     </div>
   );
