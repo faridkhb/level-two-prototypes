@@ -159,25 +159,27 @@ export function PlanningHeader({
   );
 
   return (
-    <div className="planning-header">
-      <div className="planning-header__day">{dayLabel}</div>
+    <>
+      <div className="planning-header">
+        <div className="planning-header__day">{dayLabel}</div>
 
-      {wpSection}
+        {wpSection}
+
+        <button
+          className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'}`}
+          onClick={onSubmit}
+          disabled={!submitEnabled}
+          title={submitEnabled ? 'Submit your meal plan' : 'Place food to reach Optimal zone (50%+)'}
+        >
+          Submit
+        </button>
+      </div>
 
       {!hideKcal && (kcalTooltip ? (
         <Tooltip text={kcalTooltip} position="bottom">
           {kcalSection}
         </Tooltip>
       ) : kcalSection)}
-
-      <button
-        className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'}`}
-        onClick={onSubmit}
-        disabled={!submitEnabled}
-        title={submitEnabled ? 'Submit your meal plan' : 'Place food to reach Optimal zone (50%+)'}
-      >
-        Submit
-      </button>
-    </div>
+    </>
   );
 }
