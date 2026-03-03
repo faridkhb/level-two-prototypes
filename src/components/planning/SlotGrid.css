@@ -1,7 +1,9 @@
-/* Two-row slot grid: 6 columns × 2 rows (vertical-layout) */
+/* Two-row slot grid: 6 columns × 2 rows, column-first fill order */
 .slot-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column;
   gap: 8px 6px;
   padding: 4px 8px;
   margin-top: 12px;
