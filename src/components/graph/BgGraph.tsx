@@ -18,10 +18,10 @@ import './BgGraph.css';
 
 // SVG layout constants
 const CELL_SIZE = 18;
-const PAD_LEFT = 55;
-const PAD_TOP = 12;
-const PAD_RIGHT = 12;
-const PAD_BOTTOM = 28;
+const PAD_LEFT = 38;
+const PAD_TOP = 8;
+const PAD_RIGHT = 8;
+const PAD_BOTTOM = 18;
 
 const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
 const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
@@ -155,10 +155,10 @@ export function BgGraph({
   isMobile = false,
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: enlarge fonts & markers so they're readable at ~40% scale
-  const axisFontSize = isMobile ? 22 : 9;
+  const axisFontSize = isMobile ? 22 : 7;
   const padBottom = isMobile ? 45 : PAD_BOTTOM;
   const localSvgH = PAD_TOP + GRAPH_H + padBottom;
-  const xLabelY = PAD_TOP + GRAPH_H + (isMobile ? 30 : 16);
+  const xLabelY = PAD_TOP + GRAPH_H + (isMobile ? 30 : 12);
 
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -951,7 +951,7 @@ export function BgGraph({
           return (
             <text
               key={`y-${tick}`}
-              x={PAD_LEFT - 5}
+              x={PAD_LEFT - 3}
               y={y}
               textAnchor="end"
               dominantBaseline="middle"
