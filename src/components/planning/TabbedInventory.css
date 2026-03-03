@@ -1,0 +1,32 @@
+.tabbed-inventory__tabs {
+  display: flex;
+  gap: 2px;
+  background: #1a202c;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.tabbed-inventory__tab {
+  flex: 1;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #a0aec0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.tabbed-inventory__tab:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tabbed-inventory__tab--active {
+  background: #4a5568;
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}

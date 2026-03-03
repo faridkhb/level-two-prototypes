@@ -7,12 +7,6 @@
   gap: 4px;
 }
 
-/* Food inventory expands to fill remaining space */
-.ship-inventory--food {
-  flex: 1;
-  min-height: 0;
-}
-
 .ship-inventory__title {
   color: #a0aec0;
   font-size: 11px;
@@ -47,14 +41,14 @@
   }
 
   /* Food cards: auto-fill compact vertical grid */
-  .ship-inventory--food .ship-inventory__grid {
+  .ship-inventory__grid--food {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
     gap: 6px;
   }
 
   /* Actions (interventions + medications): 2-column grid */
-  .ship-inventory--actions .ship-inventory__grid {
+  .ship-inventory__grid--actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 6px;

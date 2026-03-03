@@ -19,8 +19,7 @@ import type { InsulinParams } from '../../core/cubeEngine';
 import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
 import { BgGraph } from '../graph';
 import { PlanningHeader } from './PlanningHeader';
-import { ShipInventory } from './ShipInventory';
-import { InterventionInventory } from './InterventionInventory';
+import { TabbedInventory } from './TabbedInventory';
 import { PancreasButton } from './PancreasButton';
 import { ResultPanel } from './ResultPanel';
 import { SlotGrid } from './SlotGrid';
@@ -631,25 +630,19 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
 
           {isPlanning && (
             <InventoryDropZone>
-              <ShipInventory
+              <TabbedInventory
                 allShips={allShips}
                 availableFoods={effectiveAvailableFoods}
                 placedFoods={placedFoods}
+                allInterventions={allInterventions}
+                availableInterventions={dayConfig?.availableInterventions || []}
+                placedInterventions={placedInterventions}
                 wpRemaining={wpRemaining}
+                allMedications={allMedications}
+                availableMedicationIds={dayConfig?.availableMedications ?? []}
+                activeMedications={activeMedications}
+                onMedicationToggle={handleMedicationToggle}
               />
-
-              <div className="planning-phase__interventions-row">
-                <InterventionInventory
-                  allInterventions={allInterventions}
-                  availableInterventions={dayConfig?.availableInterventions || []}
-                  placedInterventions={placedInterventions}
-                  wpRemaining={wpRemaining}
-                  allMedications={allMedications}
-                  availableMedicationIds={dayConfig?.availableMedications ?? []}
-                  activeMedications={activeMedications}
-                  onMedicationToggle={handleMedicationToggle}
-                />
-              </div>
             </InventoryDropZone>
           )}
 

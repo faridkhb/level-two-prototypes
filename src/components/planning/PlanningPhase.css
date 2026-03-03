@@ -73,18 +73,6 @@
   background: rgba(251, 191, 36, 0.06);
 }
 
-/* Interventions row */
-.planning-phase__interventions-row {
-  display: flex;
-  gap: 12px;
-  align-items: stretch;
-}
-
-.planning-phase__interventions-row > .ship-inventory {
-  flex: 1;
-  min-width: 0;
-}
-
 /* Day navigation (cheat buttons) */
 .planning-phase__day-nav {
   display: flex;
@@ -138,11 +126,6 @@
   .planning-phase__hint {
     font-size: 11px;
     padding: 0 4px;
-  }
-
-  .planning-phase__interventions-row {
-    flex-direction: column;
-    gap: 8px;
   }
 
   .planning-phase__day-nav {

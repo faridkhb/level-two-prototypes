@@ -88,48 +88,45 @@ export function InterventionInventory({
   if (availableInterventions.length === 0 && !hasMedications) return null;
 
   return (
-    <div className="ship-inventory ship-inventory--actions">
-      <div className="ship-inventory__title">Actions</div>
-      <div className="ship-inventory__grid">
-        {hasMedications && availableMedicationIds.map(medId => {
-          const med = allMedications.find(m => m.id === medId);
-          if (!med) return null;
-          const isActive = activeMedications.includes(medId);
-          const tooltip = getMedicationTooltip(med);
+    <div className="ship-inventory__grid ship-inventory__grid--actions">
+      {hasMedications && availableMedicationIds.map(medId => {
+        const med = allMedications.find(m => m.id === medId);
+        if (!med) return null;
+        const isActive = activeMedications.includes(medId);
+        const tooltip = getMedicationTooltip(med);
+        return (
+          <button
+            key={medId}
+            className={`medication-toggle ${isActive ? 'medication-toggle--active' : ''}`}
+            onClick={() => onMedicationToggle?.(medId)}
+            data-tooltip={tooltip}
+          >
+            <span className="medication-toggle__emoji">{med.emoji}</span>
+            <div className="medication-toggle__details">
+              <span className="medication-toggle__name">{med.name}</span>
+              <span className="medication-toggle__desc">{tooltip}</span>
+            </div>
+            <span className="medication-toggle__status">
+              {isActive ? 'ON' : 'OFF'}
+            </span>
+          </button>
+        );
+      })}
+      {inventoryItems.length === 0 && !hasMedications ? (
+        <div className="ship-inventory__empty">All interventions placed!</div>
+      ) : (
+        inventoryItems.map(({ intervention, index }) => {
+          const wpDisabled = intervention.wpCost > wpRemaining;
           return (
-            <button
-              key={medId}
-              className={`medication-toggle ${isActive ? 'medication-toggle--active' : ''}`}
-              onClick={() => onMedicationToggle?.(medId)}
-              data-tooltip={tooltip}
-            >
-              <span className="medication-toggle__emoji">{med.emoji}</span>
-              <div className="medication-toggle__details">
-                <span className="medication-toggle__name">{med.name}</span>
-                <span className="medication-toggle__desc">{tooltip}</span>
-              </div>
-              <span className="medication-toggle__status">
-                {isActive ? 'ON' : 'OFF'}
-              </span>
-            </button>
+            <InterventionCard
+              key={`${intervention.id}-${index}`}
+              intervention={intervention}
+              instanceId={`intervention-${intervention.id}-${index}`}
+              wpDisabled={wpDisabled}
+            />
           );
-        })}
-        {inventoryItems.length === 0 && !hasMedications ? (
-          <div className="ship-inventory__empty">All interventions placed!</div>
-        ) : (
-          inventoryItems.map(({ intervention, index }) => {
-            const wpDisabled = intervention.wpCost > wpRemaining;
-            return (
-              <InterventionCard
-                key={`${intervention.id}-${index}`}
-                intervention={intervention}
-                instanceId={`intervention-${intervention.id}-${index}`}
-                wpDisabled={wpDisabled}
-              />
-            );
-          })
-        )}
-      </div>
+        })
+      )}
     </div>
   );
 }

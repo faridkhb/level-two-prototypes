@@ -49,26 +49,23 @@ export function ShipInventory({
   }, [allShips, availableFoods, placedCounts]);
 
   return (
-    <div className="ship-inventory ship-inventory--food">
-      <div className="ship-inventory__title">Food Cards</div>
-      <div className="ship-inventory__grid">
-        {inventoryItems.length === 0 ? (
-          <div className="ship-inventory__empty">All cards placed!</div>
-        ) : (
-          inventoryItems.map(({ ship, index }) => {
-            const wpCost = ship.wpCost ?? 0;
-            const wpDisabled = wpCost > wpRemaining;
-            return (
-              <ShipCard
-                key={`${ship.id}-${index}`}
-                ship={ship}
-                instanceId={`inventory-${ship.id}-${index}`}
-                wpDisabled={wpDisabled}
-              />
-            );
-          })
-        )}
-      </div>
+    <div className="ship-inventory__grid ship-inventory__grid--food">
+      {inventoryItems.length === 0 ? (
+        <div className="ship-inventory__empty">All cards placed!</div>
+      ) : (
+        inventoryItems.map(({ ship, index }) => {
+          const wpCost = ship.wpCost ?? 0;
+          const wpDisabled = wpCost > wpRemaining;
+          return (
+            <ShipCard
+              key={`${ship.id}-${index}`}
+              ship={ship}
+              instanceId={`inventory-${ship.id}-${index}`}
+              wpDisabled={wpDisabled}
+            />
+          );
+        })
+      )}
     </div>
   );
 }
