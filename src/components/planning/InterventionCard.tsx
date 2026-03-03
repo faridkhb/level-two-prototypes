@@ -6,6 +6,7 @@ import './InterventionCard.css';
 interface InterventionCardProps {
   intervention: Intervention;
   instanceId?: string;
+  isLocked?: boolean;
   remainingCount?: number;
   wpDisabled?: boolean;
 }
@@ -13,14 +14,16 @@ interface InterventionCardProps {
 export function InterventionCard({
   intervention,
   instanceId,
+  isLocked = false,
   remainingCount,
   wpDisabled = false,
 }: InterventionCardProps) {
   const draggableId = instanceId ?? `intervention-${intervention.id}`;
+  const disabled = wpDisabled || isLocked;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: draggableId,
-    disabled: wpDisabled,
+    disabled,
     data: {
       intervention,
       isIntervention: true,
@@ -41,20 +44,24 @@ export function InterventionCard({
         'intervention-card',
         isDragging && 'intervention-card--dragging',
         wpDisabled && 'intervention-card--disabled',
+        isLocked && 'intervention-card--locked',
       ]
         .filter(Boolean)
         .join(' ')}
       data-tooltip={tooltip}
-      {...(wpDisabled ? {} : listeners)}
+      {...(disabled ? {} : listeners)}
       {...attributes}
     >
+      {isLocked && <span className="intervention-card__lock">🔒</span>}
       <span className="intervention-card__emoji">{intervention.emoji}</span>
 
-      <span className="intervention-card__badge">
-        {intervention.isBreak
-          ? `+${Math.abs(intervention.wpCost)}`
-          : intervention.wpCost}☀️
-      </span>
+      {!isLocked && (
+        <span className="intervention-card__badge">
+          {intervention.isBreak
+            ? `+${Math.abs(intervention.wpCost)}`
+            : intervention.wpCost}☀️
+        </span>
+      )}
 
       <div className="intervention-card__details">
         <span className="intervention-card__name">{intervention.name}</span>

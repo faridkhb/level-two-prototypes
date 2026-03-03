@@ -18,8 +18,7 @@ interface PlanningHeaderProps {
   medicationModifiers?: MedicationModifiers;
   submitEnabled: boolean;
   onSubmit: () => void;
-  onToggleTimeFormat: () => void;
-  onToggleBgUnit: () => void;
+  hideKcal?: boolean;
 }
 
 export function PlanningHeader({
@@ -28,12 +27,11 @@ export function PlanningHeader({
   kcalBudget,
   wpRemaining,
   satietyPenalty = DEFAULT_SATIETY_PENALTY,
-  settings,
+  settings: _settings,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   submitEnabled,
   onSubmit,
-  onToggleTimeFormat,
-  onToggleBgUnit,
+  hideKcal,
 }: PlanningHeaderProps) {
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier)
     + satietyPenalty.kcalDelta;
@@ -166,11 +164,11 @@ export function PlanningHeader({
 
       {wpSection}
 
-      {kcalTooltip ? (
+      {!hideKcal && (kcalTooltip ? (
         <Tooltip text={kcalTooltip} position="bottom">
           {kcalSection}
         </Tooltip>
-      ) : kcalSection}
+      ) : kcalSection)}
 
       <button
         className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'}`}
@@ -180,23 +178,6 @@ export function PlanningHeader({
       >
         Submit
       </button>
-
-      <div className="planning-header__settings">
-        <button
-          className="planning-header__toggle"
-          onClick={onToggleTimeFormat}
-          title="Toggle time format"
-        >
-          {settings.timeFormat}
-        </button>
-        <button
-          className="planning-header__toggle"
-          onClick={onToggleBgUnit}
-          title="Toggle BG unit"
-        >
-          {settings.bgUnit}
-        </button>
-      </div>
     </div>
   );
 }

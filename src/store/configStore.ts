@@ -26,6 +26,11 @@ export interface PancreasTierOverride {
   cost: number;
 }
 
+export interface BoostOverride {
+  thresholdMgDl: number;
+  extraRate: number;
+}
+
 export interface MedicationOverride {
   multiplier: number;
   depth: number;
@@ -41,11 +46,13 @@ interface ConfigState {
   pancreasTiers: Record<string, Partial<PancreasTierOverride>>;
   interventions: Record<string, Partial<InterventionOverride>>;
   medications: Record<string, Partial<MedicationOverride>>;
+  boostOverride: Partial<BoostOverride>;
 
   setFoodField: (foodId: string, field: keyof FoodOverride, value: number) => void;
   setPancreasField: (tier: string, field: keyof PancreasTierOverride, value: number) => void;
   setInterventionField: (id: string, field: keyof InterventionOverride, value: number) => void;
   setMedicationField: (id: string, field: keyof MedicationOverride, value: number) => void;
+  setBoostField: (field: keyof BoostOverride, value: number) => void;
   resetAll: () => void;
 }
 
@@ -56,6 +63,7 @@ export const useConfigStore = create<ConfigState>()(
       pancreasTiers: {},
       interventions: {},
       medications: {},
+      boostOverride: {},
 
       setFoodField: (foodId, field, value) =>
         set((state) => ({
@@ -89,16 +97,22 @@ export const useConfigStore = create<ConfigState>()(
           },
         })),
 
-      resetAll: () => set({ foods: {}, pancreasTiers: {}, interventions: {}, medications: {} }),
+      setBoostField: (field, value) =>
+        set((state) => ({
+          boostOverride: { ...state.boostOverride, [field]: value },
+        })),
+
+      resetAll: () => set({ foods: {}, pancreasTiers: {}, interventions: {}, medications: {}, boostOverride: {} }),
     }),
     {
       name: 'bg-config-overrides',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         foods: state.foods,
         pancreasTiers: state.pancreasTiers,
         interventions: state.interventions,
         medications: state.medications,
+        boostOverride: state.boostOverride,
       }),
     }
   )

@@ -1,6 +1,5 @@
-import { useMemo, useCallback, useRef, useState } from 'react';
-import { useDroppable } from '@dnd-kit/core';
-import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, MedicationModifiers } from '../../core/types';
+import { useMemo, useRef, useState, useLayoutEffect, useEffect } from 'react';
+import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, MedicationModifiers, BoostConfig } from '../../core/types';
 import {
   TOTAL_COLUMNS,
   TOTAL_ROWS,
@@ -13,7 +12,8 @@ import {
   columnToTimeString,
   formatBgValue,
 } from '../../core/types';
-import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, calculateSglt2Reduction } from '../../core/cubeEngine';
+import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, calculateSglt2Reduction, calculateBoostReduction } from '../../core/cubeEngine';
+import type { InsulinParams } from '../../core/cubeEngine';
 import './BgGraph.css';
 
 // SVG layout constants
@@ -26,11 +26,13 @@ const PAD_BOTTOM = 28;
 const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
 const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
 const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
-
 // BG zone thresholds (mg/dL)
 const ZONE_NORMAL = 140;
 const ZONE_ELEVATED = 200;
 const ZONE_HIGH = 300;
+
+// Insulin floor: insulin cannot eat below this row (100 mg/dL)
+const INSULIN_FLOOR_ROW = 2; // (100 - 60) / 20 = 2
 
 // Fixed blue palette: each food gets a progressively darker shade
 const FOOD_PALETTE = [
@@ -47,12 +49,8 @@ function getFoodColor(index: number): string {
   return FOOD_PALETTE[Math.min(index, FOOD_PALETTE.length - 1)];
 }
 
-const PREVIEW_COLOR = 'rgba(99, 179, 237, 0.4)';
-const PREVIEW_PANCREAS_COLOR = 'rgba(246, 153, 63, 0.35)';
-
-
 // Unified render data types
-type CubeStatus = 'normal' | 'burned' | 'pancreas';
+type CubeStatus = 'normal' | 'burned';
 
 interface FoodRenderCube {
   col: number;
@@ -64,15 +62,13 @@ interface FoodRenderCube {
 interface FoodColumnSummary {
   col: number;
   baseRow: number;
-  totalCount: number;
+  plateauCount: number;  // total cubes at plateau (before insulin eating)
+  aliveCount: number;    // cubes remaining after insulin eating
+  eatenCount: number;    // cubes insulin ate (cumulative)
+  drainCount: number;    // cubes insulin drains THIS column (incremental)
   topNormalRow: number;
   aliveTop: number;   // per-food alive boundary (unclamped — for markers)
   skylineRow: number;  // clamped by columnCaps (for skyline paths)
-}
-
-interface FoodMarkerInfo {
-  peakCenterX: number;
-  tailRow: number;
 }
 
 interface FoodRenderLayer {
@@ -83,8 +79,8 @@ interface FoodRenderLayer {
   emoji: string;
   carbs: number;
   cubes: FoodRenderCube[];
+  digestCubes: FoodRenderCube[]; // cubes insulin ate (positioned above food's alive zone)
   colSummary: FoodColumnSummary[];
-  marker: FoodMarkerInfo | null;
   skylinePath: string | null;
 }
 
@@ -104,26 +100,30 @@ interface GraphRenderData {
   effectiveRows: number;
 }
 
+interface ExitingCube {
+  col: number;
+  row: number;
+  color: string;
+  dropColumn: number;
+}
+
 interface BgGraphProps {
   placedFoods: PlacedFood[];
   allShips: Ship[];
   placedInterventions: PlacedIntervention[];
   allInterventions: Intervention[];
   settings: GameSettings;
-  decayRate: number;
+  decayOrInsulin: number | InsulinParams;
+  boostConfig?: BoostConfig;
   medicationModifiers?: MedicationModifiers;
-  previewShip?: Ship | null;
-  previewIntervention?: Intervention | null;
-  previewColumn?: number | null;
-  breakValidColumns?: boolean[] | null;
   showPenaltyHighlight?: boolean;
   revealPhase?: number; // undefined = all visible, 0-4 = progressive layer reveal
-  interactive?: boolean;
-  isMobile?: boolean;
-  onFoodClick?: (placementId: string) => void;
-  onFoodMove?: (placementId: string, newColumn: number) => void;
-  onInterventionClick?: (placementId: string) => void;
-  onInterventionMove?: (placementId: string, newColumn: number) => void;
+  previewShip?: Ship;        // food being dragged (for preview on graph)
+  previewColumn?: number;    // target column for preview
+  previewIntervention?: Intervention;   // intervention being dragged
+  previewInterventionColumn?: number;   // target column for intervention preview
+  stressSlots?: Set<number>;            // slot indices with stress (reduced insulin)
+  isMobile?: boolean;                    // mobile-responsive sizing
 }
 
 // Convert column to SVG x
@@ -142,46 +142,46 @@ export function BgGraph({
   placedInterventions,
   allInterventions,
   settings,
-  decayRate,
+  decayOrInsulin,
+  boostConfig,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
-  previewShip,
-  previewIntervention,
-  previewColumn,
-  breakValidColumns,
   showPenaltyHighlight = false,
   revealPhase,
-  interactive = true,
+  previewShip,
+  previewColumn,
+  previewIntervention,
+  previewInterventionColumn,
+  stressSlots,
   isMobile = false,
-  onFoodClick,
-  onFoodMove,
-  onInterventionClick,
-  onInterventionMove,
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: enlarge fonts & markers so they're readable at ~40% scale
   const axisFontSize = isMobile ? 22 : 9;
   const padBottom = isMobile ? 45 : PAD_BOTTOM;
   const localSvgH = PAD_TOP + GRAPH_H + padBottom;
   const xLabelY = PAD_TOP + GRAPH_H + (isMobile ? 30 : 16);
-  const mrkW = isMobile ? 70 : 50;
-  const mrkH = isMobile ? 72 : 52;
-  const mrkTailH = isMobile ? 14 : 11;
-  const mrkEmojiSize = isMobile ? 40 : 26;
-  const mrkCarbsSize = isMobile ? 16 : 10;
-  const intMrkH = isMobile ? 60 : 44;
-  const intMrkEmojiSize = isMobile ? 44 : 30;
 
   const svgRef = useRef<SVGSVGElement>(null);
-  const markerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
-  const interventionMarkerDragRef = useRef<{ placementId: string; lastCol: number } | null>(null);
 
-  // Floating card overlay when dragging marker outside graph
-  const [dragOutside, setDragOutside] = useState<{
-    emoji: string; name: string; clientX: number; clientY: number;
-  } | null>(null);
+  // Exit animation state
+  const prevLayersRef = useRef<FoodRenderLayer[]>([]);
+  const [exitingCubes, setExitingCubes] = useState<ExitingCube[]>([]);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'bg-graph',
-  });
+  // Digest animation state: tracks foods currently in "insulin eating" animation
+  const [digestingFoodIds, setDigestingFoodIds] = useState<Set<string>>(new Set());
+  const digestTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Intervention fall animation state
+  interface BurningIntervention {
+    id: string;
+    interventionId: string;
+    dropColumn: number;
+    reduction: number[];
+    color: string;
+  }
+  const [burningInterventions, setBurningInterventions] = useState<Map<string, BurningIntervention>>(new Map());
+  const burningIntTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const prevInterventionIdsRef = useRef<Set<string>>(new Set());
 
   // Calculate intervention reduction per column, split by type (walk/run)
   const interventionReductions = useMemo(() => {
@@ -216,11 +216,10 @@ export function BgGraph({
   // Every cube is pre-stamped with status (normal/burned/pancreas), markers and
   // skylines are derived from the SAME data that stamps cubes — no desync possible.
   const graphRenderData = useMemo((): GraphRenderData => {
-    // Phase 1: Decay-based stacking — cube POSITIONS from actual decay curves.
-    // This ensures all alive cubes are below the alive boundary (pancreasCaps).
-    // Pancreas-eaten cubes are stacked ABOVE all alive cubes (separate visual zone).
-    // When decayRate=0: decay=plateau, so stacking is identical to old model.
-    const decayHeights = new Array(TOTAL_COLUMNS).fill(0);
+    // Phase 1: Per-column insulin eating model.
+    // Uses ONLY plateau curves. Insulin eating computed per-column with 100 mg/dL floor.
+    // Foods stacked by alive heights (after eating).
+    const aliveStacks = new Array(TOTAL_COLUMNS).fill(0);
     const plateauHeights = new Array(TOTAL_COLUMNS).fill(0);
     const originalPlateauHeights = new Array(TOTAL_COLUMNS).fill(0);
     const afterMetPlateauHeights = new Array(TOTAL_COLUMNS).fill(0);
@@ -229,6 +228,11 @@ export function BgGraph({
       ? medicationModifiers.glucoseMultiplier / medicationModifiers.glp1GlucoseMultiplier
       : medicationModifiers.glucoseMultiplier;
     const hasMedEffect = medicationModifiers.glucoseMultiplier < 1 || medicationModifiers.durationMultiplier > 1;
+
+    // Determine insulin mode
+    const isInsulinProfile = typeof decayOrInsulin !== 'number';
+    const insulinRates = isInsulinProfile ? (decayOrInsulin as InsulinParams).rates : null;
+
     const rawFoods: Array<{
       placementId: string;
       shipId: string;
@@ -236,7 +240,7 @@ export function BgGraph({
       color: string;
       emoji: string;
       carbs: number;
-      columns: Array<{ col: number; baseRow: number; aliveCount: number; pancreasExtra: number }>;
+      columns: Array<{ col: number; baseRow: number; aliveCount: number; plateauCount: number; eatenCount: number; drainCount: number }>;
     }> = [];
 
     for (const placed of placedFoods) {
@@ -244,19 +248,25 @@ export function BgGraph({
       if (!ship) continue;
       const { glucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
 
-      // Decay curve: determines cube POSITIONS (actual visible alive cubes)
-      const decayCurve = calculateCurve(glucose, duration, placed.dropColumn, decayRate);
-      // Plateau curve: determines TOTAL cubes per column (including pancreas-eaten)
-      const plateauCurve = decayRate > 0
-        ? calculateCurve(glucose, duration, placed.dropColumn, 0)
-        : decayCurve; // same when no decay
+      // Always compute plateau curve (full height, no eating)
+      const plateauCurve = calculateCurve(glucose, duration, placed.dropColumn, 0);
 
-      // Build plateau count lookup + accumulate plateauHeights (for preview)
-      const plateauMap: Record<number, number> = {};
+      // For legacy numeric decay, compute decay curve for comparison
+      const legacyDecayCurve = (!isInsulinProfile && (decayOrInsulin as number) > 0)
+        ? calculateCurve(glucose, duration, placed.dropColumn, decayOrInsulin)
+        : null;
+      const legacyDecayMap: Record<number, number> = {};
+      if (legacyDecayCurve) {
+        for (const dc of legacyDecayCurve) {
+          const graphCol = placed.dropColumn + dc.columnOffset;
+          if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) legacyDecayMap[graphCol] = dc.cubeCount;
+        }
+      }
+
+      // Accumulate plateauHeights (for Y-axis expansion & preview)
       for (const pc of plateauCurve) {
         const graphCol = placed.dropColumn + pc.columnOffset;
         if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
-          plateauMap[graphCol] = pc.cubeCount;
           plateauHeights[graphCol] += pc.cubeCount;
         }
       }
@@ -280,22 +290,51 @@ export function BgGraph({
         }
       }
 
-      // Build column entries from DECAY curve (alive cubes + per-column pancreas excess)
-      const cols: Array<{ col: number; baseRow: number; aliveCount: number; pancreasExtra: number }> = [];
-      for (const dc of decayCurve) {
-        const graphCol = placed.dropColumn + dc.columnOffset;
-        if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
-          const baseRow = decayHeights[graphCol];
-          const aliveCount = dc.cubeCount;
-          const plateauCount = plateauMap[graphCol] ?? aliveCount;
-          cols.push({
-            col: graphCol,
-            baseRow,
-            aliveCount,
-            pancreasExtra: Math.max(0, plateauCount - aliveCount),
-          });
-          decayHeights[graphCol] += aliveCount;
+      // Build column entries from PLATEAU curve, compute per-column eating
+      // Insulin eating: per-column during ramp-up, CUMULATIVE after peak
+      const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
+      let cumInsulin = 0; // accumulates only after ramp-up
+      let prevEatenCount = 0; // for computing incremental drain (legacy mode)
+
+      const cols: Array<{ col: number; baseRow: number; aliveCount: number; plateauCount: number; eatenCount: number; drainCount: number }> = [];
+      for (const pc of plateauCurve) {
+        const graphCol = placed.dropColumn + pc.columnOffset;
+        if (graphCol < 0 || graphCol >= TOTAL_COLUMNS) continue;
+        const baseRow = aliveStacks[graphCol];
+        const plateauCount = pc.cubeCount;
+
+        let eatenCount: number;
+        let drainCount: number;
+        if (insulinRates) {
+          const rate = graphCol < insulinRates.length ? insulinRates[graphCol] : 0;
+          const absoluteTop = baseRow + plateauCount;
+          const effectiveFloor = Math.max(baseRow, INSULIN_FLOOR_ROW);
+          const cubesAboveFloor = Math.max(0, absoluteTop - effectiveFloor);
+
+          if (pc.columnOffset < riseCols) {
+            // Ramp-up: per-column eating (not cumulative)
+            eatenCount = Math.min(rate, cubesAboveFloor);
+          } else {
+            // Post-peak: cumulative eating — creates natural decay slope
+            cumInsulin += rate;
+            eatenCount = Math.min(cumInsulin, cubesAboveFloor);
+          }
+          // Flat drain visualization: show insulin rate per column (constant depth)
+          drainCount = Math.min(rate, cubesAboveFloor);
+        } else if (legacyDecayCurve) {
+          // Legacy: use decay curve difference
+          const decayCount = legacyDecayMap[graphCol] ?? plateauCount;
+          eatenCount = Math.max(0, plateauCount - decayCount);
+          drainCount = eatenCount - prevEatenCount;
+          prevEatenCount = eatenCount;
+        } else {
+          eatenCount = 0;
+          drainCount = 0;
         }
+
+        const aliveCount = plateauCount - eatenCount;
+        cols.push({ col: graphCol, baseRow, aliveCount, plateauCount, eatenCount, drainCount });
+        aliveStacks[graphCol] += aliveCount;
       }
 
       rawFoods.push({
@@ -314,34 +353,51 @@ export function BgGraph({
       rawFoods[i].color = getFoodColor(i);
     }
 
-    // Dynamic Y-axis expansion: compute effectiveRows from max cube height
-    const maxHeight = hasMedEffect
-      ? Math.max(0, ...originalPlateauHeights)
-      : Math.max(0, ...plateauHeights);
-    const effectiveRows = maxHeight <= TOTAL_ROWS
+    // Dynamic Y-axis expansion: compute from ACTUAL visible heights (not raw plateau)
+    // Visible layers: alive cubes + drain cubes + medication cubes
+    let maxVisibleRow = 0;
+    for (const food of rawFoods) {
+      for (const c of food.columns) {
+        const topRow = c.baseRow + c.aliveCount + (c.aliveCount > 0 ? c.drainCount : 0);
+        if (topRow > maxVisibleRow) maxVisibleRow = topRow;
+      }
+    }
+    if (hasMedEffect) {
+      for (let col = 0; col < TOTAL_COLUMNS; col++) {
+        const medReduction = Math.max(0, originalPlateauHeights[col] - plateauHeights[col]);
+        const medTop = aliveStacks[col] + medReduction;
+        if (medTop > maxVisibleRow) maxVisibleRow = medTop;
+      }
+    }
+    maxVisibleRow += 5; // buffer for visual padding
+    const effectiveRows = maxVisibleRow <= TOTAL_ROWS
       ? TOTAL_ROWS
-      : TOTAL_ROWS + Math.ceil((maxHeight - TOTAL_ROWS) / 5) * 5;
+      : TOTAL_ROWS + Math.ceil((maxVisibleRow - TOTAL_ROWS) / 5) * 5;
     const cellHeight = GRAPH_H / effectiveRows;
 
-    // pancreasCaps = sum of decay heights (already computed)
-    const pancreasCaps = decayHeights;
+    // pancreasCaps = sum of alive heights (after insulin eating)
+    const pancreasCaps = aliveStacks;
 
-    // Phase 3: ColumnCaps (pancreas − interventions − SGLT2)
+    // Phase 3: ColumnCaps (pancreas − boost − interventions − SGLT2)
+    const boostReduction = boostConfig
+      ? calculateBoostReduction(pancreasCaps, boostConfig)
+      : new Array(TOTAL_COLUMNS).fill(0);
+    const afterBoost = pancreasCaps.map((h, i) => Math.max(0, h - boostReduction[i]));
     const sglt2 = medicationModifiers.sglt2;
     const sglt2Reduction = sglt2
-      ? calculateSglt2Reduction(pancreasCaps, sglt2.depth, sglt2.floorRow)
+      ? calculateSglt2Reduction(afterBoost, sglt2.depth, sglt2.floorRow)
       : new Array(TOTAL_COLUMNS).fill(0);
-    const columnCaps = pancreasCaps.map((h, i) =>
+    const columnCaps = afterBoost.map((h, i) =>
       Math.max(0, h - interventionReduction[i] - sglt2Reduction[i])
     );
 
     // Phase 4: Per-food layers — stamp cubes, compute markers and skylines
-    // Alive cubes use decay-stacked positions. Pancreas cubes stack above all alive cubes.
+    // Alive cubes use decay-stacked positions. Digest cubes (insulin-eaten) positioned above food's own alive zone.
     const hasMultipleFoods = rawFoods.length >= 2;
     const bottomY = PAD_TOP + GRAPH_H;
-    const pancreasOffset = new Array(TOTAL_COLUMNS).fill(0);
     const layers: FoodRenderLayer[] = rawFoods.map((food) => {
       const cubes: FoodRenderCube[] = [];
+      const digestCubes: FoodRenderCube[] = [];
       const colSummary: FoodColumnSummary[] = [];
 
       for (const c of food.columns) {
@@ -357,15 +413,19 @@ export function BgGraph({
           if (row >= columnCaps[c.col]) {
             status = 'burned';
             // Determine burn source by row position within burned zone
+            // Stacking order (bottom → top): walk → run → SGLT2 → boost
             const offset = row - columnCaps[c.col];
             const walkR = interventionReductions.walk[c.col];
             const runR = interventionReductions.run[c.col];
+            const sglt2R = sglt2Reduction[c.col];
             if (offset < walkR) {
               burnColor = '#86efac'; // light green (walk)
             } else if (offset < walkR + runR) {
               burnColor = '#22c55e'; // darker green (run)
-            } else {
+            } else if (offset < walkR + runR + sglt2R) {
               burnColor = '#c084fc'; // purple (SGLT2)
+            } else {
+              burnColor = '#f59e0b'; // amber-500 (BOOST)
             }
           } else {
             status = 'normal';
@@ -374,15 +434,14 @@ export function BgGraph({
           cubes.push({ col: c.col, row, status, burnColor });
         }
 
-        // Pancreas cubes — full difference between plateau and decay curves
-        const visibleEaten = c.pancreasExtra;
-        const pBase = pancreasCaps[c.col] + pancreasOffset[c.col];
-        for (let i = 0; i < visibleEaten; i++) {
-          const row = pBase + i;
-          if (row >= effectiveRows) break;
-          cubes.push({ col: c.col, row, status: 'pancreas' });
+        // Digest cubes — flat insulin drain (constant depth = rate per column, on top of alive zone)
+        if (c.aliveCount > 0) {
+          for (let i = 0; i < c.drainCount; i++) {
+            const row = c.baseRow + c.aliveCount + i;
+            if (row >= effectiveRows) break;
+            digestCubes.push({ col: c.col, row, status: 'normal' });
+          }
         }
-        pancreasOffset[c.col] += visibleEaten;
 
         // aliveTop: food's own alive boundary (for markers — stable, independent)
         const aliveTop = Math.min(c.baseRow + c.aliveCount, effectiveRows);
@@ -392,48 +451,14 @@ export function BgGraph({
         colSummary.push({
           col: c.col,
           baseRow: c.baseRow,
-          totalCount: c.aliveCount + c.pancreasExtra,
+          plateauCount: c.plateauCount,
+          aliveCount: c.aliveCount,
+          eatenCount: c.eatenCount,
+          drainCount: c.drainCount,
           topNormalRow,
           aliveTop,
           skylineRow,
         });
-      }
-
-      // Marker: centered on food's OWN VISIBLE peak (skylineRow - baseRow)
-      // Falls back to aliveTop (pre-intervention height) if all cubes are burned
-      let maxVisibleHeight = 0;
-      let useFallback = false;
-      for (const cs of colSummary) {
-        const visibleHeight = Math.max(0, cs.skylineRow - cs.baseRow);
-        if (visibleHeight > maxVisibleHeight) maxVisibleHeight = visibleHeight;
-      }
-      if (maxVisibleHeight === 0) {
-        useFallback = true;
-        for (const cs of colSummary) {
-          const h = Math.max(0, cs.aliveTop - cs.baseRow);
-          if (h > maxVisibleHeight) maxVisibleHeight = h;
-        }
-      }
-      const peakCols: number[] = [];
-      for (const cs of colSummary) {
-        const h = useFallback
-          ? Math.max(0, cs.aliveTop - cs.baseRow)
-          : Math.max(0, cs.skylineRow - cs.baseRow);
-        if (h === maxVisibleHeight && maxVisibleHeight > 0) {
-          peakCols.push(cs.col);
-        }
-      }
-
-      let marker: FoodMarkerInfo | null = null;
-      if (peakCols.length > 0) {
-        const anchorCol = peakCols[Math.floor(peakCols.length / 2)];
-        const anchorSummary = colSummary.find(cs => cs.col === anchorCol);
-        const tailRow = anchorSummary
-          ? (useFallback ? anchorSummary.aliveTop : anchorSummary.skylineRow)
-          : 0;
-        const peakCenterX = PAD_LEFT +
-          ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
-        marker = { peakCenterX, tailRow };
       }
 
       // Skyline path: trace boundary of food's ALIVE (unburned) cubes
@@ -479,8 +504,8 @@ export function BgGraph({
         emoji: food.emoji,
         carbs: food.carbs,
         cubes,
+        digestCubes,
         colSummary,
-        marker,
         skylinePath,
       };
     });
@@ -518,7 +543,7 @@ export function BgGraph({
       for (let col = 0; col < TOTAL_COLUMNS; col++) {
         const metReduction = Math.max(0, originalPlateauHeights[col] - afterMetPlateauHeights[col]);
         const glp1Reduction = Math.max(0, afterMetPlateauHeights[col] - plateauHeights[col]);
-        const baseRow = pancreasCaps[col] + pancreasOffset[col];
+        const baseRow = pancreasCaps[col];
         // Stack: Metformin cubes first (bottom), then GLP-1 cubes (top)
         for (let i = 0; i < metReduction; i++) {
           const row = baseRow + i;
@@ -534,261 +559,237 @@ export function BgGraph({
     }
 
     return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps, medCubes, effectiveRows };
-  }, [placedFoods, allShips, medicationModifiers, decayRate, interventionReduction, interventionReductions]);
+  }, [placedFoods, allShips, medicationModifiers, decayOrInsulin, boostConfig, interventionReduction, interventionReductions]);
 
   // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
   const { effectiveRows } = graphRenderData;
   const cellHeight = GRAPH_H / effectiveRows;
   const rowToY = (row: number) => PAD_TOP + GRAPH_H - (row + 1) * cellHeight;
 
+  // Preview: alive cubes (post-insulin) + incremental drain layer on top of alive skyline
+  const previewData = useMemo(() => {
+    if (!previewShip || previewColumn === undefined) return null;
+
+    const isInsulinProfile = typeof decayOrInsulin !== 'number';
+    const insulinRates = isInsulinProfile ? (decayOrInsulin as InsulinParams).rates : null;
+
+    const { glucose, duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
+    const plateauCurve = calculateCurve(glucose, duration, previewColumn, 0);
+    const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
+
+    const { pancreasCaps } = graphRenderData;
+    const foodCubes: Array<{ col: number; row: number }> = [];
+    const wrapCubes: Array<{ col: number; row: number }> = [];
+
+    let cumInsulin = 0;
+
+    for (const pc of plateauCurve) {
+      const col = previewColumn + pc.columnOffset;
+      if (col < 0 || col >= TOTAL_COLUMNS) continue;
+      const baseRow = pancreasCaps[col];
+      const plateauCount = pc.cubeCount;
+
+      // Compute insulin eating (same algorithm as main render)
+      let eatenCount = 0;
+      let drainCount = 0;
+      if (insulinRates) {
+        const rate = col < insulinRates.length ? insulinRates[col] : 0;
+        const absoluteTop = baseRow + plateauCount;
+        const effectiveFloor = Math.max(baseRow, INSULIN_FLOOR_ROW);
+        const cubesAboveFloor = Math.max(0, absoluteTop - effectiveFloor);
+
+        if (pc.columnOffset < riseCols) {
+          eatenCount = Math.min(rate, cubesAboveFloor);
+        } else {
+          cumInsulin += rate;
+          eatenCount = Math.min(cumInsulin, cubesAboveFloor);
+        }
+        // Flat drain visualization: constant depth = rate per column
+        drainCount = Math.min(rate, cubesAboveFloor);
+      }
+
+      const aliveCount = plateauCount - eatenCount;
+
+      // Alive cubes — final result after insulin eating
+      for (let i = 0; i < aliveCount; i++) {
+        const row = baseRow + i;
+        if (row >= effectiveRows) break;
+        foodCubes.push({ col, row });
+      }
+
+      // Insulin drain layer — flat rate on top of alive skyline (only where food exists)
+      if (aliveCount > 0) {
+        for (let i = 0; i < drainCount; i++) {
+          const row = baseRow + aliveCount + i;
+          if (row >= effectiveRows) break;
+          wrapCubes.push({ col, row });
+        }
+      }
+    }
+
+    return { foodCubes, wrapCubes, dropColumn: previewColumn };
+  }, [previewShip, previewColumn, medicationModifiers, decayOrInsulin, graphRenderData, effectiveRows]);
+
+  // Preview: intervention burn overlay — green cubes on food that would be burned
+  const interventionPreviewData = useMemo(() => {
+    if (!previewIntervention || previewInterventionColumn === undefined) return null;
+    if (previewIntervention.depth <= 0) return null;
+
+    const dropCol = previewInterventionColumn;
+    const curve = calculateInterventionCurve(
+      previewIntervention.depth, previewIntervention.duration, dropCol,
+      previewIntervention.boostCols ?? 0, previewIntervention.boostExtra ?? 0,
+    );
+
+    const previewReduction = new Array(TOTAL_COLUMNS).fill(0);
+    for (const c of curve) {
+      const graphCol = dropCol + c.columnOffset;
+      if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+        previewReduction[graphCol] = c.cubeCount;
+      }
+    }
+
+    const burnColor = previewIntervention.id === 'lightwalk' ? '#86efac' : '#22c55e';
+    const { columnCaps } = graphRenderData;
+    const wrapCubes: Array<{ col: number; row: number; color: string }> = [];
+
+    for (let col = 0; col < TOTAL_COLUMNS; col++) {
+      const reduction = previewReduction[col];
+      if (reduction <= 0) continue;
+      const currentTop = columnCaps[col];
+      if (currentTop <= 0) continue;
+      const wrapCount = Math.min(reduction, currentTop);
+      for (let i = 0; i < wrapCount; i++) {
+        const row = currentTop + i; // ABOVE food stack (wrap style)
+        if (row >= effectiveRows) break;
+        wrapCubes.push({ col, row, color: burnColor });
+      }
+    }
+
+    return { wrapCubes, dropColumn: dropCol };
+  }, [previewIntervention, previewInterventionColumn, graphRenderData, effectiveRows]);
+
+  // Detect removed food layers for exit animation
+  useLayoutEffect(() => {
+    const prev = prevLayersRef.current;
+    const currIds = new Set(graphRenderData.layers.map(l => l.placementId));
+    const prevIds = new Set(prev.map(l => l.placementId));
+
+    // Detect removed foods → exit animation
+    const removed = prev.filter(l => !currIds.has(l.placementId));
+    if (removed.length > 0) {
+      const cubes = removed.flatMap(l =>
+        l.cubes
+          .filter(c => c.status === 'normal')
+          .map(c => ({ col: c.col, row: c.row, color: l.color, dropColumn: l.dropColumn }))
+      );
+      setExitingCubes(cubes);
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = setTimeout(() => setExitingCubes([]), 1200);
+    }
+
+    // Detect added foods → digest animation (insulin eating)
+    const added = graphRenderData.layers.filter(l => !prevIds.has(l.placementId));
+    if (added.length > 0) {
+      setDigestingFoodIds(prev => {
+        const next = new Set(prev);
+        for (const a of added) next.add(a.placementId);
+        return next;
+      });
+      for (const a of added) {
+        const timer = setTimeout(() => {
+          setDigestingFoodIds(prev => {
+            const next = new Set(prev);
+            next.delete(a.placementId);
+            return next;
+          });
+          digestTimersRef.current.delete(a.placementId);
+        }, 2000); // 1.6s animation + buffer
+        digestTimersRef.current.set(a.placementId, timer);
+      }
+    }
+
+    prevLayersRef.current = graphRenderData.layers;
+  }, [graphRenderData.layers]);
+
+  // Detect added interventions → fall animation
+  useLayoutEffect(() => {
+    const currIds = new Set(placedInterventions.map(p => p.id));
+    const prevIds = prevInterventionIdsRef.current;
+
+    const added = placedInterventions.filter(p => !prevIds.has(p.id));
+    if (added.length > 0) {
+      const newBurning = new Map(burningInterventions);
+      for (const placed of added) {
+        const intervention = allInterventions.find(i => i.id === placed.interventionId);
+        if (!intervention || intervention.depth <= 0) continue;
+
+        const curve = calculateInterventionCurve(
+          intervention.depth, intervention.duration, placed.dropColumn,
+          intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+        );
+        const reduction = new Array(TOTAL_COLUMNS).fill(0);
+        for (const c of curve) {
+          const graphCol = placed.dropColumn + c.columnOffset;
+          if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+            reduction[graphCol] = c.cubeCount;
+          }
+        }
+
+        const color = intervention.id === 'lightwalk' ? '#86efac' : '#22c55e';
+        newBurning.set(placed.id, {
+          id: placed.id,
+          interventionId: intervention.id,
+          dropColumn: placed.dropColumn,
+          reduction,
+          color,
+        });
+
+        const timer = setTimeout(() => {
+          setBurningInterventions(prev => {
+            const next = new Map(prev);
+            next.delete(placed.id);
+            return next;
+          });
+          burningIntTimersRef.current.delete(placed.id);
+        }, 2000);
+        burningIntTimersRef.current.set(placed.id, timer);
+      }
+      setBurningInterventions(newBurning);
+    }
+
+    prevInterventionIdsRef.current = currIds;
+  }, [placedInterventions, allInterventions]);
+
+  // Cleanup timers on unmount
+  useEffect(() => () => {
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    for (const timer of digestTimersRef.current.values()) clearTimeout(timer);
+    for (const timer of burningIntTimersRef.current.values()) clearTimeout(timer);
+  }, []);
+
   // Dynamic zone clip bands (Y-positions depend on cellHeight)
-  const normalRow = mgdlToRow(ZONE_NORMAL);    // 140 mg/dL
-  const elevatedRow = mgdlToRow(ZONE_ELEVATED); // 200 mg/dL
-  const highRow = mgdlToRow(ZONE_HIGH);         // 300 mg/dL
   const zoneClipBands = [
     { id: 'zone-clip-green', color: '#48bb78',
-      yTop: PAD_TOP + GRAPH_H - normalRow * cellHeight - 3, yBot: PAD_TOP + GRAPH_H + 3 },
+      yTop: PAD_TOP + GRAPH_H - 4 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H + 3 },
     { id: 'zone-clip-yellow', color: '#ecc94b',
-      yTop: PAD_TOP + GRAPH_H - elevatedRow * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - normalRow * cellHeight + 3 },
+      yTop: PAD_TOP + GRAPH_H - 7 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - 4 * cellHeight + 3 },
     { id: 'zone-clip-orange', color: '#ed8936',
-      yTop: PAD_TOP + GRAPH_H - highRow * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - elevatedRow * cellHeight + 3 },
+      yTop: PAD_TOP + GRAPH_H - 12 * cellHeight - 3, yBot: PAD_TOP + GRAPH_H - 7 * cellHeight + 3 },
     { id: 'zone-clip-red', color: '#fc8181',
-      yTop: PAD_TOP - 3, yBot: PAD_TOP + GRAPH_H - highRow * cellHeight + 3 },
+      yTop: PAD_TOP - 3, yBot: PAD_TOP + GRAPH_H - 12 * cellHeight + 3 },
   ];
 
-  // Dynamic Y-axis tick labels (extend beyond bgMax when graph expands)
+  // Dynamic Y-axis tick labels (extend beyond 400 when graph expands)
   const yTicks = [...DEFAULT_Y_TICKS];
   const maxMgDl = GRAPH_CONFIG.bgMin + effectiveRows * GRAPH_CONFIG.cellHeightMgDl;
-  for (let tick = 400; tick <= maxMgDl; tick += 100) {
+  for (let tick = 500; tick <= maxMgDl; tick += 100) {
     yTicks.push(tick);
   }
 
-  // Preview curve (shown during drag hover)
-  // With decay stacking, preview cubes start on top of the alive stack (pancreasCaps).
-  // Alive preview cubes shown normally, pancreas-eaten ones shown dimmed.
-  const previewCubes = useMemo(() => {
-    if (!previewShip || previewColumn == null) return null;
-    const { glucose, duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
-
-    // Plateau curve: total cubes (for visual extent)
-    const plateauCurve = calculateCurve(glucose, duration, previewColumn, 0);
-    // Decayed curve: alive cubes
-    const decayedCurve = calculateCurve(glucose, duration, previewColumn, decayRate);
-
-    const decayedCounts: Record<number, number> = {};
-    for (const pc of decayedCurve) {
-      const graphCol = previewColumn + pc.columnOffset;
-      if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
-        decayedCounts[graphCol] = pc.cubeCount;
-      }
-    }
-
-    const { pancreasCaps } = graphRenderData;
-    const cubes: Array<{ col: number; row: number; isPancreasEaten: boolean }> = [];
-
-    for (const pc of plateauCurve) {
-      const graphCol = previewColumn + pc.columnOffset;
-      if (graphCol < 0 || graphCol >= TOTAL_COLUMNS) continue;
-      const decayedCount = decayedCounts[graphCol] ?? 0;
-      // New alive boundary = existing alive + preview alive
-      const combinedCap = pancreasCaps[graphCol] + decayedCount;
-      // Preview cubes start on top of existing alive stack
-      const startRow = pancreasCaps[graphCol];
-
-      for (let cubeIdx = 0; cubeIdx < pc.cubeCount; cubeIdx++) {
-        const row = startRow + cubeIdx;
-        if (row >= graphRenderData.effectiveRows) break;
-        cubes.push({ col: graphCol, row, isPancreasEaten: row >= combinedCap });
-      }
-    }
-
-    return cubes;
-  }, [previewShip, previewColumn, graphRenderData, medicationModifiers, decayRate]);
-
-  // Intervention preview: per-column reduction array
-  const interventionPreviewData = useMemo(() => {
-    if (!previewIntervention || previewColumn == null) return null;
-    const { depth, duration, boostCols = 0, boostExtra = 0 } = previewIntervention;
-    const curve = calculateInterventionCurve(depth, duration, previewColumn, boostCols, boostExtra);
-    const reduction = new Array(TOTAL_COLUMNS).fill(0);
-    for (const cc of curve) {
-      const col = previewColumn + cc.columnOffset;
-      if (col >= 0 && col < TOTAL_COLUMNS) {
-        reduction[col] = cc.cubeCount;
-      }
-    }
-    return reduction;
-  }, [previewIntervention, previewColumn]);
-
-  // Intervention markers: emoji bubbles at each intervention's peak reduction column
-  const interventionMarkers = useMemo(() => {
-    return placedInterventions.map(placed => {
-      const intervention = allInterventions.find(i => i.id === placed.interventionId);
-      if (!intervention) return null;
-
-      // Break interventions: marker centered over the blocked zone
-      if (intervention.isBreak) {
-        const cols = Math.max(1, Math.ceil(intervention.duration / GRAPH_CONFIG.cellWidthMin));
-        const startCol = placed.dropColumn;
-        const endCol = startCol + cols - 1;
-        const peakCenterX = PAD_LEFT + ((startCol + endCol) / 2 + 0.5) * CELL_SIZE;
-        return {
-          placementId: placed.id,
-          emoji: intervention.emoji,
-          peakCenterX,
-          tailRow: 0, // tail points to graph bottom
-          isBreak: true,
-        };
-      }
-
-      const curve = calculateInterventionCurve(
-        intervention.depth, intervention.duration, placed.dropColumn,
-        intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
-      );
-      if (curve.length === 0) return null;
-      // Find peak reduction column(s)
-      let maxDepth = 0;
-      for (const cc of curve) { if (cc.cubeCount > maxDepth) maxDepth = cc.cubeCount; }
-      const peakCols: number[] = [];
-      for (const cc of curve) {
-        if (cc.cubeCount === maxDepth) {
-          const col = placed.dropColumn + cc.columnOffset;
-          if (col >= 0 && col < TOTAL_COLUMNS) peakCols.push(col);
-          if (peakCols.length >= 3) break; // limit to first few peak cols
-        }
-      }
-      if (peakCols.length === 0) return null;
-      const peakCenterX = PAD_LEFT +
-        ((peakCols[0] + peakCols[peakCols.length - 1]) / 2 + 0.5) * CELL_SIZE;
-      // Tail points to top of columnCaps at peak column
-      const tailRow = graphRenderData.columnCaps[peakCols[0]] ?? 0;
-      return {
-        placementId: placed.id,
-        emoji: intervention.emoji,
-        peakCenterX,
-        tailRow,
-        isBreak: false,
-      };
-    }).filter(Boolean) as Array<{ placementId: string; emoji: string; peakCenterX: number; tailRow: number; isBreak: boolean }>;
-  }, [placedInterventions, allInterventions, graphRenderData.columnCaps]);
-
-  const handleCubeClick = useCallback(
-    (placementId: string, isIntervention: boolean) => {
-      if (!interactive) return;
-      if (isIntervention) {
-        onInterventionClick?.(placementId);
-      } else {
-        onFoodClick?.(placementId);
-      }
-    },
-    [onFoodClick, onInterventionClick, interactive]
-  );
-
-  // Food marker pointer drag handlers
-  const handleMarkerPointerDown = useCallback((e: React.PointerEvent<SVGGElement>, placementId: string) => {
-    if (!interactive) return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    markerDragRef.current = { placementId, lastCol: -1 };
-  }, [interactive]);
-
-  const handleMarkerPointerMove = useCallback((e: React.PointerEvent<SVGGElement>) => {
-    const drag = markerDragRef.current;
-    if (!drag) return;
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const scale = rect.width / SVG_W;
-    const svgX = (e.clientX - rect.left) / scale;
-    const svgY = (e.clientY - rect.top) / scale;
-    const isOutside = svgX < PAD_LEFT || svgX > PAD_LEFT + GRAPH_W || svgY < PAD_TOP || svgY > PAD_TOP + GRAPH_H;
-    if (isOutside) {
-      // Show floating card under cursor
-      const placed = placedFoods.find(f => f.id === drag.placementId);
-      const ship = placed ? allShips.find(s => s.id === placed.shipId) : null;
-      if (ship) {
-        setDragOutside({ emoji: ship.emoji, name: ship.name, clientX: e.clientX, clientY: e.clientY });
-      }
-    } else {
-      setDragOutside(null);
-      const col = Math.max(0, Math.min(Math.floor((svgX - PAD_LEFT) / CELL_SIZE), TOTAL_COLUMNS - 1));
-      if (col !== drag.lastCol) {
-        drag.lastCol = col;
-        onFoodMove?.(drag.placementId, col);
-      }
-    }
-  }, [onFoodMove, placedFoods, allShips]);
-
-  const handleMarkerPointerUp = useCallback((e: React.PointerEvent<SVGGElement>) => {
-    const drag = markerDragRef.current;
-    if (!drag) return;
-    markerDragRef.current = null;
-    setDragOutside(null);
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const scale = rect.width / SVG_W;
-    const svgX = (e.clientX - rect.left) / scale;
-    const svgY = (e.clientY - rect.top) / scale;
-    if (svgX < PAD_LEFT || svgX > PAD_LEFT + GRAPH_W || svgY < PAD_TOP || svgY > PAD_TOP + GRAPH_H) {
-      onFoodClick?.(drag.placementId);
-    }
-  }, [onFoodClick]);
-
-  // Intervention marker pointer drag handlers
-  const handleIntMarkerDown = useCallback((e: React.PointerEvent<SVGGElement>, placementId: string) => {
-    if (!interactive) return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    interventionMarkerDragRef.current = { placementId, lastCol: -1 };
-  }, [interactive]);
-
-  const handleIntMarkerMove = useCallback((e: React.PointerEvent<SVGGElement>) => {
-    const drag = interventionMarkerDragRef.current;
-    if (!drag) return;
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const scale = rect.width / SVG_W;
-    const svgX = (e.clientX - rect.left) / scale;
-    const svgY = (e.clientY - rect.top) / scale;
-    const isOutside = svgX < PAD_LEFT || svgX > PAD_LEFT + GRAPH_W || svgY < PAD_TOP || svgY > PAD_TOP + GRAPH_H;
-    if (isOutside) {
-      const placed = placedInterventions.find(i => i.id === drag.placementId);
-      const intervention = placed ? allInterventions.find(iv => iv.id === placed.interventionId) : null;
-      if (intervention) {
-        setDragOutside({ emoji: intervention.emoji, name: intervention.name, clientX: e.clientX, clientY: e.clientY });
-      }
-    } else {
-      setDragOutside(null);
-      const col = Math.max(0, Math.min(Math.floor((svgX - PAD_LEFT) / CELL_SIZE), TOTAL_COLUMNS - 1));
-      if (col !== drag.lastCol) {
-        drag.lastCol = col;
-        onInterventionMove?.(drag.placementId, col);
-      }
-    }
-  }, [onInterventionMove, placedInterventions, allInterventions]);
-
-  const handleIntMarkerUp = useCallback((e: React.PointerEvent<SVGGElement>) => {
-    const drag = interventionMarkerDragRef.current;
-    if (!drag) return;
-    interventionMarkerDragRef.current = null;
-    setDragOutside(null);
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const scale = rect.width / SVG_W;
-    const svgX = (e.clientX - rect.left) / scale;
-    const svgY = (e.clientY - rect.top) / scale;
-    if (svgX < PAD_LEFT || svgX > PAD_LEFT + GRAPH_W || svgY < PAD_TOP || svgY > PAD_TOP + GRAPH_H) {
-      onInterventionClick?.(drag.placementId);
-    }
-  }, [onInterventionClick]);
 
   return (
-    <div ref={setNodeRef} className={`bg-graph ${isOver ? 'bg-graph--drag-over' : ''}`}>
+    <div className="bg-graph">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${localSvgH}`}
@@ -842,6 +843,23 @@ export function BgGraph({
           opacity={0.2}
         />
 
+        {/* Stress zone column bands */}
+        {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).map(slotIndex => {
+          const startCol = slotIndex * 4;
+          return (
+            <rect
+              key={`stress-zone-${slotIndex}`}
+              x={colToX(startCol)}
+              y={PAD_TOP}
+              width={CELL_SIZE * 4}
+              height={GRAPH_H}
+              fill="#ef4444"
+              opacity={0.08}
+              pointerEvents="none"
+            />
+          );
+        })}
+
         {/* Grid lines - vertical (time) */}
         {Array.from({ length: TOTAL_COLUMNS + 1 }, (_, i) => (
           <line
@@ -878,6 +896,52 @@ export function BgGraph({
           stroke="#a0aec0"
           strokeWidth={1}
         />
+
+        {/* Stress zone boundary lines and markers */}
+        {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).flatMap(slotIndex => {
+          const startCol = slotIndex * 4;
+          const endCol = startCol + 4;
+          const centerX = colToX(startCol) + (CELL_SIZE * 4) / 2;
+          return [
+            <line
+              key={`stress-left-${slotIndex}`}
+              x1={colToX(startCol)}
+              y1={PAD_TOP}
+              x2={colToX(startCol)}
+              y2={PAD_TOP + GRAPH_H}
+              stroke="#ef4444"
+              strokeWidth={1}
+              strokeDasharray="4 3"
+              opacity={0.4}
+              pointerEvents="none"
+            />,
+            <line
+              key={`stress-right-${slotIndex}`}
+              x1={colToX(endCol)}
+              y1={PAD_TOP}
+              x2={colToX(endCol)}
+              y2={PAD_TOP + GRAPH_H}
+              stroke="#ef4444"
+              strokeWidth={1}
+              strokeDasharray="4 3"
+              opacity={0.4}
+              pointerEvents="none"
+            />,
+            <text
+              key={`stress-marker-${slotIndex}`}
+              x={centerX}
+              y={PAD_TOP - 2}
+              textAnchor="middle"
+              fontSize={8}
+              fontWeight={700}
+              fill="#ef4444"
+              opacity={0.7}
+              pointerEvents="none"
+            >
+              STRESS
+            </text>,
+          ];
+        })}
 
         {/* Y axis labels */}
         {yTicks.map(tick => {
@@ -917,6 +981,8 @@ export function BgGraph({
           );
         })}
 
+        {/* Insulin profile bars — disabled for now */}
+
         {/* SGLT2 drain threshold line */}
         {medicationModifiers.sglt2 && (revealPhase === undefined || revealPhase >= 4) && (
           <line
@@ -931,65 +997,78 @@ export function BgGraph({
           />
         )}
 
-        {/* Break zones — semi-transparent overlay for break interventions */}
-        {placedInterventions.map(placed => {
-          const intv = allInterventions.find(i => i.id === placed.interventionId);
-          if (!intv?.isBreak) return null;
-          const cols = Math.max(1, Math.ceil(intv.duration / GRAPH_CONFIG.cellWidthMin));
-          const x = PAD_LEFT + placed.dropColumn * CELL_SIZE;
-          const w = cols * CELL_SIZE;
-          return (
-            <rect
-              key={`break-${placed.id}`}
-              x={x} y={PAD_TOP} width={w} height={GRAPH_H}
-              fill="#a78bfa" opacity={0.12}
-              stroke="#a78bfa" strokeWidth={0.5} strokeDasharray="4 2"
-              pointerEvents="none"
-            />
-          );
-        })}
-
-        {/* Break valid zone highlights — shown when dragging a break */}
-        {breakValidColumns && breakValidColumns.map((valid, col) => (
-          <rect
-            key={`break-zone-${col}`}
-            x={colToX(col)}
-            y={PAD_TOP}
-            width={CELL_SIZE}
-            height={GRAPH_H}
-            fill={valid ? '#48bb78' : '#e53e3e'}
-            opacity={valid ? 0.12 : 0.10}
-            pointerEvents="none"
-          />
-        ))}
+        {/* Drag preview: alive cubes + incremental insulin drain layer */}
+        {previewData && (
+          <g className="bg-graph__preview" pointerEvents="none">
+            {/* Alive cubes — final result after insulin eating */}
+            {previewData.foodCubes.map(cube => (
+              <rect
+                key={`preview-${cube.col}-${cube.row}`}
+                x={colToX(cube.col) + 0.5}
+                y={rowToY(cube.row) + 0.5}
+                width={CELL_SIZE - 1}
+                height={cellHeight - 1}
+                fill="#38bdf8"
+                opacity={0.35}
+                rx={2}
+                className="bg-graph__cube--preview"
+              />
+            ))}
+            {/* Insulin drain — amber cubes showing per-column drain depth */}
+            {previewData.wrapCubes.map(cube => (
+              <rect
+                key={`preview-wrap-${cube.col}-${cube.row}`}
+                x={colToX(cube.col) + 0.5}
+                y={rowToY(cube.row) + 0.5}
+                width={CELL_SIZE - 1}
+                height={cellHeight - 1}
+                fill="#f59e0b"
+                opacity={0.5}
+                rx={2}
+                className="bg-graph__cube--preview"
+                stroke="#d97706"
+                strokeWidth={0.5}
+              />
+            ))}
+          </g>
+        )}
 
         {/* Per-food cube layers: last placed rendered first (bottom), first placed last (top) */}
         {[...graphRenderData.layers].reverse().map(layer => (
           <g key={`food-layer-${layer.placementId}`} className="bg-graph__food-group">
             {layer.cubes
               .filter(cube => {
+                // Hide exercise-burned cubes entirely (they disappear after intervention fall animation)
+                if (cube.status === 'burned') {
+                  const isExercise = cube.burnColor === '#86efac' || cube.burnColor === '#22c55e';
+                  if (isExercise) return false;
+                }
                 // During reveal, progressively show cube layers
                 if (revealPhase === undefined) return true;
                 if (cube.status === 'normal') return revealPhase >= 1;
-                if (cube.status === 'pancreas') return revealPhase >= 2;
-                if (cube.status === 'burned') {
-                  const isExercise = cube.burnColor === '#86efac' || cube.burnColor === '#22c55e';
-                  return isExercise ? revealPhase >= 3 : revealPhase >= 4;
-                }
+                if (cube.status === 'burned') return revealPhase >= 4; // only SGLT2 remains
                 return false;
               })
               .map(cube => {
               const waveDelay = (cube.col - layer.dropColumn) * 20;
-              const cubeClass = cube.status === 'pancreas'
-                ? 'bg-graph__cube--pancreas'
-                : cube.status === 'burned'
-                  ? 'bg-graph__cube--burned'
-                  : 'bg-graph__cube';
-              const cubeFill = cube.status === 'pancreas'
-                ? '#f97316'
-                : cube.status === 'burned' && cube.burnColor
-                  ? cube.burnColor
-                  : layer.color;
+              const cubeClass = cube.status === 'burned'
+                ? 'bg-graph__cube--burned'
+                : 'bg-graph__cube';
+              let cubeFill: string;
+              if (cube.status === 'burned' && cube.burnColor) {
+                cubeFill = cube.burnColor;
+              } else if (revealPhase !== undefined || showPenaltyHighlight) {
+                // Results phase: color cubes by danger zone
+                if (cube.row >= PENALTY_RED_ROW) {
+                  cubeFill = '#f56565'; // red-400
+                } else if (cube.row >= PENALTY_ORANGE_ROW) {
+                  cubeFill = '#ed8936'; // orange-400
+                } else {
+                  cubeFill = layer.color;
+                }
+              } else {
+                cubeFill = layer.color;
+              }
               return (
                 <rect
                   key={`${layer.placementId}-${cube.col}-${cube.row}`}
@@ -1001,21 +1080,186 @@ export function BgGraph({
                   rx={2}
                   className={cubeClass}
                   style={{ animationDelay: `${waveDelay}ms` }}
-                  onClick={() => {
-                    if (cube.status === 'pancreas') return;
-                    if (cube.status === 'burned') {
-                      if (placedInterventions.length > 0) {
-                        handleCubeClick(placedInterventions[0]?.id ?? layer.placementId, true);
-                      }
-                    } else {
-                      handleCubeClick(layer.placementId, false);
-                    }
-                  }}
                 />
               );
             })}
           </g>
         ))}
+
+        {/* Drag preview: intervention burn overlay — green cubes on food that would burn */}
+        {interventionPreviewData && (
+          <g pointerEvents="none">
+            {interventionPreviewData.wrapCubes.map(cube => {
+              const waveDelay = Math.abs(cube.col - interventionPreviewData.dropColumn) * 15;
+              return (
+                <rect
+                  key={`preview-wrap-int-${cube.col}-${cube.row}`}
+                  x={colToX(cube.col) + 0.5}
+                  y={rowToY(cube.row) + 0.5}
+                  width={CELL_SIZE - 1}
+                  height={cellHeight - 1}
+                  fill={cube.color}
+                  opacity={0.5}
+                  rx={2}
+                  className="bg-graph__cube--preview"
+                  stroke={cube.color === '#86efac' ? '#4ade80' : '#16a34a'}
+                  strokeWidth={0.5}
+                  style={{ animationDelay: `${waveDelay}ms` }}
+                />
+              );
+            })}
+          </g>
+        )}
+
+        {/* Intervention fall animation — green cubes falling into food */}
+        {burningInterventions.size > 0 && (
+          <g pointerEvents="none">
+            {Array.from(burningInterventions.values()).flatMap(bi => {
+              const { columnCaps } = graphRenderData;
+              return bi.reduction.flatMap((red, col) => {
+                if (red <= 0) return [];
+                const currentTop = columnCaps[col];
+                const effectiveRed = Math.min(red, currentTop + red);
+                if (effectiveRed <= 0) return [];
+
+                const fallDist = effectiveRed * cellHeight;
+                const waveDelay = Math.abs(col - bi.dropColumn) * 20;
+
+                return Array.from({ length: effectiveRed }, (_, i) => {
+                  const startRow = currentTop + effectiveRed + i;
+                  return (
+                    <rect
+                      key={`ifall-${bi.id}-${col}-${i}`}
+                      x={colToX(col) + 0.5}
+                      y={rowToY(startRow) + 0.5}
+                      width={CELL_SIZE - 1}
+                      height={cellHeight - 1}
+                      fill={bi.color}
+                      rx={2}
+                      className="bg-graph__cube--intervention-fall"
+                      style={{
+                        animationDelay: `${waveDelay}ms`,
+                        '--fall-dist': `${fallDist}px`,
+                      } as React.CSSProperties}
+                    />
+                  );
+                });
+              });
+            })}
+          </g>
+        )}
+
+        {/* Digest cubes + insulin fall animation (unified reveal/gameplay) */}
+        {graphRenderData.layers.map(layer => {
+          if (layer.digestCubes.length === 0) return null;
+
+          const isReveal = revealPhase !== undefined;
+          const showDigest = isReveal ? revealPhase! >= 1 : digestingFoodIds.has(layer.placementId);
+          if (!showDigest) return null;
+
+          // Phase 1 reveal: cubes appear as normal food. Phase 2+/gameplay: burn animation
+          const showFall = isReveal ? revealPhase! >= 2 : true;
+          const digestCls = showFall ? 'bg-graph__cube--digest-appear-burn' : 'bg-graph__cube';
+
+          return (
+            <g key={`digest-${layer.placementId}`} pointerEvents="none">
+              {layer.digestCubes.map(cube => {
+                const waveDelay = Math.abs(cube.col - layer.dropColumn) * 20;
+                // Zone coloring for digest cubes during results
+                let fill = layer.color;
+                if (isReveal) {
+                  if (cube.row >= PENALTY_RED_ROW) fill = '#f56565';
+                  else if (cube.row >= PENALTY_ORANGE_ROW) fill = '#ed8936';
+                }
+                return (
+                  <rect
+                    key={`${layer.placementId}-digest-${cube.col}-${cube.row}`}
+                    x={colToX(cube.col) + 0.5}
+                    y={rowToY(cube.row) + 0.5}
+                    width={CELL_SIZE - 1}
+                    height={cellHeight - 1}
+                    fill={fill}
+                    rx={2}
+                    className={digestCls}
+                    style={{ animationDelay: `${waveDelay}ms` }}
+                  />
+                );
+              })}
+              {showFall && layer.colSummary
+                .filter(cs => cs.drainCount > 0)
+                .flatMap(cs => {
+                  const drainTop = cs.baseRow + cs.aliveCount + cs.drainCount;
+                  const fallDist = cs.drainCount * cellHeight;
+                  const waveDelay = Math.abs(cs.col - layer.dropColumn) * 20;
+                  return Array.from({ length: cs.drainCount }, (_, i) => (
+                    <rect
+                      key={`${layer.placementId}-ifall-${cs.col}-${i}`}
+                      x={colToX(cs.col) + 0.5}
+                      y={rowToY(drainTop + i) + 0.5}
+                      width={CELL_SIZE - 1}
+                      height={cellHeight - 1}
+                      fill="#f59e0b"
+                      rx={2}
+                      className="bg-graph__cube--insulin-fall"
+                      style={{
+                        animationDelay: `${waveDelay}ms`,
+                        '--fall-dist': `${fallDist}px`,
+                      } as React.CSSProperties}
+                    />
+                  ));
+                })}
+            </g>
+          );
+        })}
+
+        {/* Intervention fall during reveal phase 3 */}
+        {revealPhase !== undefined && revealPhase >= 3 && placedInterventions.length > 0 && (() => {
+          const { columnCaps } = graphRenderData;
+          const fallCubes: React.ReactElement[] = [];
+
+          for (const placed of placedInterventions) {
+            const intervention = allInterventions.find(i => i.id === placed.interventionId);
+            if (!intervention || intervention.depth <= 0) continue;
+
+            const curve = calculateInterventionCurve(
+              intervention.depth, intervention.duration, placed.dropColumn,
+              intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+            );
+            const color = intervention.id === 'lightwalk' ? '#86efac' : '#22c55e';
+
+            for (const c of curve) {
+              const col = placed.dropColumn + c.columnOffset;
+              if (col < 0 || col >= TOTAL_COLUMNS) continue;
+              const currentTop = columnCaps[col];
+              const effectiveRed = Math.min(c.cubeCount, currentTop + c.cubeCount);
+              if (effectiveRed <= 0) continue;
+              const fallDist = effectiveRed * cellHeight;
+              const waveDelay = Math.abs(col - placed.dropColumn) * 20;
+
+              for (let i = 0; i < effectiveRed; i++) {
+                fallCubes.push(
+                  <rect
+                    key={`reveal-ifall-${placed.id}-${col}-${i}`}
+                    x={colToX(col) + 0.5}
+                    y={rowToY(currentTop + effectiveRed + i) + 0.5}
+                    width={CELL_SIZE - 1}
+                    height={cellHeight - 1}
+                    fill={color}
+                    rx={2}
+                    className="bg-graph__cube--intervention-fall"
+                    style={{
+                      animationDelay: `${waveDelay}ms`,
+                      '--fall-dist': `${fallDist}px`,
+                    } as React.CSSProperties}
+                  />
+                );
+              }
+            }
+          }
+
+          if (fallCubes.length === 0) return null;
+          return <g pointerEvents="none">{fallCubes}</g>;
+        })()}
 
         {/* Medication-prevented cubes (above pancreas zone) */}
         {graphRenderData.medCubes.length > 0 && (revealPhase === undefined || revealPhase >= 4) && (
@@ -1034,6 +1278,28 @@ export function BgGraph({
                   className={revealPhase !== undefined ? 'bg-graph__cube--med-reveal' : undefined}
                   opacity={revealPhase !== undefined ? undefined : 0.45}
                   style={revealPhase !== undefined ? { animationDelay: `${waveDelay}ms` } : undefined}
+                />
+              );
+            })}
+          </g>
+        )}
+
+        {/* Exiting cubes — burn-out animation for removed food */}
+        {exitingCubes.length > 0 && (
+          <g className="bg-graph__exit-cubes" pointerEvents="none">
+            {exitingCubes.map((cube, i) => {
+              const waveDelay = Math.abs(cube.col - cube.dropColumn) * 15;
+              return (
+                <rect
+                  key={`exit-${i}`}
+                  x={colToX(cube.col) + 0.5}
+                  y={rowToY(cube.row) + 0.5}
+                  width={CELL_SIZE - 1}
+                  height={cellHeight - 1}
+                  fill={cube.color}
+                  rx={2}
+                  className="bg-graph__cube--exiting"
+                  style={{ animationDelay: `${waveDelay}ms` }}
                 />
               );
             })}
@@ -1094,120 +1360,6 @@ export function BgGraph({
           </g>
         )}
 
-        {/* Food markers — emoji labels above each food's own peak */}
-        {(interactive || (revealPhase !== undefined && revealPhase >= 1)) && graphRenderData.layers.map(layer => {
-          if (!layer.marker) return null;
-          const mW = mrkW;
-          const mH = mrkH;
-          const tailH = mrkTailH;
-          // Clamp horizontal: marker stays within graph bounds
-          const cx = Math.max(PAD_LEFT + mW / 2, Math.min(PAD_LEFT + GRAPH_W - mW / 2, layer.marker.peakCenterX));
-          // Clamp vertical: tail ≥ 60 mg/dL (row 0), marker body doesn't exceed graph top
-          const rawTailBottomY = PAD_TOP + GRAPH_H - Math.max(0, layer.marker.tailRow) * cellHeight;
-          const tailBottomY = Math.max(PAD_TOP + mH + tailH, Math.min(PAD_TOP + GRAPH_H, rawTailBottomY));
-          const tailTopY = tailBottomY - tailH;
-          const mY = tailTopY - mH;
-          const tailW = isMobile ? 8 : 6;
-          return (
-            <g
-              key={`marker-${layer.placementId}`}
-              style={interactive ? { cursor: 'grab' } : undefined}
-              {...(interactive ? {
-                onPointerDown: (e: React.PointerEvent<SVGGElement>) => handleMarkerPointerDown(e, layer.placementId),
-                onPointerMove: handleMarkerPointerMove,
-                onPointerUp: handleMarkerPointerUp,
-              } : {})}
-            >
-              {/* Shadow + background + tail */}
-              <g filter="url(#bubble-shadow)">
-                <rect
-                  x={cx - mW / 2} y={mY}
-                  width={mW} height={mH}
-                  rx={isMobile ? 10 : 8} fill="white"
-                  stroke="#cbd5e0" strokeWidth={0.7}
-                />
-                <polygon
-                  points={`${cx - tailW},${tailTopY} ${cx + tailW},${tailTopY} ${cx},${tailBottomY}`}
-                  fill="white" stroke="#cbd5e0" strokeWidth={0.7}
-                />
-                {/* Cover the border between rect and tail */}
-                <line
-                  x1={cx - tailW + 0.5} y1={tailTopY} x2={cx + tailW - 0.5} y2={tailTopY}
-                  stroke="white" strokeWidth={2}
-                />
-              </g>
-              {/* Emoji */}
-              <text
-                x={cx} y={mY + mH * 0.38}
-                textAnchor="middle" dominantBaseline="central"
-                fontSize={mrkEmojiSize} style={{ pointerEvents: 'none' }}
-              >
-                {layer.emoji}
-              </text>
-              {/* Carbs label */}
-              <text
-                x={cx} y={mY + mH - (isMobile ? 10 : 7)}
-                textAnchor="middle" dominantBaseline="central"
-                fontSize={mrkCarbsSize} fontWeight={700} fill="#4a5568"
-                style={{ pointerEvents: 'none' }}
-              >
-                {layer.carbs}g
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Intervention markers — emoji labels at each intervention's peak */}
-        {(interactive || (revealPhase !== undefined && revealPhase >= 3)) && interventionMarkers.map(im => {
-          const mW = mrkW;
-          const mH = intMrkH;
-          const tailH = mrkTailH;
-          const borderColor = im.isBreak ? '#a78bfa' : '#22c55e';
-          // Clamp horizontal: marker stays within graph bounds
-          const cx = Math.max(PAD_LEFT + mW / 2, Math.min(PAD_LEFT + GRAPH_W - mW / 2, im.peakCenterX));
-          // Clamp vertical: tail ≥ 60 mg/dL (row 0), marker body doesn't exceed graph top
-          const rawTailBottomY = PAD_TOP + GRAPH_H - Math.max(0, im.tailRow) * cellHeight;
-          const tailBottomY = Math.max(PAD_TOP + mH + tailH, Math.min(PAD_TOP + GRAPH_H, rawTailBottomY));
-          const tailTopY = tailBottomY - tailH;
-          const mY = tailTopY - mH;
-          const tailW = isMobile ? 8 : 6;
-          return (
-            <g
-              key={`int-marker-${im.placementId}`}
-              style={interactive ? { cursor: 'grab' } : undefined}
-              {...(interactive ? {
-                onPointerDown: (e: React.PointerEvent<SVGGElement>) => handleIntMarkerDown(e, im.placementId),
-                onPointerMove: handleIntMarkerMove,
-                onPointerUp: handleIntMarkerUp,
-              } : {})}
-            >
-              <g filter="url(#bubble-shadow)">
-                <rect
-                  x={cx - mW / 2} y={mY}
-                  width={mW} height={mH}
-                  rx={isMobile ? 10 : 8} fill="white"
-                  stroke={borderColor} strokeWidth={1.2}
-                />
-                <polygon
-                  points={`${cx - tailW},${tailTopY} ${cx + tailW},${tailTopY} ${cx},${tailBottomY}`}
-                  fill="white" stroke={borderColor} strokeWidth={1.2}
-                />
-                <line
-                  x1={cx - tailW + 0.5} y1={tailTopY} x2={cx + tailW - 0.5} y2={tailTopY}
-                  stroke="white" strokeWidth={2}
-                />
-              </g>
-              <text
-                x={cx} y={mY + mH / 2 + 1}
-                textAnchor="middle" dominantBaseline="central"
-                fontSize={intMrkEmojiSize} style={{ pointerEvents: 'none' }}
-              >
-                {im.emoji}
-              </text>
-            </g>
-          );
-        })}
-
         {/* Penalty highlight overlays (after submit) */}
         {showPenaltyHighlight && graphRenderData.layers.map(layer =>
           layer.cubes
@@ -1234,62 +1386,6 @@ export function BgGraph({
             })
         )}
 
-        {/* Intervention preview: green overlay on normal cubes that would be burned */}
-        {interventionPreviewData && graphRenderData.layers.map(layer =>
-          layer.cubes
-            .filter(cube => cube.status === 'normal')
-            .map(cube => {
-              const red = interventionPreviewData[cube.col];
-              if (red <= 0) return null;
-              const cap = graphRenderData.columnCaps[cube.col];
-              const burnFloor = Math.max(0, cap - red);
-              if (cube.row < burnFloor) return null;
-              return (
-                <rect
-                  key={`burn-pv-${layer.placementId}-${cube.col}-${cube.row}`}
-                  x={colToX(cube.col) + 0.5}
-                  y={rowToY(cube.row) + 0.5}
-                  width={CELL_SIZE - 1}
-                  height={cellHeight - 1}
-                  fill="rgba(34, 197, 94, 0.6)"
-                  rx={2}
-                  className="bg-graph__cube--preview-burn"
-                />
-              );
-            })
-        )}
-
-        {/* Break preview: purple zone overlay when dragging a break intervention */}
-        {previewIntervention?.isBreak && previewColumn != null && (() => {
-          const cols = Math.max(1, Math.ceil(previewIntervention.duration / GRAPH_CONFIG.cellWidthMin));
-          const x = PAD_LEFT + previewColumn * CELL_SIZE;
-          const w = cols * CELL_SIZE;
-          return (
-            <rect
-              x={x} y={PAD_TOP} width={w} height={GRAPH_H}
-              fill="#a78bfa" opacity={0.18}
-              stroke="#a78bfa" strokeWidth={1} strokeDasharray="4 2"
-              pointerEvents="none"
-              className="bg-graph__cube--preview"
-            />
-          );
-        })()}
-
-        {/* Preview cubes (during drag) — blue for normal, orange for pancreas-eaten */}
-        {/* Includes correction overlays on existing food's orange cubes that become normal */}
-        {previewCubes && previewCubes.map((cube, i) => (
-          <rect
-            key={`preview-${i}`}
-            x={colToX(cube.col) + 0.5}
-            y={rowToY(cube.row) + 0.5}
-            width={CELL_SIZE - 1}
-            height={cellHeight - 1}
-            fill={cube.isPancreasEaten ? PREVIEW_PANCREAS_COLOR : PREVIEW_COLOR}
-            rx={2}
-            className="bg-graph__cube--preview"
-          />
-        ))}
-
         {/* Penalty threshold line at 200 mg/dL (shown during results) */}
         {showPenaltyHighlight && (
           <line
@@ -1308,7 +1404,7 @@ export function BgGraph({
         {revealPhase !== undefined && revealPhase >= 1 && (() => {
           const labels: Record<number, { emoji: string; text: string }> = {
             1: { emoji: '🍽️', text: 'Food Cubes' },
-            2: { emoji: '🟠', text: 'Pancreas' },
+            2: { emoji: '🫠', text: 'Insulin' },
             3: { emoji: '🏃', text: 'Exercise' },
             4: { emoji: '💊', text: 'Medications' },
           };
@@ -1329,40 +1425,7 @@ export function BgGraph({
           );
         })()}
       </svg>
-
-      {/* Floating card when dragging marker outside graph */}
-      {dragOutside && (
-        <div
-          className="bg-graph__drag-card"
-          style={{
-            position: 'fixed',
-            left: dragOutside.clientX + 12,
-            top: dragOutside.clientY - 20,
-          }}
-        >
-          <span className="bg-graph__drag-card-emoji">{dragOutside.emoji}</span>
-          <span className="bg-graph__drag-card-name">{dragOutside.name}</span>
-        </div>
-      )}
     </div>
   );
 }
 
-/**
- * Utility: convert pointer position relative to the graph container to a column index.
- * Call this from the parent during drag events.
- */
-export function pointerToColumn(
-  graphElement: HTMLElement,
-  pointerX: number
-): number | null {
-  const rect = graphElement.getBoundingClientRect();
-  const svgWidth = rect.width;
-  const scale = svgWidth / SVG_W;
-  const relativeX = pointerX - rect.left;
-  const svgX = relativeX / scale;
-  const col = Math.floor((svgX - PAD_LEFT) / CELL_SIZE);
-
-  if (col < 0 || col >= TOTAL_COLUMNS) return null;
-  return col;
-}

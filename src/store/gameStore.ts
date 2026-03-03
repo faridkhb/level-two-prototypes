@@ -9,11 +9,28 @@ import type {
   Ship,
   Intervention,
   GameSettings,
-  PancreasTier,
   SatietyPenalty,
 } from '../core/types';
-import { DEFAULT_SETTINGS, DEFAULT_SATIETY_PENALTY } from '../core/types';
-import { getPancreasTiers } from '../config/loader';
+import { DEFAULT_SETTINGS, DEFAULT_SATIETY_PENALTY, slotToColumn, TOTAL_SLOTS } from '../core/types';
+
+// Build pre-placed items from day config
+function getPreplacedItems(dayConfig: DayConfig | null): { foods: PlacedFood[]; interventions: PlacedIntervention[] } {
+  if (!dayConfig) return { foods: [], interventions: [] };
+  const foods: PlacedFood[] = (dayConfig.preplacedFoods ?? []).map(pf => ({
+    id: `preplaced-food-${pf.shipId}-${pf.slotIndex}`,
+    shipId: pf.shipId,
+    dropColumn: slotToColumn(pf.slotIndex),
+    slotIndex: pf.slotIndex,
+  }));
+  const interventions: PlacedIntervention[] = (dayConfig.preplacedInterventions ?? []).map(pi => ({
+    id: `preplaced-int-${pi.interventionId}-${pi.slotIndex}`,
+    interventionId: pi.interventionId,
+    dropColumn: slotToColumn(pi.slotIndex),
+    slotIndex: pi.slotIndex,
+    slotSize: pi.slotSize,
+  }));
+  return { foods, interventions };
+}
 
 // Helper to get day config
 function getDayConfig(level: LevelConfig, day: number): DayConfig | null {
@@ -34,13 +51,17 @@ interface GameState {
   currentLevel: LevelConfig | null;
   currentDay: number;
 
+  // Tutorial mode
+  isTutorial: boolean;
+  tutorialLevelId: string | null;
+
   // Planning (graph-based)
   placedFoods: PlacedFood[];
   placedInterventions: PlacedIntervention[];
   activeMedications: string[];
 
-  // Pancreas tier system
-  pancreasTierPerDay: Record<number, PancreasTier>;
+  // BOOST system (adaptive insulin above threshold)
+  boostActivePerDay: Record<number, boolean>;
   lockedBarsPerDay: Record<number, number>;
 
   // WP carry-over tracking
@@ -54,21 +75,20 @@ interface GameState {
 
   // Actions
   setLevel: (level: LevelConfig) => void;
-  placeFood: (shipId: string, dropColumn: number) => void;
-  removeFood: (placementId: string) => void;
-  moveFood: (placementId: string, newDropColumn: number) => void;
-  placeIntervention: (interventionId: string, dropColumn: number) => void;
-  removeIntervention: (placementId: string) => void;
-  moveIntervention: (placementId: string, newDropColumn: number) => void;
+  setTutorialMode: (isTutorial: boolean, levelId: string | null) => void;
+  placeFoodInSlot: (shipId: string, slotIndex: number) => void;
+  placeInterventionInSlot: (interventionId: string, slotIndex: number, slotSize?: number) => void;
+  removeFromSlot: (slotIndex: number) => void;
+  moveSlotToSlot: (fromSlot: number, toSlot: number) => void;
   toggleMedication: (medicationId: string) => void;
   clearFoods: () => void;
   goToDay: (day: number) => void;
   startNextDay: () => void;
   restartLevel: () => void;
   updateSettings: (settings: Partial<GameSettings>) => void;
-  setPancreasTier: (day: number, tier: PancreasTier) => void;
-  lockPancreasBars: () => void;
-  unlockPancreasBars: (day: number) => void;
+  toggleBoost: (day: number) => void;
+  lockBoostBars: () => void;
+  unlockBoostBars: (day: number) => void;
   submitDayWp: (day: number, wpUsed: number, effectiveWpBudget: number) => void;
   setSatietyPenalty: (day: number, penalty: SatietyPenalty) => void;
 }
@@ -79,68 +99,163 @@ export const useGameStore = create<GameState>()(
       // Initial state
       currentLevel: null,
       currentDay: 1,
+      isTutorial: false,
+      tutorialLevelId: null,
       placedFoods: [],
       placedInterventions: [],
       activeMedications: [],
-      pancreasTierPerDay: {},
+      boostActivePerDay: {},
       lockedBarsPerDay: {},
       submittedWpPerDay: {},
       satietyPenaltyPerDay: {},
       settings: DEFAULT_SETTINGS,
 
       // Actions
-      setLevel: (level) =>
-        set({
+      setTutorialMode: (isTutorial, levelId) =>
+        set({ isTutorial, tutorialLevelId: levelId }),
+
+      setLevel: (level) => {
+        const dc = getDayConfig(level, 1);
+        const pre = getPreplacedItems(dc);
+        return set({
           currentLevel: level,
           currentDay: 1,
-          placedFoods: [],
-          placedInterventions: [],
+          placedFoods: pre.foods,
+          placedInterventions: pre.interventions,
           activeMedications: [],
-          pancreasTierPerDay: {},
+          boostActivePerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
           satietyPenaltyPerDay: {},
+        });
+      },
+
+      placeFoodInSlot: (shipId, slotIndex) =>
+        set((state) => {
+          if (slotIndex < 0 || slotIndex >= TOTAL_SLOTS) return state;
+          // Check slot not covered by food or multi-slot intervention
+          const occupied = state.placedFoods.some(f => f.slotIndex === slotIndex)
+            || state.placedInterventions.some(i => {
+              const start = i.slotIndex ?? -1;
+              const size = i.slotSize ?? 1;
+              return slotIndex >= start && slotIndex < start + size;
+            });
+          if (occupied) return state;
+          return {
+            placedFoods: [
+              ...state.placedFoods,
+              { id: uuidv4(), shipId, dropColumn: slotToColumn(slotIndex), slotIndex },
+            ],
+          };
         }),
 
-      placeFood: (shipId, dropColumn) =>
-        set((state) => ({
-          placedFoods: [
-            ...state.placedFoods,
-            { id: uuidv4(), shipId, dropColumn },
-          ],
-        })),
+      placeInterventionInSlot: (interventionId, slotIndex, slotSize = 1) =>
+        set((state) => {
+          if (slotIndex < 0 || slotIndex + slotSize > TOTAL_SLOTS) return state;
+          // Check ALL required slots are unoccupied
+          for (let s = slotIndex; s < slotIndex + slotSize; s++) {
+            const occupied = state.placedFoods.some(f => f.slotIndex === s)
+              || state.placedInterventions.some(i => {
+                const start = i.slotIndex ?? -1;
+                const sz = i.slotSize ?? 1;
+                return s >= start && s < start + sz;
+              });
+            if (occupied) return state;
+          }
+          return {
+            placedInterventions: [
+              ...state.placedInterventions,
+              { id: uuidv4(), interventionId, dropColumn: slotToColumn(slotIndex), slotIndex, slotSize },
+            ],
+          };
+        }),
 
-      removeFood: (placementId) =>
-        set((state) => ({
-          placedFoods: state.placedFoods.filter((f) => f.id !== placementId),
-        })),
+      removeFromSlot: (slotIndex) =>
+        set((state) => {
+          // Block removal of pre-placed items
+          const preplacedFood = state.placedFoods.find(f => f.slotIndex === slotIndex && f.id.startsWith('preplaced-'));
+          if (preplacedFood) return state;
+          // Find multi-slot intervention covering this slot
+          const coveringInt = state.placedInterventions.find(i => {
+            const start = i.slotIndex ?? -1;
+            const size = i.slotSize ?? 1;
+            return slotIndex >= start && slotIndex < start + size;
+          });
+          if (coveringInt?.id.startsWith('preplaced-')) return state;
+          return {
+            placedFoods: state.placedFoods.filter(f => f.slotIndex !== slotIndex),
+            placedInterventions: coveringInt
+              ? state.placedInterventions.filter(i => i.id !== coveringInt.id)
+              : state.placedInterventions,
+          };
+        }),
 
-      moveFood: (placementId, newDropColumn) =>
-        set((state) => ({
-          placedFoods: state.placedFoods.map((f) =>
-            f.id === placementId ? { ...f, dropColumn: newDropColumn } : f
-          ),
-        })),
+      moveSlotToSlot: (fromSlot, toSlot) =>
+        set((state) => {
+          if (fromSlot === toSlot) return state;
+          const foodFrom = state.placedFoods.find(f => f.slotIndex === fromSlot);
+          const intFrom = state.placedInterventions.find(i => i.slotIndex === fromSlot);
+          // Block moving pre-placed items
+          if (foodFrom?.id.startsWith('preplaced-')) return state;
+          if (intFrom?.id.startsWith('preplaced-')) return state;
+          if (!foodFrom && !intFrom) return state;
 
-      placeIntervention: (interventionId, dropColumn) =>
-        set((state) => ({
-          placedInterventions: [
-            ...state.placedInterventions,
-            { id: uuidv4(), interventionId, dropColumn },
-          ],
-        })),
+          const fromSize = intFrom ? (intFrom.slotSize ?? 1) : 1;
 
-      removeIntervention: (placementId) =>
-        set((state) => ({
-          placedInterventions: state.placedInterventions.filter((i) => i.id !== placementId),
-        })),
+          // Multi-slot move: only move to free range (no swap)
+          if (fromSize > 1) {
+            if (toSlot + fromSize > TOTAL_SLOTS) return state;
+            for (let s = toSlot; s < toSlot + fromSize; s++) {
+              // Skip self slots
+              if (intFrom && s >= fromSlot && s < fromSlot + fromSize) continue;
+              const occFood = state.placedFoods.some(f => f.slotIndex === s);
+              const occInt = state.placedInterventions.some(i => {
+                if (intFrom && i.id === intFrom.id) return false;
+                const size = i.slotSize ?? 1;
+                const start = i.slotIndex ?? -1;
+                return s >= start && s < start + size;
+              });
+              if (occFood || occInt) return state;
+            }
+            return {
+              placedFoods: state.placedFoods,
+              placedInterventions: state.placedInterventions.map(i =>
+                intFrom && i.id === intFrom.id
+                  ? { ...i, slotIndex: toSlot, dropColumn: slotToColumn(toSlot) }
+                  : i
+              ),
+            };
+          }
 
-      moveIntervention: (placementId, newDropColumn) =>
-        set((state) => ({
-          placedInterventions: state.placedInterventions.map((i) =>
-            i.id === placementId ? { ...i, dropColumn: newDropColumn } : i
-          ),
-        })),
+          // Single-slot: check if target is inside a multi-slot (reject swap)
+          const covInt = state.placedInterventions.find(i => {
+            const size = i.slotSize ?? 1;
+            const start = i.slotIndex ?? -1;
+            return toSlot >= start && toSlot < start + size;
+          });
+          if (covInt && (covInt.slotSize ?? 1) > 1) return state;
+
+          const foodTo = state.placedFoods.find(f => f.slotIndex === toSlot);
+          const intTo = covInt;
+
+          const newFoods = state.placedFoods.map(f => {
+            if (foodFrom && f.id === foodFrom.id)
+              return { ...f, slotIndex: toSlot, dropColumn: slotToColumn(toSlot) };
+            if (foodTo && f.id === foodTo.id)
+              return { ...f, slotIndex: fromSlot, dropColumn: slotToColumn(fromSlot) };
+            return f;
+          });
+
+          const newInts = state.placedInterventions.map(i => {
+            if (intFrom && i.id === intFrom.id)
+              return { ...i, slotIndex: toSlot, dropColumn: slotToColumn(toSlot) };
+            if (intTo && i.id === intTo.id)
+              return { ...i, slotIndex: fromSlot, dropColumn: slotToColumn(fromSlot) };
+            return i;
+          });
+
+          return { placedFoods: newFoods, placedInterventions: newInts };
+        }),
 
       toggleMedication: (medicationId) =>
         set((state) => ({
@@ -149,23 +264,37 @@ export const useGameStore = create<GameState>()(
             : [...state.activeMedications, medicationId],
         })),
 
-      clearFoods: () => set({ placedFoods: [], placedInterventions: [], activeMedications: [] }),
+      clearFoods: () =>
+        set((state) => {
+          const dc = state.currentLevel ? getDayConfig(state.currentLevel, state.currentDay) : null;
+          const pre = getPreplacedItems(dc);
+          return { placedFoods: pre.foods, placedInterventions: pre.interventions, activeMedications: [] };
+        }),
 
       goToDay: (day) =>
-        set({
-          currentDay: day,
-          placedFoods: [],
-          placedInterventions: [],
-          activeMedications: [],
+        set((state) => {
+          const dc = state.currentLevel ? getDayConfig(state.currentLevel, day) : null;
+          const pre = getPreplacedItems(dc);
+          return {
+            currentDay: day,
+            placedFoods: pre.foods,
+            placedInterventions: pre.interventions,
+            activeMedications: [],
+          };
         }),
 
       startNextDay: () =>
-        set((state) => ({
-          currentDay: state.currentDay + 1,
-          placedFoods: [],
-          placedInterventions: [],
-          activeMedications: [],
-        })),
+        set((state) => {
+          const nextDay = state.currentDay + 1;
+          const dc = state.currentLevel ? getDayConfig(state.currentLevel, nextDay) : null;
+          const pre = getPreplacedItems(dc);
+          return {
+            currentDay: nextDay,
+            placedFoods: pre.foods,
+            placedInterventions: pre.interventions,
+            activeMedications: [],
+          };
+        }),
 
       restartLevel: () =>
         set({
@@ -173,7 +302,7 @@ export const useGameStore = create<GameState>()(
           placedFoods: [],
           placedInterventions: [],
           activeMedications: [],
-          pancreasTierPerDay: {},
+          boostActivePerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
           satietyPenaltyPerDay: {},
@@ -184,23 +313,26 @@ export const useGameStore = create<GameState>()(
           settings: { ...state.settings, ...newSettings },
         })),
 
-      setPancreasTier: (day, tier) =>
+      toggleBoost: (day) =>
         set((state) => ({
-          pancreasTierPerDay: { ...state.pancreasTierPerDay, [day]: tier },
+          boostActivePerDay: {
+            ...state.boostActivePerDay,
+            [day]: !state.boostActivePerDay[day],
+          },
         })),
 
-      lockPancreasBars: () =>
+      lockBoostBars: () =>
         set((state) => {
-          const tier = (state.pancreasTierPerDay[state.currentDay] ?? 1) as PancreasTier;
+          const isActive = state.boostActivePerDay[state.currentDay] ?? false;
           return {
             lockedBarsPerDay: {
               ...state.lockedBarsPerDay,
-              [state.currentDay]: getPancreasTiers()[tier].cost,
+              [state.currentDay]: isActive ? 1 : 0,
             },
           };
         }),
 
-      unlockPancreasBars: (day) =>
+      unlockBoostBars: (day) =>
         set((state) => {
           const next = { ...state.lockedBarsPerDay };
           delete next[day];
@@ -225,11 +357,11 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'bg-graph-save',
-      version: 8,
+      version: 9,
       partialize: (state) => ({
         currentDay: state.currentDay,
         settings: state.settings,
-        pancreasTierPerDay: state.pancreasTierPerDay,
+        boostActivePerDay: state.boostActivePerDay,
         lockedBarsPerDay: state.lockedBarsPerDay,
         submittedWpPerDay: state.submittedWpPerDay,
         satietyPenaltyPerDay: state.satietyPenaltyPerDay,

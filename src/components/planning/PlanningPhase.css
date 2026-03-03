@@ -1,8 +1,8 @@
 .planning-phase {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: 6px;
+  padding: 6px 12px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -37,7 +37,7 @@
 .planning-phase__content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   align-items: stretch;
 }
 
@@ -48,9 +48,21 @@
 
 .planning-phase__pancreas-overlay {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 32px;
+  right: 32px;
   z-index: 10;
+}
+
+/* Inventory drop zone (accepts cards dragged back from slots) */
+.planning-phase__inventory-zone {
+  border: 1.5px dashed transparent;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.planning-phase__inventory-zone--over {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.06);
 }
 
 /* Interventions row */
@@ -70,13 +82,13 @@
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding: 8px 0;
+  padding: 4px 0;
   border-top: 1px solid #4a5568;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .planning-phase__day-btn {
-  padding: 6px 16px;
+  padding: 4px 14px;
   border-radius: 6px;
   border: 1px solid #4a5568;
   background: #2d3748;

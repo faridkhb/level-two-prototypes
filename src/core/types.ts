@@ -53,6 +53,65 @@ export const PANCREAS_TIERS: Record<PancreasTier, { decayRate: number; cost: num
 
 export const PANCREAS_TOTAL_BARS = 1;
 
+/** Stress slot: insulin rate reduction per column within stressed slot */
+export const STRESS_INSULIN_REDUCTION = 2;
+
+// === Insulin Profile System ===
+
+export type InsulinMode = 'cumulative' | 'per-column';
+
+export interface InsulinSegment {
+  from: number;  // column index (0-47)
+  to: number;    // column index inclusive
+  rate: number;  // integer 1-5: cubes absorbed per column (post-peak)
+}
+
+export interface InsulinProfileConfig {
+  mode: InsulinMode;
+  segments: InsulinSegment[];
+}
+
+export interface BoostConfig {
+  active: boolean;
+  thresholdRow: number;  // row for 200 mg/dL = 7
+  extraRate: number;     // +N cubes per column above threshold (e.g., 2)
+}
+
+/** Expand segment-based insulin profile to per-column rate array (48 elements) */
+export function expandInsulinProfile(config: InsulinProfileConfig): number[] {
+  const rates = new Array(TOTAL_COLUMNS).fill(0);
+  for (const seg of config.segments) {
+    for (let col = seg.from; col <= Math.min(seg.to, TOTAL_COLUMNS - 1); col++) {
+      rates[col] = seg.rate;
+    }
+  }
+  return rates;
+}
+
+/** Apply stress slot reduction to insulin rates.
+ *  Reduces rate by STRESS_INSULIN_REDUCTION in columns covered by stress slots.
+ *  Rate cannot go below 0.
+ */
+export function applyStressToRates(rates: number[], stressSlots: number[]): number[] {
+  const result = [...rates];
+  for (const slotIndex of stressSlots) {
+    const startCol = slotIndex * COLS_PER_SLOT;
+    const endCol = startCol + COLS_PER_SLOT;
+    for (let col = startCol; col < endCol && col < result.length; col++) {
+      result[col] = Math.max(0, result[col] - STRESS_INSULIN_REDUCTION);
+    }
+  }
+  return result;
+}
+
+/** Create a uniform insulin profile from a legacy decayRate value */
+export function legacyDecayToProfile(decayRate: number): InsulinProfileConfig {
+  return {
+    mode: 'cumulative',
+    segments: [{ from: 0, to: TOTAL_COLUMNS - 1, rate: decayRate }],
+  };
+}
+
 // === WP Carry-Over Penalty ===
 
 /** Each unspent WP on the last day adds this many penalty points */
@@ -87,6 +146,7 @@ export interface PlacedFood {
   id: string;             // Unique placement ID
   shipId: string;         // Reference to Ship.id
   dropColumn: number;     // Column index where dropped (0 = start of graph)
+  slotIndex?: number;     // Meal slot index (0-11)
 }
 
 // === Interventions (exercise) ===
@@ -101,12 +161,15 @@ export interface Intervention {
   boostCols?: number;     // First N columns get extra depth (burst zone)
   boostExtra?: number;    // Extra cubes removed in burst zone
   isBreak?: boolean;      // Blocks time, gives WP instead of costing
+  slotSize?: number;         // Number of meal slots occupied (default 1)
 }
 
 export interface PlacedIntervention {
   id: string;             // Unique placement ID
   interventionId: string; // Reference to Intervention.id
   dropColumn: number;
+  slotIndex?: number;     // Meal slot index (0-11)
+  slotSize?: number;      // Number of meal slots occupied (default 1)
 }
 
 // === Medications ===
@@ -156,6 +219,17 @@ export interface AvailableFood {
   count: number;
 }
 
+export interface PreplacedFood {
+  shipId: string;
+  slotIndex: number;
+}
+
+export interface PreplacedIntervention {
+  interventionId: string;
+  slotIndex: number;
+  slotSize?: number;
+}
+
 export interface DayConfig {
   day: number;
   kcalBudget: number;
@@ -163,6 +237,11 @@ export interface DayConfig {
   availableFoods: AvailableFood[];
   availableInterventions?: AvailableFood[];
   availableMedications?: string[];
+  preplacedFoods?: PreplacedFood[];
+  preplacedInterventions?: PreplacedIntervention[];
+  lockedSlots?: number[];
+  stressSlots?: number[];
+  insulinProfile?: InsulinProfileConfig;
 }
 
 // === Kcal Assessment (3-zone satiety system) ===
@@ -291,4 +370,36 @@ export function formatBgValue(mgdl: number, unit: 'mg/dL' | 'mmol/L'): string {
     return `${mgdlToMmol(mgdl)}`;
   }
   return `${mgdl}`;
+}
+
+// === Meal Slot System ===
+
+export const SLOTS_PER_MEAL = 4;
+export const TOTAL_SLOTS = 12;
+export const COLS_PER_SLOT = 4; // 1 hour = 4 columns of 15 min
+
+export type MealSegment = 'breakfast' | 'lunch' | 'dinner';
+
+export interface MealSegmentConfig {
+  id: MealSegment;
+  label: string;
+  emoji: string;
+  startSlot: number;
+  slotCount: number;
+}
+
+export const MEAL_SEGMENTS: MealSegmentConfig[] = [
+  { id: 'breakfast', label: 'Breakfast', emoji: '🌅', startSlot: 0, slotCount: 4 },
+  { id: 'lunch',     label: 'Lunch',     emoji: '☀️', startSlot: 4, slotCount: 4 },
+  { id: 'dinner',    label: 'Dinner',    emoji: '🌙', startSlot: 8, slotCount: 4 },
+];
+
+/** Convert slot index (0-11) to graph column (0,4,8,...,44) */
+export function slotToColumn(slotIndex: number): number {
+  return slotIndex * COLS_PER_SLOT;
+}
+
+/** Get time label for a slot */
+export function slotTimeLabel(slotIndex: number, format: '12h' | '24h'): string {
+  return columnToTimeString(slotToColumn(slotIndex), format);
 }

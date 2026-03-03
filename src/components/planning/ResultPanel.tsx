@@ -10,6 +10,9 @@ interface ResultPanelProps {
   satietyResult?: SatietyPenalty;
   onRetry: () => void;
   onNextDay: () => void;
+  isTutorial?: boolean;
+  onNextLevel?: () => void;
+  onBackToTutorials?: () => void;
 }
 
 function StarDisplay({ count }: { count: number }) {
@@ -27,11 +30,16 @@ function StarDisplay({ count }: { count: number }) {
   );
 }
 
-export function ResultPanel({ result, currentDay, totalDays, unspentWp = 0, satietyResult = DEFAULT_SATIETY_PENALTY, onRetry, onNextDay }: ResultPanelProps) {
+export function ResultPanel({
+  result, currentDay, totalDays, unspentWp = 0,
+  satietyResult = DEFAULT_SATIETY_PENALTY, onRetry, onNextDay,
+  isTutorial, onNextLevel, onBackToTutorials,
+}: ResultPanelProps) {
   const isDefeat = result.stars === 0;
   const isPerfect = result.stars === 3;
   const isLastDay = currentDay >= totalDays;
   const hasUnspentWp = unspentWp > 0;
+  const isSuccess = result.stars >= 1;
 
   // Satiety zone result message
   const satietyMessage = (() => {
@@ -101,23 +109,54 @@ export function ResultPanel({ result, currentDay, totalDays, unspentWp = 0, sati
         </div>
       )}
 
-      <div className="result-panel__actions">
-        {!isPerfect && (
-          <button className="result-panel__btn result-panel__btn--retry" onClick={onRetry}>
-            Retry Day
-          </button>
-        )}
-        {!isDefeat && !isLastDay && (
-          <button className="result-panel__btn result-panel__btn--next" onClick={onNextDay}>
-            Next Day
-          </button>
-        )}
-        {!isDefeat && isLastDay && (
-          <button className="result-panel__btn result-panel__btn--next" onClick={onRetry}>
-            Play Again
-          </button>
-        )}
-      </div>
+      {/* Tutorial mode buttons */}
+      {isTutorial ? (
+        <div className="result-panel__actions">
+          {isDefeat && (
+            <button className="result-panel__btn result-panel__btn--retry" onClick={onRetry}>
+              Retry Level
+            </button>
+          )}
+          {isSuccess && !isLastDay && (
+            <button className="result-panel__btn result-panel__btn--next" onClick={onNextDay}>
+              Next Day
+            </button>
+          )}
+          {!isPerfect && !isDefeat && (
+            <button className="result-panel__btn result-panel__btn--retry" onClick={onRetry}>
+              Retry Day
+            </button>
+          )}
+          {isSuccess && isLastDay && onNextLevel && (
+            <button className="result-panel__btn result-panel__btn--next" onClick={onNextLevel}>
+              Next Level
+            </button>
+          )}
+          {onBackToTutorials && (
+            <button className="result-panel__btn result-panel__btn--back" onClick={onBackToTutorials}>
+              Back to Tutorials
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="result-panel__actions">
+          {!isPerfect && (
+            <button className="result-panel__btn result-panel__btn--retry" onClick={onRetry}>
+              Retry Day
+            </button>
+          )}
+          {!isDefeat && !isLastDay && (
+            <button className="result-panel__btn result-panel__btn--next" onClick={onNextDay}>
+              Next Day
+            </button>
+          )}
+          {!isDefeat && isLastDay && (
+            <button className="result-panel__btn result-panel__btn--next" onClick={onRetry}>
+              Play Again
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

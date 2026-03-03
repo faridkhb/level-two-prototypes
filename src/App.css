@@ -52,39 +52,6 @@
   color: #eee;
 }
 
-.app-header {
-  padding: 0.5rem 1rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  text-align: center;
-}
-
-.app-header__back {
-  position: absolute;
-  left: 12px;
-  padding: 4px 12px;
-  font-size: 13px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: #a0aec0;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.app-header__back:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #e2e8f0;
-}
 
 .status-bar {
   display: flex;
@@ -173,17 +140,13 @@ button:active {
 
 /* Desktop styles */
 @media (min-width: 768px) {
-  .app-header h1 {
-    font-size: 2rem;
-  }
-
   .status-bar {
     font-size: 1rem;
     gap: 2rem;
   }
 
   .app-main {
-    padding: 2rem;
+    padding: 0.25rem 0.75rem;
   }
 
   .phase-placeholder {

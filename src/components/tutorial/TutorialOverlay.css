@@ -1,0 +1,204 @@
+/* ======= OVERLAY ======= */
+
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: auto;
+}
+
+/* Passthrough mode: overlay lets clicks reach the game underneath */
+.tutorial-overlay--passthrough {
+  pointer-events: none;
+}
+
+.tutorial-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  transition: clip-path 0.3s ease;
+}
+
+/* ======= SPOTLIGHT ======= */
+
+.tutorial-overlay__spotlight {
+  position: fixed;
+  border-radius: 8px;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.tutorial-overlay__spotlight--spotlight {
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.5);
+}
+
+.tutorial-overlay__spotlight--pulse {
+  animation: tutorialPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.6);
+}
+
+.tutorial-overlay__spotlight--glow {
+  box-shadow: 0 0 20px 4px rgba(56, 189, 248, 0.4);
+}
+
+.tutorial-overlay__spotlight--arrow {
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.5);
+}
+
+@keyframes tutorialPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 12px 6px rgba(56, 189, 248, 0.3);
+    transform: scale(1.02);
+  }
+}
+
+/* ======= BUBBLE ======= */
+
+.tutorial-bubble {
+  position: fixed;
+  max-width: 320px;
+  min-width: 200px;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  z-index: 9001;
+  animation: bubbleAppear 0.25s ease-out both;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 1.5px solid #334155;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.tutorial-bubble--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 360px;
+}
+
+@keyframes bubbleAppear {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tutorial-bubble--center {
+  animation-name: bubbleCenterAppear;
+}
+
+@keyframes bubbleCenterAppear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Bubble type colors */
+.tutorial-bubble--dialogue {
+  border-color: #475569;
+}
+
+.tutorial-bubble--hint {
+  border-color: #ca8a04;
+  background: #1c1917;
+}
+
+.tutorial-bubble--warning {
+  border-color: #ea580c;
+  background: #1c1917;
+}
+
+.tutorial-bubble--success {
+  border-color: #16a34a;
+  background: #0f1a12;
+}
+
+/* Action bubble: not clickable to advance, visual distinction */
+.tutorial-bubble--action {
+  cursor: default;
+  opacity: 0.92;
+}
+
+.tutorial-bubble__avatar {
+  font-size: 28px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.tutorial-bubble__content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tutorial-bubble__text {
+  color: #e2e8f0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tutorial-bubble__tap-hint {
+  font-size: 10px;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* ======= CTA ANIMATIONS ======= */
+
+.tutorial-cta {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9002;
+}
+
+.tutorial-cta--tap-pulse {
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  margin-top: -20px;
+  border-radius: 50%;
+  border: 2px solid rgba(56, 189, 248, 0.6);
+  animation: ctaTapPulse 1.5s ease-out infinite;
+}
+
+@keyframes ctaTapPulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.tutorial-cta--bounce {
+  font-size: 24px;
+  margin-left: -12px;
+  animation: ctaBounce 1s ease-in-out infinite;
+}
+
+@keyframes ctaBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}

@@ -202,6 +202,19 @@
   background: #3182ce;
 }
 
+.result-panel__btn--back {
+  background: transparent;
+  border-color: #718096;
+  color: #a0aec0;
+  font-size: 12px;
+  padding: 8px 16px;
+}
+
+.result-panel__btn--back:hover {
+  color: #e2e8f0;
+  border-color: #a0aec0;
+}
+
 /* Mobile portrait */
 @media (max-width: 480px) {
   .result-panel {

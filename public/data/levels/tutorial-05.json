@@ -1,0 +1,55 @@
+{
+  "id": "tutorial-05",
+  "name": "First Medication",
+  "description": "Metformin — passive glucose reduction for all foods.",
+  "days": 2,
+  "dayConfigs": [
+    {
+      "day": 1,
+      "kcalBudget": 1200,
+      "wpBudget": 8,
+      "availableFoods": [
+        { "id": "banana", "count": 1 },
+        { "id": "cookie", "count": 1 }
+      ],
+      "availableInterventions": [],
+      "availableMedications": ["metformin"],
+      "preplacedFoods": [
+        { "shipId": "chocolatemuffin", "slotIndex": 3 }
+      ],
+      "lockedSlots": [0, 1, 3, 5, 6, 8, 9, 10, 11],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 31, "rate": 2 },
+          { "from": 32, "to": 47, "rate": 1 }
+        ]
+      }
+    },
+    {
+      "day": 2,
+      "kcalBudget": 1400,
+      "wpBudget": 10,
+      "availableFoods": [
+        { "id": "chickpeas", "count": 1 },
+        { "id": "banana", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 2 }
+      ],
+      "availableMedications": ["metformin"],
+      "preplacedFoods": [
+        { "shipId": "burger", "slotIndex": 0 },
+        { "shipId": "chocolatemuffin", "slotIndex": 5 }
+      ],
+      "lockedSlots": [0, 1, 5, 8, 10, 11],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 23, "rate": 2 },
+          { "from": 24, "to": 47, "rate": 1 }
+        ]
+      }
+    }
+  ]
+}

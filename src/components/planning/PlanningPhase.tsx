@@ -1,28 +1,33 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { DragStartEvent, DragEndEvent, DragMoveEvent } from '@dnd-kit/core';
+import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
   TouchSensor,
+  useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, PancreasTier, PlacedFood, PlacedIntervention, SatietyPenalty } from '../../core/types';
+import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BoostConfig } from '../../core/types';
+import { TOTAL_SLOTS, expandInsulinProfile, applyStressToRates, PENALTY_ORANGE_ROW, slotToColumn } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
+import { useConfigStore } from '../../store/configStore';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
-import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars, GRAPH_CONFIG, TOTAL_COLUMNS } from '../../core/types';
-import { getPancreasTiers } from '../../config/loader';
-import { BgGraph, pointerToColumn } from '../graph';
+import type { InsulinParams } from '../../core/cubeEngine';
+import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
+import { BgGraph } from '../graph';
 import { PlanningHeader } from './PlanningHeader';
 import { ShipInventory } from './ShipInventory';
 import { InterventionInventory } from './InterventionInventory';
-// MedicationPanel merged into InterventionInventory
 import { PancreasButton } from './PancreasButton';
 import { ResultPanel } from './ResultPanel';
+import { SlotGrid } from './SlotGrid';
 import { ShipCardOverlay } from './ShipCard';
 import { InterventionCardOverlay } from './InterventionCard';
+import { TutorialOverlay } from '../tutorial/TutorialOverlay';
+import { useTutorial } from '../tutorial/useTutorial';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import './PlanningPhase.css';
 
@@ -35,81 +40,41 @@ const REVEAL_HOLD: Record<number, number> = {
   4: 1200,  // medications
 };
 
-function togglePancreasTier(current: PancreasTier, maxBars: number): PancreasTier {
-  if (current === 3) return 1; // BOOST → ON
-  // ON → BOOST (if affordable)
-  if (getPancreasTiers()[3].cost <= maxBars) return 3;
-  return 1; // can't afford boost, stay ON
+function InventoryDropZone({ children }: { children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`planning-phase__inventory-zone${isOver ? ' planning-phase__inventory-zone--over' : ''}`}
+    >
+      {children}
+    </div>
+  );
 }
 
-// === Break blocking helpers ===
-
-function getOccupiedColumns(dropColumn: number, durationMinutes: number): [number, number] {
-  const cols = Math.max(1, Math.ceil(durationMinutes / GRAPH_CONFIG.cellWidthMin));
-  return [dropColumn, dropColumn + cols - 1];
+interface PlanningPhaseProps {
+  isTutorial?: boolean;
+  onBackToTutorials?: () => void;
+  onNextLevel?: (nextLevelId: string) => void;
 }
 
-function rangesOverlap(a: [number, number], b: [number, number]): boolean {
-  return a[0] <= b[1] && b[0] <= a[1];
-}
+// Tutorial level order for "Next Level" navigation
+const TUTORIAL_LEVEL_ORDER = [
+  'tutorial-01', 'tutorial-02', 'tutorial-03', 'tutorial-04',
+  'tutorial-05', 'tutorial-06', 'tutorial-07', 'tutorial-08',
+];
 
-/** Check if a new item (food or non-break intervention) overlaps with any placed break */
-function isBlockedByBreaks(
-  dropColumn: number,
-  durationMinutes: number,
-  placedIntvs: PlacedIntervention[],
-  allIntvs: Intervention[],
-): boolean {
-  const newRange = getOccupiedColumns(dropColumn, durationMinutes);
-  for (const placed of placedIntvs) {
-    const intv = allIntvs.find(i => i.id === placed.interventionId);
-    if (!intv?.isBreak) continue;
-    const breakRange = getOccupiedColumns(placed.dropColumn, intv.duration);
-    if (rangesOverlap(newRange, breakRange)) return true;
-  }
-  return false;
-}
-
-/** Check if a new break overlaps with any placed food or non-break intervention */
-function isBreakBlockedByPlacements(
-  dropColumn: number,
-  durationMinutes: number,
-  placedFoodsList: PlacedFood[],
-  allShipsList: Ship[],
-  placedIntvs: PlacedIntervention[],
-  allIntvs: Intervention[],
-): boolean {
-  const breakRange = getOccupiedColumns(dropColumn, durationMinutes);
-  // Check vs foods
-  for (const placed of placedFoodsList) {
-    const ship = allShipsList.find(s => s.id === placed.shipId);
-    if (!ship) continue;
-    const foodRange = getOccupiedColumns(placed.dropColumn, ship.duration);
-    if (rangesOverlap(breakRange, foodRange)) return true;
-  }
-  // Check vs non-break interventions
-  for (const placed of placedIntvs) {
-    const intv = allIntvs.find(i => i.id === placed.interventionId);
-    if (!intv || intv.isBreak) continue;
-    const intvRange = getOccupiedColumns(placed.dropColumn, intv.duration);
-    if (rangesOverlap(breakRange, intvRange)) return true;
-  }
-  return false;
-}
-
-export function PlanningPhase() {
+export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: PlanningPhaseProps = {}) {
   const isMobile = useIsMobile();
   const {
     placedFoods,
-    placeFood,
-    removeFood,
+    placeFoodInSlot,
     placedInterventions,
-    placeIntervention,
-    removeIntervention,
-    moveIntervention,
+    placeInterventionInSlot,
+    removeFromSlot,
+    moveSlotToSlot,
     activeMedications,
     toggleMedication,
-    moveFood,
     clearFoods,
     currentLevel,
     currentDay,
@@ -117,26 +82,33 @@ export function PlanningPhase() {
     goToDay,
     startNextDay,
     settings,
-    updateSettings,
-    pancreasTierPerDay,
+    boostActivePerDay,
     lockedBarsPerDay,
-    setPancreasTier,
-    lockPancreasBars,
-    unlockPancreasBars,
+    toggleBoost,
+    lockBoostBars,
+    unlockBoostBars,
     submittedWpPerDay,
     submitDayWp,
     satietyPenaltyPerDay,
     setSatietyPenalty,
+    tutorialLevelId,
   } = useGameStore();
+
+  const { boostOverride } = useConfigStore();
+
+  // Tutorial overlay system
+  const { currentStep: tutorialStep, advance: advanceTutorial, notifyAction: notifyTutorialAction, isActive: isTutorialActive } = useTutorial(
+    isTutorial ? tutorialLevelId : null,
+    currentDay,
+  );
 
   const [allShips, setAllShips] = useState<Ship[]>([]);
   const [allInterventions, setAllInterventions] = useState<Intervention[]>([]);
   const [allMedications, setAllMedications] = useState<Medication[]>([]);
   const [activeShip, setActiveShip] = useState<Ship | null>(null);
   const [activeIntervention, setActiveIntervention] = useState<Intervention | null>(null);
-  const [previewColumn, setPreviewColumn] = useState<number | null>(null);
+  const [previewSlot, setPreviewSlot] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const graphRef = useRef<HTMLDivElement>(null);
 
   // Submit / reveal state
   const [gamePhase, setGamePhase] = useState<GamePhase>('planning');
@@ -180,6 +152,17 @@ export function PlanningPhase() {
     return getDayConfig(currentLevel, currentDay);
   }, [currentLevel, currentDay]);
 
+  // Compute effective locked slots (pre-placed items + explicitly locked)
+  const effectiveLockedSlots = useMemo(() => {
+    const slots = new Set<number>(dayConfig?.lockedSlots ?? []);
+    for (const pf of dayConfig?.preplacedFoods ?? []) slots.add(pf.slotIndex);
+    for (const pi of dayConfig?.preplacedInterventions ?? []) {
+      const size = pi.slotSize ?? 1;
+      for (let s = pi.slotIndex; s < pi.slotIndex + size; s++) slots.add(s);
+    }
+    return slots;
+  }, [dayConfig]);
+
   // Compute medication modifiers from active medications
   const medicationModifiers = useMemo(
     () => activeMedications.length > 0
@@ -207,24 +190,37 @@ export function PlanningPhase() {
   const effectiveWpBudget = Math.max(rawWpBudget - wpPenalty + satietyPenalty.wpDelta, wpFloor);
   const wpRemaining = effectiveWpBudget - wpUsed;
 
-  // Valid drop columns for break interventions (computed during drag)
-  const breakValidColumns = useMemo(() => {
-    if (!activeIntervention?.isBreak) return null;
-    const result = new Array(TOTAL_COLUMNS).fill(false);
-    for (let col = 0; col < TOTAL_COLUMNS; col++) {
-      result[col] = !isBreakBlockedByPlacements(
-        col, activeIntervention.duration,
-        placedFoods, allShips, placedInterventions, allInterventions
-      );
-    }
-    return result;
-  }, [activeIntervention, placedFoods, allShips, placedInterventions, allInterventions]);
+  // Stress slots
+  const stressSlotSet = useMemo(() => {
+    return new Set<number>(dayConfig?.stressSlots ?? []);
+  }, [dayConfig]);
 
-  // Pancreas tier system
-  const currentPancreasTier = (pancreasTierPerDay[currentDay] ?? 1) as PancreasTier;
-  const currentDecayRate = getPancreasTiers()[currentPancreasTier].decayRate;
+  // Insulin profile system (with stress slot reduction applied)
+  const insulinParams: InsulinParams | number = useMemo(() => {
+    if (dayConfig?.insulinProfile) {
+      let rates = expandInsulinProfile(dayConfig.insulinProfile);
+      if (dayConfig.stressSlots && dayConfig.stressSlots.length > 0) {
+        rates = applyStressToRates(rates, dayConfig.stressSlots);
+      }
+      return {
+        rates,
+        mode: dayConfig.insulinProfile.mode,
+      };
+    }
+    return 0.5; // legacy fallback
+  }, [dayConfig]);
+
+  // BOOST system
+  const isBoostActive = boostActivePerDay[currentDay] ?? false;
   const totalLockedBars = Object.values(lockedBarsPerDay).reduce((a, b) => a + b, 0);
   const barsAvailable = PANCREAS_TOTAL_BARS - totalLockedBars;
+  const boostThresholdRow = boostOverride.thresholdMgDl
+    ? Math.round((boostOverride.thresholdMgDl - 60) / 20)
+    : PENALTY_ORANGE_ROW;
+  const boostExtraRate = boostOverride.extraRate ?? 4;
+  const boostConfig: BoostConfig | undefined = isBoostActive
+    ? { active: true, thresholdRow: boostThresholdRow, extraRate: boostExtraRate }
+    : undefined;
 
   // Submit button enabled when kcal >= 50% (Optimal zone) and in planning phase
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier) + satietyPenalty.kcalDelta;
@@ -247,6 +243,12 @@ export function PlanningPhase() {
     }
     return [...base, { id: SATIETY_PENALTY_FOOD_ID, count: freeCount }];
   }, [dayConfig, satietyPenalty.freeFood]);
+
+  // Tutorial-aware medication toggle wrapper
+  const handleMedicationToggle = useCallback((medId: string) => {
+    toggleMedication(medId);
+    notifyTutorialAction({ type: 'toggle-medication', medicationId: medId });
+  }, [toggleMedication, notifyTutorialAction]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -271,32 +273,17 @@ export function PlanningPhase() {
     }
   }, [gamePhase]);
 
-  const handleDragMove = useCallback((_event: DragMoveEvent) => {
-    if (!graphRef.current || (!activeShip && !activeIntervention)) {
-      setPreviewColumn(null);
-      return;
-    }
-
-    const graphEl = graphRef.current.querySelector('.bg-graph') as HTMLElement;
-    if (!graphEl) {
-      setPreviewColumn(null);
-      return;
-    }
-
-    const { delta, activatorEvent } = _event;
-    if (activatorEvent && 'clientX' in activatorEvent) {
-      const pointerX = (activatorEvent as PointerEvent).clientX + delta.x;
-      const pointerY = (activatorEvent as PointerEvent).clientY + delta.y;
-      const graphRect = graphEl.getBoundingClientRect();
-      // Only show preview when cursor is within the graph element bounds
-      if (pointerY < graphRect.top || pointerY > graphRect.bottom) {
-        setPreviewColumn(null);
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const overId = event.over ? String(event.over.id) : null;
+    if (overId && overId.startsWith('slot-')) {
+      const slot = parseInt(overId.replace('slot-', ''), 10);
+      if (!isNaN(slot) && slot >= 0 && slot < TOTAL_SLOTS) {
+        setPreviewSlot(slot);
         return;
       }
-      const col = pointerToColumn(graphEl, pointerX);
-      setPreviewColumn(col);
     }
-  }, [activeShip, activeIntervention]);
+    setPreviewSlot(null);
+  }, []);
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -304,109 +291,128 @@ export function PlanningPhase() {
 
       setActiveShip(null);
       setActiveIntervention(null);
-      setPreviewColumn(null);
+      setPreviewSlot(null);
 
-      if (!over || over.id !== 'bg-graph') return;
-      if (gamePhase !== 'planning') return;
+      if (!over || gamePhase !== 'planning') return;
 
-      // Compute drop column from pointer position
-      const graphEl = document.querySelector('.bg-graph') as HTMLElement;
-      if (!graphEl) return;
+      const activeData = active.data.current;
+      const isFromSlot = activeData?.isFromSlot === true;
+      const fromSlotIndex = activeData?.fromSlotIndex as number | undefined;
+      const overId = String(over.id);
 
-      const { activatorEvent, delta } = event;
-      let col: number | null = null;
-      if (activatorEvent && 'clientX' in activatorEvent) {
-        const pointerX = (activatorEvent as PointerEvent).clientX + delta.x;
-        col = pointerToColumn(graphEl, pointerX);
+      // Case: Drop onto inventory zone → remove from slot
+      if (overId === 'inventory-zone') {
+        if (isFromSlot && fromSlotIndex !== undefined) {
+          removeFromSlot(fromSlotIndex);
+        }
+        return;
       }
-      if (col == null) return;
 
-      // Check if it's a food or intervention drop
-      const isIntervention = active.data.current?.isIntervention === true;
+      // Only slot targets from here
+      if (!overId.startsWith('slot-')) return;
+      const targetSlot = parseInt(overId.replace('slot-', ''), 10);
+      if (isNaN(targetSlot) || targetSlot < 0 || targetSlot >= TOTAL_SLOTS) return;
 
-      if (isIntervention) {
-        const intervention = active.data.current?.intervention as Intervention | undefined;
-        if (!intervention) return;
-        // Breaks have negative wpCost, so they always pass wpCost > wpRemaining check
-        if (intervention.wpCost > wpRemaining) return;
+      if (isFromSlot && fromSlotIndex !== undefined) {
+        // Block drag from locked slot
+        if (effectiveLockedSlots.has(fromSlotIndex)) return;
+        // Block drag to locked slot
+        if (effectiveLockedSlots.has(targetSlot)) return;
+        // Slot → Slot: move or swap
+        if (fromSlotIndex === targetSlot) return;
+        moveSlotToSlot(fromSlotIndex, targetSlot);
+      } else {
+        // Inventory → Slot: place (or replace if occupied)
+        const isIntervention = activeData?.isIntervention === true;
 
-        if (intervention.isBreak) {
-          // Break can't overlap with food or non-break interventions
-          if (isBreakBlockedByPlacements(col, intervention.duration, placedFoods, allShips, placedInterventions, allInterventions)) return;
-        } else {
-          // Regular intervention can't overlap with breaks
-          if (isBlockedByBreaks(col, intervention.duration, placedInterventions, allInterventions)) return;
+        // Helper: check if a slot is covered (including multi-slot interventions)
+        const isSlotCovered = (slot: number): boolean => {
+          if (placedFoods.some(f => f.slotIndex === slot)) return true;
+          return placedInterventions.some(i => {
+            const start = i.slotIndex ?? -1;
+            const size = i.slotSize ?? 1;
+            return slot >= start && slot < start + size;
+          });
+        };
+
+        // Multi-slot intervention placement: all target slots must be free and unlocked
+        if (isIntervention) {
+          const intervention = activeData?.intervention as Intervention | undefined;
+          if (!intervention) return;
+          const slotSize = intervention.slotSize ?? 1;
+
+          if (slotSize > 1) {
+            if (targetSlot + slotSize > TOTAL_SLOTS) return;
+            for (let s = targetSlot; s < targetSlot + slotSize; s++) {
+              if (effectiveLockedSlots.has(s)) return;
+              if (isSlotCovered(s)) return;
+            }
+            if (intervention.wpCost > wpRemaining) return;
+            placeInterventionInSlot(intervention.id, targetSlot, slotSize);
+            notifyTutorialAction({ type: 'place-intervention', interventionId: intervention.id, slotIndex: targetSlot });
+            return;
+          }
         }
 
-        placeIntervention(intervention.id, col);
-      } else {
-        const ship = active.data.current?.ship as Ship | undefined;
-        if (!ship) return;
-        const shipWp = ship.wpCost ?? 0;
-        if (shipWp > wpRemaining) return;
-        // Food can't overlap with breaks
-        if (isBlockedByBreaks(col, ship.duration, placedInterventions, allInterventions)) return;
-        placeFood(ship.id, col);
+        // Block placement on locked slots
+        if (effectiveLockedSlots.has(targetSlot)) return;
+
+        // Single-slot placement (food or single-slot intervention)
+        const targetOccupied = isSlotCovered(targetSlot);
+
+        // Compute WP freed if replacing an existing card
+        let freedWp = 0;
+        if (targetOccupied) {
+          const existingFood = placedFoods.find(f => f.slotIndex === targetSlot);
+          if (existingFood) {
+            const s = allShips.find(sh => sh.id === existingFood.shipId);
+            freedWp = s?.wpCost ?? 0;
+          }
+          const coveringInt = placedInterventions.find(i => {
+            const start = i.slotIndex ?? -1;
+            const size = i.slotSize ?? 1;
+            return targetSlot >= start && targetSlot < start + size;
+          });
+          if (coveringInt) {
+            const inv = allInterventions.find(a => a.id === coveringInt.interventionId);
+            freedWp = inv?.wpCost ?? 0;
+          }
+        }
+
+        const effectiveWp = wpRemaining + freedWp;
+
+        if (isIntervention) {
+          const intervention = activeData?.intervention as Intervention | undefined;
+          if (!intervention) return;
+          if (intervention.wpCost > effectiveWp) return;
+          if (targetOccupied) removeFromSlot(targetSlot);
+          placeInterventionInSlot(intervention.id, targetSlot);
+          notifyTutorialAction({ type: 'place-intervention', interventionId: intervention.id, slotIndex: targetSlot });
+        } else {
+          const ship = activeData?.ship as Ship | undefined;
+          if (!ship) return;
+          if ((ship.wpCost ?? 0) > effectiveWp) return;
+          if (targetOccupied) removeFromSlot(targetSlot);
+          placeFoodInSlot(ship.id, targetSlot);
+          notifyTutorialAction({ type: 'place-food', foodId: ship.id, slotIndex: targetSlot });
+        }
       }
     },
-    [placeFood, placeIntervention, wpRemaining, gamePhase, placedFoods, allShips, placedInterventions, allInterventions]
+    [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions, effectiveLockedSlots, notifyTutorialAction]
   );
 
-  const handleFoodClick = useCallback(
-    (placementId: string) => {
-      if (gamePhase !== 'planning') return;
-      removeFood(placementId);
-    },
-    [removeFood, gamePhase]
-  );
-
-  const handleInterventionClick = useCallback(
-    (placementId: string) => {
-      if (gamePhase !== 'planning') return;
-      removeIntervention(placementId);
-    },
-    [removeIntervention, gamePhase]
-  );
-
-  const handleFoodMove = useCallback(
-    (placementId: string, newColumn: number) => {
-      if (gamePhase !== 'planning') return;
-      moveFood(placementId, newColumn);
-    },
-    [moveFood, gamePhase]
-  );
-
-  const handleInterventionMove = useCallback(
-    (placementId: string, newColumn: number) => {
-      if (gamePhase !== 'planning') return;
-      moveIntervention(placementId, newColumn);
-    },
-    [moveIntervention, gamePhase]
-  );
-
-  const handleToggleTimeFormat = useCallback(() => {
-    updateSettings({
-      timeFormat: settings.timeFormat === '12h' ? '24h' : '12h',
-    });
-  }, [settings.timeFormat, updateSettings]);
-
-  const handleToggleBgUnit = useCallback(() => {
-    updateSettings({
-      bgUnit: settings.bgUnit === 'mg/dL' ? 'mmol/L' : 'mg/dL',
-    });
-  }, [settings.bgUnit, updateSettings]);
-
-  const handleTogglePancreas = useCallback(() => {
-    const nextTier = togglePancreasTier(currentPancreasTier, barsAvailable);
-    setPancreasTier(currentDay, nextTier);
-  }, [currentPancreasTier, barsAvailable, currentDay, setPancreasTier]);
+  const handleToggleBoost = useCallback(() => {
+    if (!isBoostActive && barsAvailable <= 0) return;
+    toggleBoost(currentDay);
+    notifyTutorialAction({ type: 'toggle-boost' });
+  }, [isBoostActive, barsAvailable, currentDay, toggleBoost, notifyTutorialAction]);
 
   // === Submit handler: start reveal animation (no graph clear) ===
   const handleSubmit = useCallback(() => {
     if (!submitEnabled) return;
 
-    // Lock pancreas bars for this day
-    lockPancreasBars();
+    // Lock BOOST bars for this day
+    lockBoostBars();
 
     // Save WP state for carry-over penalty
     submitDayWp(currentDay, wpUsed, effectiveWpBudget);
@@ -417,17 +423,21 @@ export function PlanningPhase() {
     setSatietyResult(penalty);
 
     // Build reveal sequence — only phases that have content
+    const hasInsulin = typeof insulinParams !== 'number' || insulinParams > 0;
     const phases: number[] = [1]; // food cubes always present
-    if (currentDecayRate > 0) phases.push(2); // pancreas
+    if (hasInsulin) phases.push(2); // insulin/pancreas
     if (placedInterventions.length > 0) phases.push(3); // exercise
     if (activeMedications.length > 0) phases.push(4); // medications
     revealSequenceRef.current = phases;
+
+    // Notify tutorial system before phase change
+    notifyTutorialAction({ type: 'click-submit' });
 
     // Start reveal — graph stays populated, revealPhase controls layer visibility
     setGamePhase('replaying');
     setRevealPhase(0);
     setPenaltyResult(null);
-  }, [submitEnabled, lockPancreasBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, kcalUsed, effectiveKcalBudget, setSatietyPenalty, currentDecayRate, placedInterventions.length, activeMedications.length]);
+  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, kcalUsed, effectiveKcalBudget, setSatietyPenalty, insulinParams, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
 
   // === Reveal animation effect — progressive layer reveal (skips empty phases) ===
   useEffect(() => {
@@ -451,7 +461,8 @@ export function PlanningPhase() {
           placedInterventions,
           allInterventions,
           medicationModifiers,
-          currentDecayRate,
+          insulinParams,
+          boostConfig,
         );
 
         // Last day: add WP penalty for unspent WP
@@ -488,12 +499,12 @@ export function PlanningPhase() {
   // === Result actions ===
   const handleRetry = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-    unlockPancreasBars(currentDay);
+    unlockBoostBars(currentDay);
     clearFoods();
     setGamePhase('planning');
     setRevealPhase(undefined);
     setPenaltyResult(null);
-  }, [clearFoods, unlockPancreasBars, currentDay]);
+  }, [clearFoods, unlockBoostBars, currentDay]);
 
   const handleNextDay = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
@@ -512,6 +523,24 @@ export function PlanningPhase() {
     setPenaltyResult(null);
   }, [goToDay]);
 
+  // Tutorial: next level handler
+  const handleNextTutorialLevel = useCallback(() => {
+    if (!tutorialLevelId || !onNextLevel) return;
+    const idx = TUTORIAL_LEVEL_ORDER.indexOf(tutorialLevelId);
+    if (idx < 0 || idx >= TUTORIAL_LEVEL_ORDER.length - 1) return;
+    const nextId = TUTORIAL_LEVEL_ORDER[idx + 1];
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    setGamePhase('planning');
+    setRevealPhase(undefined);
+    setPenaltyResult(null);
+    onNextLevel(nextId);
+  }, [tutorialLevelId, onNextLevel]);
+
+  // Is this the last tutorial level?
+  const isLastTutorialLevel = tutorialLevelId
+    ? TUTORIAL_LEVEL_ORDER.indexOf(tutorialLevelId) >= TUTORIAL_LEVEL_ORDER.length - 1
+    : false;
+
   if (isLoading || !currentLevel) {
     return (
       <div className="planning-phase planning-phase--loading">
@@ -527,10 +556,10 @@ export function PlanningPhase() {
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
-      onDragMove={handleDragMove}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="planning-phase" ref={graphRef}>
+      <div className="planning-phase">
         <PlanningHeader
           dayLabel={`Day ${currentDay}/${currentLevel.days}`}
           kcalUsed={kcalUsed}
@@ -541,13 +570,12 @@ export function PlanningPhase() {
           medicationModifiers={medicationModifiers}
           submitEnabled={submitEnabled}
           onSubmit={handleSubmit}
-          onToggleTimeFormat={handleToggleTimeFormat}
-          onToggleBgUnit={handleToggleBgUnit}
+          hideKcal={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
         />
 
         {isPlanning && (
           <div className="planning-phase__hint">
-            Drag food cards onto the graph to plan your meals!
+            Drag food cards into meal slots to plan your day!
           </div>
         )}
         {gamePhase === 'replaying' && (
@@ -564,35 +592,44 @@ export function PlanningPhase() {
               placedInterventions={placedInterventions}
               allInterventions={allInterventions}
               settings={settings}
-              decayRate={currentDecayRate}
+              decayOrInsulin={insulinParams}
+              boostConfig={boostConfig}
               medicationModifiers={medicationModifiers}
-              previewShip={isPlanning ? activeShip : null}
-              previewIntervention={isPlanning ? activeIntervention : null}
-              previewColumn={isPlanning ? previewColumn : null}
-              breakValidColumns={isPlanning ? breakValidColumns : null}
               showPenaltyHighlight={showResults}
               revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
-              interactive={isPlanning}
+              previewShip={activeShip && previewSlot !== null ? activeShip : undefined}
+              previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}
+              previewIntervention={activeIntervention && previewSlot !== null ? activeIntervention : undefined}
+              previewInterventionColumn={activeIntervention && previewSlot !== null ? slotToColumn(previewSlot) : undefined}
+              stressSlots={stressSlotSet}
               isMobile={isMobile}
-              onFoodClick={handleFoodClick}
-              onFoodMove={handleFoodMove}
-              onInterventionClick={handleInterventionClick}
-              onInterventionMove={handleInterventionMove}
             />
             {isPlanning && (
               <div className="planning-phase__pancreas-overlay">
                 <PancreasButton
-                  currentTier={currentPancreasTier}
+                  isBoostActive={isBoostActive}
                   usesRemaining={barsAvailable}
-                  onToggle={handleTogglePancreas}
+                  onToggle={handleToggleBoost}
                   disabled={gamePhase !== 'planning'}
                 />
               </div>
             )}
           </div>
 
+          <SlotGrid
+            allShips={allShips}
+            allInterventions={allInterventions}
+            placedFoods={placedFoods}
+            placedInterventions={placedInterventions}
+            settings={settings}
+            onRemoveFromSlot={removeFromSlot}
+            disabled={!isPlanning}
+            lockedSlots={effectiveLockedSlots}
+            stressSlots={stressSlotSet}
+          />
+
           {isPlanning && (
-            <>
+            <InventoryDropZone>
               <ShipInventory
                 allShips={allShips}
                 availableFoods={effectiveAvailableFoods}
@@ -609,10 +646,10 @@ export function PlanningPhase() {
                   allMedications={allMedications}
                   availableMedicationIds={dayConfig?.availableMedications ?? []}
                   activeMedications={activeMedications}
-                  onMedicationToggle={toggleMedication}
+                  onMedicationToggle={handleMedicationToggle}
                 />
               </div>
-            </>
+            </InventoryDropZone>
           )}
 
           {showResults && penaltyResult && (
@@ -624,11 +661,14 @@ export function PlanningPhase() {
               satietyResult={satietyResult}
               onRetry={handleRetry}
               onNextDay={handleNextDay}
+              isTutorial={isTutorial}
+              onNextLevel={!isLastTutorialLevel ? handleNextTutorialLevel : undefined}
+              onBackToTutorials={onBackToTutorials}
             />
           )}
 
-          {/* Day navigation (cheat buttons) — only in planning */}
-          {isPlanning && (
+          {/* Day navigation (cheat buttons) — only in planning, hidden in tutorial */}
+          {isPlanning && !isTutorial && (
             <div className="planning-phase__day-nav">
               {Array.from({ length: currentLevel.days }, (_, i) => i + 1).map(day => (
                 <button
@@ -649,6 +689,14 @@ export function PlanningPhase() {
         {activeShip && <ShipCardOverlay ship={activeShip} />}
         {activeIntervention && <InterventionCardOverlay intervention={activeIntervention} />}
       </DragOverlay>
+
+      {/* Tutorial overlay */}
+      {isTutorialActive && tutorialStep && (
+        <TutorialOverlay
+          step={tutorialStep}
+          onAdvance={advanceTutorial}
+        />
+      )}
     </DndContext>
   );
 }

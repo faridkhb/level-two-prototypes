@@ -1,0 +1,57 @@
+{
+  "id": "tutorial-06",
+  "name": "Threshold Drain",
+  "description": "SGLT2 drains glucose above 200 mg/dL, and stress weakens insulin.",
+  "days": 2,
+  "dayConfigs": [
+    {
+      "day": 1,
+      "kcalBudget": 1400,
+      "wpBudget": 8,
+      "availableFoods": [
+        { "id": "banana", "count": 1 },
+        { "id": "cookie", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 }
+      ],
+      "availableMedications": ["sglt2"],
+      "preplacedFoods": [
+        { "shipId": "pizza", "slotIndex": 3 }
+      ],
+      "lockedSlots": [0, 1, 3, 5, 6, 8, 9, 10, 11],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 31, "rate": 2 },
+          { "from": 32, "to": 47, "rate": 1 }
+        ]
+      }
+    },
+    {
+      "day": 2,
+      "kcalBudget": 1400,
+      "wpBudget": 10,
+      "availableFoods": [
+        { "id": "chickpeas", "count": 1 },
+        { "id": "banana", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 }
+      ],
+      "availableMedications": ["metformin", "sglt2"],
+      "preplacedFoods": [
+        { "shipId": "oatmeal", "slotIndex": 2 }
+      ],
+      "lockedSlots": [0, 1, 2, 5, 8, 10, 11],
+      "stressSlots": [6, 7],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 23, "rate": 3 },
+          { "from": 24, "to": 47, "rate": 2 }
+        ]
+      }
+    }
+  ]
+}

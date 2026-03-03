@@ -1,7 +1,7 @@
 # BG Planner — Game Design Document
 
-**Version:** v0.39.2-alpha1
-**Branch:** `main`
+**Version:** v0.43.25 (alpha-5-stable)
+**Branch:** `main` / `mobile-layout`
 **Deploy:** https://level-two-eight.vercel.app/
 
 ---
@@ -22,21 +22,25 @@
 
 ```
 ┌─────────────────────────────────────┐
-│  Header: Day X │ WP: X/Y │ kcal    │
+│  Day X                              │
+│  ☀️ WP: X/Y │ kcal bar │ [Submit]  │
 ├─────────────────────────────────────┤
-│                                     │
+│  [BOOST]                            │
 │          BG Graph (SVG)             │
 │    8 AM ──────────────── 8 PM       │
-│    Зоны: green/yellow/orange/red    │
+│    Insulin bars (amber)             │
 │    Кубики еды + маркеры + скайлайны │
 │                                     │
 ├─────────────────────────────────────┤
+│  Slots: [B1][B2][B3][B4] Breakfast  │
+│         [L1][L2][L3][L4] Lunch      │
+│         [D1][D2][D3][D4] Dinner     │
+├─────────────────────────────────────┤
 │  Medications: ON/OFF toggles        │
 ├─────────────────────────────────────┤
-│  Food Cards (горизонтальный скролл) │
-│  Intervention Cards                 │
+│  Food Cards  │  Intervention Cards  │
 ├─────────────────────────────────────┤
-│  Pancreas Tier │ Day 1│2│3 │ Submit │
+│  Day 1│2│3                          │
 └─────────────────────────────────────┘
 ```
 
@@ -85,9 +89,9 @@ peakCubes = round(glucose / 20)
 riseCols  = round(duration / 15)
 ```
 
-- **Фаза нарастания:** линейный рост от 1 до peakCubes за riseCols колонок
-- **Фаза спада** (Pancreas ON): снижение на decayRate кубов за колонку
-- **Плато** (Pancreas OFF): плоская линия на peakCubes до правого края
+- **Фаза нарастания:** линейный рост от 1 до peakCubes за riseCols колонок (NO insulin drain)
+- **После пика (insulin):** `height = round(peak − cumInsulin)` where cumInsulin accumulates insulin rate per column
+- **Без инсулина:** плоская линия на peakCubes до правого края
 
 ### 4.2. Стекирование
 
@@ -113,30 +117,30 @@ riseCols  = round(duration / 15)
 
 | # | Продукт | Emoji | Glucose | Carbs | Protein | Fat | Duration | Kcal | WP | Cubes | Cols |
 |---|---------|-------|--------:|------:|--------:|----:|---------:|-----:|---:|------:|-----:|
-| 1 | Banana | 🍌 | 230 | 23g | 1g | 0g | 45m | 302 | 1 | 12 | 3 |
-| 2 | Apple | 🍎 | 210 | 21g | 1g | 0g | 45m | 274 | 1 | 11 | 3 |
-| 3 | Ice Cream | 🍦 | 200 | 20g | 4g | 11g | 60m | 596 | 0 | 10 | 4 |
-| 4 | Popcorn | 🍿 | 190 | 19g | 3g | 2g | 45m | 325 | 1 | 10 | 3 |
-| 5 | Cookie | 🍪 | 140 | 14g | 2g | 7g | 60m | 420 | 2 | 7 | 4 |
-| 6 | Caesar Salad | 🥗 | 80 | 8g | 9g | 12g | 120m | 546 | 3 | 4 | 8 |
-| 7 | Choco Muffin | 🧁 | 440 | 44g | 6g | 18g | 60m | 1142 | 0 | 22 | 4 |
-| 8 | Sandwich | 🥪 | 340 | 34g | 22g | 28g | 150m | 1438 | 2 | 17 | 10 |
-| 9 | Chicken Meal | 🍗 | 30 | 3g | 35g | 12g | 120m | 805 | 3 | 2 | 8 |
-| 10 | Bowl of Rice | 🍚 | 380 | 38g | 4g | 0g | 150m | 590 | 4 | 19 | 10 |
-| 11 | Hamburger | 🍔 | 200 | 20g | 17g | 14g | 180m | 849 | 3 | 10 | 12 |
-| 12 | Oatmeal | 🥣 | 240 | 24g | 6g | 4g | 120m | 477 | 4 | 12 | 8 |
-| 13 | Pizza | 🍕 | 290 | 29g | 12g | 12g | 90m | 863 | 3 | 15 | 6 |
-| 14 | Boiled Eggs | 🥚 | 0 | 0g | 13g | 10g | 150m | 446 | 4 | 0 | 10 |
-| 15 | Mixed Berries | 🫐 | 180 | 18g | 2g | 1g | 45m | 245 | 2 | 9 | 3 |
-| 16 | Greek Yogurt | 🥛 | 60 | 6g | 11g | 11g | 90m | 561 | 3 | 3 | 6 |
-| 17 | Milk 2% | 🥛 | 100 | 10g | 8g | 5g | 45m | 351 | 3 | 5 | 3 |
-| 18 | Vegetable Stew | 🥘 | 170 | 17g | 5g | 5g | 150m | 483 | 4 | 9 | 10 |
-| 19 | Boiled Carrots | 🥕 | 60 | 6g | 1g | 0g | 45m | 153 | 4 | 3 | 3 |
-| 20 | Chickpeas | 🫘 | 230 | 23g | 9g | 3g | 90m | 472 | 3 | 12 | 6 |
-| 21 | Cottage Cheese | 🧀 | 30 | 3g | 25g | 9g | 120m | 592 | 4 | 2 | 8 |
-| 22 | Hard Cheese | 🧀 | 0 | 0g | 7g | 9g | 150m | 345 | 3 | 0 | 10 |
-| 23 | Avocado | 🥑 | 70 | 7g | 2g | 15g | 150m | 460 | 3 | 4 | 10 |
-| 24 | Mixed Nuts | 🥜 | 20 | 2g | 5g | 16g | 150m | 523 | 2 | 1 | 10 |
+| 1 | Banana | 🍌 | 230 | 23g | 1g | 0g | 45m | 395 | 1 | 12 | 3 |
+| 2 | Apple | 🍎 | 210 | 21g | 1g | 0g | 45m | 355 | 1 | 11 | 3 |
+| 3 | Ice Cream | 🍦 | 200 | 20g | 4g | 11g | 60m | 780 | 0 | 10 | 4 |
+| 4 | Popcorn | 🍿 | 190 | 19g | 3g | 2g | 45m | 420 | 1 | 10 | 3 |
+| 5 | Cookie | 🍪 | 140 | 14g | 2g | 7g | 60m | 545 | 2 | 7 | 4 |
+| 6 | Caesar Salad | 🥗 | 80 | 8g | 9g | 12g | 120m | 715 | 3 | 4 | 8 |
+| 7 | Choco Muffin | 🧁 | 440 | 44g | 6g | 18g | 60m | 1495 | 0 | 22 | 4 |
+| 8 | Sandwich | 🥪 | 340 | 34g | 22g | 28g | 150m | 1885 | 2 | 17 | 10 |
+| 9 | Chicken Meal | 🍗 | 30 | 3g | 35g | 12g | 120m | 1055 | 3 | 2 | 8 |
+| 10 | Bowl of Rice | 🍚 | 380 | 38g | 4g | 0g | 150m | 775 | 4 | 19 | 10 |
+| 11 | Hamburger | 🍔 | 200 | 20g | 17g | 14g | 180m | 1110 | 3 | 10 | 12 |
+| 12 | Oatmeal | 🥣 | 240 | 24g | 6g | 4g | 120m | 620 | 4 | 12 | 8 |
+| 13 | Pizza | 🍕 | 290 | 29g | 12g | 12g | 90m | 1130 | 3 | 15 | 6 |
+| 14 | Boiled Eggs | 🥚 | 0 | 0g | 13g | 10g | 150m | 580 | 4 | 0 | 10 |
+| 15 | Mixed Berries | 🫐 | 180 | 18g | 2g | 1g | 45m | 325 | 2 | 9 | 3 |
+| 16 | Greek Yogurt | 🥛 | 60 | 6g | 11g | 11g | 90m | 730 | 3 | 3 | 6 |
+| 17 | Milk 2% | 🥛 | 100 | 10g | 8g | 5g | 45m | 460 | 3 | 5 | 3 |
+| 18 | Vegetable Stew | 🥘 | 170 | 17g | 5g | 5g | 150m | 635 | 4 | 9 | 10 |
+| 19 | Boiled Carrots | 🥕 | 60 | 6g | 1g | 0g | 45m | 200 | 4 | 3 | 3 |
+| 20 | Chickpeas | 🫘 | 230 | 23g | 9g | 3g | 90m | 620 | 3 | 12 | 6 |
+| 21 | Cottage Cheese | 🧀 | 30 | 3g | 25g | 9g | 120m | 775 | 4 | 2 | 8 |
+| 22 | Hard Cheese | 🧀 | 0 | 0g | 7g | 9g | 150m | 450 | 3 | 0 | 10 |
+| 23 | Avocado | 🥑 | 70 | 7g | 2g | 15g | 150m | 600 | 3 | 4 | 10 |
+| 24 | Mixed Nuts | 🥜 | 20 | 2g | 5g | 16g | 150m | 685 | 2 | 1 | 10 |
 
 **Формула:** Cubes = round(glucose / 20), Cols = round(duration / 15)
 
@@ -146,25 +150,29 @@ riseCols  = round(duration / 15)
 
 ### 5.1. Параметры
 
-| Упражнение | Emoji | Depth | Duration | WP | Boost Zone | Пик |
-|-----------|-------|------:|--------:|---:|------------|-----|
-| Light Walk | 🚶 | 3 cubes | 60m | 2 | +1 на 3 cols | 4 cubes |
-| Heavy Run | 🏃 | 5 cubes | 30m | 4 | +2 на 5 cols | 7 cubes |
+| Упражнение | Emoji | Depth | Duration | WP | Tail | SlotSize | Эффект |
+|-----------|-------|------:|---------:|---:|-----:|---------:|--------|
+| Light Walk | 🚶 | 3 cubes | 60m (4 cols) | 2 | 1 cube | 1 | Main: 3 cubes for 4 cols, tail: 1 cube to end |
+| Heavy Run | 🏃 | 5 cubes | 180m (12 cols) | 4 | 2 cubes | 2 | Main: 5 cubes for 12 cols, tail: 2 cubes to end |
+| Take a Break | ☕ | 0 | 30m (2 cols) | −1 | 0 | 1 | Refunds 1 WP, no cube effect |
+| Take a Rest | 😴 | 0 | 120m (8 cols) | −2 | 0 | 2 | Refunds 2 WP, no cube effect |
 
-### 5.2. Кривая reduction
+### 5.2. Two-Phase Curve (v0.40.0)
 
 ```
-riseCols = round(duration / 15)
-Rise phase:  линейный рост от 1 до depth
-Plateau:     depth до правого края графика
-Boost zone:  первые boostCols колонок получают +boostExtra depth
+mainCols = round(duration / 15)
+Main phase:  flat at depth for mainCols columns (no ramp, immediate full power)
+Tail phase:  flat at boostExtra from mainCols to right edge of graph
 ```
+
+Break interventions (☕/😴) have no cube effect — they only restore WP.
 
 ### 5.3. Механика
 
 - Кубики удаляются **сверху** стека еды
 - Несколько упражнений стекируются (reduction суммируется)
 - Drag-превью: зелёные оверлеи на кубиках которые будут сожжены (пульсация)
+- Multi-slot: Heavy Run и Take a Rest занимают 2 слота (`slotSize=2`)
 
 ### 5.4. Per-source burn coloring
 
@@ -244,28 +252,54 @@ Boost zone:  первые boostCols колонок получают +boostExtra 
 
 ---
 
-## 7. Pancreas Tier System
+## 7. Insulin Profile System (v0.43.0)
 
-### 7.1. Тиры
+Replaces old Pancreas Tier System (OFF/I/II/III).
 
-| Tier | Decay Rate | WP | Эффект |
-|------|-----------|-----|--------|
-| OFF | 0 | 0 | Плато (без спада) |
-| I | 0.25 | 0 | Медленный спад |
-| II | 0.50 | 1 | Стандартный спад |
-| III | 0.75 | 2 | Быстрый спад |
+### 7.1. Segment-Based Profiles
 
-### 7.2. Формула спада
-
-```
-decayHeight[col] = max(0, peakCubes − decayRate × (col − peakCol + 1))
+Each day defines insulin rate segments in level config:
+```json
+"insulinProfile": [
+  { "from": 0, "to": 16, "rate": 2 },
+  { "from": 16, "to": 25, "rate": 2 },
+  { "from": 25, "to": 48, "rate": 1 }
+]
 ```
 
-### 7.3. Визуальный pancreas layer
+- Integer rates 1-5 (insulin cells absorbed per column)
+- Visible as amber background bars on graph
+- Higher rates = faster glucose absorption after peak
 
-- Высота слоя = `max(1, round(decayRate × 4))` → Tier I=1, II=2, III=3 куба
-- Цвет: оранжевый `#f97316`
-- Стекируется поверх alive-зоны для каждого продукта
+### 7.2. Post-Peak Insulin
+
+Food rises to **full peak** without any insulin drain during ramp-up.
+Insulin absorbs cubes only **after** the food reaches its peak column.
+
+**Cumulative mode (default):**
+```
+After peak: height = round(peakCubes − cumInsulin)
+where cumInsulin += rate[col] each post-peak column
+```
+
+**Per-column mode (config option):**
+```
+After peak: height = round(peakCubes − rate[col])
+```
+
+### 7.3. BOOST — Adaptive Insulin
+
+- ON/OFF toggle, **1 use per level**
+- Only enhances columns above 200 mg/dL threshold
+- Extra rate = 4 cubes per column above threshold (configurable)
+- Button overlaid on graph top-left corner
+- Config screen: BOOST threshold and extra rate editable
+
+### 7.4. Visual Layer
+
+- Insulin-eaten cubes rendered as orange (`#f59e0b`) with fall animation
+- Darker stroke `#d97706`
+- Stacked above alive food cubes
 
 ---
 
@@ -321,25 +355,121 @@ penalty = Σ(orange_cubes × 0.5 + red_cubes × 1.5)
 
 ---
 
-## 10. Level-01: First Steps
+## 10. Slot System (v0.42.0)
 
-### 10.1. Конфигурация дней
+### 10.1. Слоты
 
-| День | WP | Kcal | Продукты | Упражнения | Медикаменты |
-|------|---:|-----:|---------|-----------|------------|
-| 1 | 7 | 1800 | 🍔🍦🍪🍌🍎🍿🫐 (7) | 🚶🏃 (2) | — |
-| 2 | 14 | 2000 | 🍕🫘🥛🥣🍪🫐🥜🍌 (8) | 🚶 (1) | 💊 |
-| 3 | 10 | 2000 | 🧁🥪🍪🫐🫘🥛🥣🍌 (8) | 🚶 (1) | 💊💉 |
+12 слотов: 4 Breakfast (8-11 AM) + 4 Lunch (11 AM-2 PM) + 4 Dinner (5-8 PM).
+Each slot maps to a graph column range.
 
-### 10.2. Прогрессия сложности
+- Drag food/intervention from inventory → drop into slot
+- Drag between slots to swap/reorder
+- Drag back to inventory to remove
+- Multi-slot items (Heavy Run, Take a Rest) occupy 2 adjacent slots
 
-- **День 1:** Много WP на единицу еды (7 WP, дешёвые продукты). 2 упражнения для обучения механике. Без медикаментов.
-- **День 2:** Больше WP (14), но дорогие продукты. Только 1 упражнение. Metformin помогает снизить пики.
-- **День 3:** Меньше WP (10), тяжёлые продукты (Muffin 🧁, Sandwich 🥪). Metformin + GLP-1 необходимы для контроля.
+### 10.2. Pre-placed Foods (v0.42.12)
+
+Level config specifies foods already placed when day starts:
+```json
+"preplacedFoods": [{ "shipId": "burger", "slotIndex": 0 }]
+```
+- Player **cannot** remove pre-placed foods
+- Displayed with grayscale + lock icon
+- Creates mandatory stacking the player must manage
+
+### 10.3. Locked Slots (v0.42.12)
+
+Level config specifies slots where player cannot place anything:
+```json
+"lockedSlots": [0, 1, 3, 4, 6, 7, 9, 10]
+```
+- Dark gray background with lock visual
+- Design rules: max 2 consecutive locked slots, no pre-placed foods in adjacent slots
 
 ---
 
-## 11. Анимации
+## 11. Level-01: First Steps (v0.43.0)
+
+### 11.1. Конфигурация дней
+
+| День | WP | Kcal | Pre-placed | Insulin Profile | Locked | Free | Продукты | Упражнения | Медикаменты | 3★ % |
+|------|---:|-----:|-----------|----------------|--------|------|---------|-----------|------------|-----:|
+| 1 | 10 | 1800 | 🍔@0, 🍌@4 | 2,2,1 | [0,1,3,4,6,7,9,10] | [2,5,8,11] | 🍪🥛🫘 | 🚶×1,☕×1 | — | 14.8% |
+| 2 | 10 | 2000 | 🍌@0, 🧁@5 | 2,2(→25),1 | [1,3,6,8,11] | [2,4,7,9,10] | 🫘🍪🥣 | 🚶×2,☕×1 | 💊 | 13.4% |
+| 3 | 10 | 2000 | 🍔@0, 🧁@2, 🥣@5 | 4,3,2 | [0,2,3,5,6,8,9,11] | [1,4,7,10] | 🥪🍪🍌🥛 | 🚶×1,☕×2 | 💊💉 | 0.7%* |
+
+*Day 3 requires BOOST (extraRate=4) to achieve 3★.
+
+### 11.2. Прогрессия сложности
+
+- **День 1:** 2 pre-placed (burger+banana), 4 free slots. Lightwalk covers overlap at slot 2.
+- **День 2:** 2 pre-placed (banana+muffin), 5 free slots. Metformin + 2× lightwalk near muffin spike.
+- **День 3:** 3 pre-placed (burger+muffin+oatmeal), 4 free slots. Both meds + BOOST + precise WP management. Without BOOST: 0% 3★ (intentional design).
+
+### 11.3. Key Puzzle Solutions
+
+- **Day 1**: lightwalk@2 covers burger+banana overlap
+- **Day 2**: metformin + 2×lightwalk near muffin spike
+- **Day 3**: both meds + BOOST + lightwalk@1 + sandwich@7, precise WP management
+
+---
+
+## 12. Tutorial Progression (Story Mode)
+
+Full tutorial scenarios documented in **`docs/TUTORIAL_SCENARIOS.md`**.
+
+### 12.1. Overview
+
+8 levels, 20 days. Each level introduces 1-3 new mechanics. Guide character: **Doctor Alice** (friendly doctor, text bubble dialogues in English).
+
+| Level | Name | Days | New Mechanics |
+|-------|------|------|---------------|
+| 1 | First Steps | 3 | Graph, zones, food→cubes, WP, kcal, stacking |
+| 2 | Keep Moving | 3 | Light Walk, locked slots, Heavy Run |
+| 3 | Willpower Management | 3 | Take a Break, overeating, carry-over, Take a Rest |
+| 4 | Insulin Rhythm | 2 | Insulin profiles, rate segments |
+| 5 | First Medication | 2 | Metformin |
+| 6 | Threshold Drain | 2 | SGLT2, stress slots |
+| 7 | GLP-1 | 2 | GLP-1 (4 effects), all meds combined |
+| 8 | Final Exam | 3 | BOOST, full challenge |
+
+### 12.2. Tutorial System
+
+- **Overlay:** spotlight cutout + dark backdrop, pulse/glow/arrow highlights
+- **4 bubble types:** dialogue (white), hint (yellow 💡), warning (red ⚠️), success (green ✨)
+- **CTA animations:** drag-arrow, tap-pulse, glow-border, bounce
+- **Step schema:** `{ id, bubble, highlight, cta, expectedAction, advanceOn, blockInteraction }`
+- Each day has 8-15 tutorial steps, ~200 steps total
+- Tutorial data stored in `public/data/tutorials/tutorial-01.json` through `tutorial-08.json`
+
+### 12.3. Mechanic Introduction Order
+
+| Day | Mechanic |
+|-----|----------|
+| L1D1 | BG graph, zones, food→cubes, drag & drop, Submit, stars |
+| L1D2 | WP budget, kcal assessment, food selection |
+| L1D3 | Pre-placed food, stacking risk, insulin variation |
+| L2D1 | Light Walk (exercise burns cubes) |
+| L2D2 | Locked slots (🔒) |
+| L2D3 | Heavy Run (2-slot, deeper) |
+| L3D1 | Take a Break (☕ WP refund) |
+| L3D2 | Overeating penalty, kcal zones |
+| L3D3 | Carry-over penalties, Take a Rest (😴) |
+| L4D1 | Insulin profiles (morning vs evening) |
+| L4D2 | Strategic food-to-insulin matching |
+| L5D1 | Metformin (💊 −20% glucose) |
+| L5D2 | Metformin + exercise combo |
+| L6D1 | SGLT2 (🧪 drain above 200) |
+| L6D2 | Stress slots (😰 insulin −2), Met + SGLT2 |
+| L7D1 | GLP-1 (💉 4 effects) |
+| L7D2 | All 3 medications stacking |
+| L8D1 | Full arsenal exam |
+| L8D2 | Stress + carry-over + restrictions |
+| L8D3 | BOOST (🧑‍⚕️ adaptive insulin) |
+
+---
+
+## 13. Анимации
 
 | Анимация | Длительность | Эффект | Задержка |
 |----------|-------------|--------|----------|
@@ -350,12 +480,14 @@ penalty = Σ(orange_cubes × 0.5 + red_cubes × 1.5)
 
 ---
 
-## 12. Взаимодействия (Drag & Drop)
+## 14. Взаимодействия (Drag & Drop)
 
 | Действие | Механика |
 |----------|----------|
-| Карта еды → график | Drag-and-drop через @dnd-kit, drop column от позиции курсора |
-| Карта упражнения → график | Аналогично, зелёный превью по кубикам |
+| Карта еды → слот | Drag-and-drop через @dnd-kit в один из 12 слотов |
+| Карта упражнения → слот | Аналогично, multi-slot для run/rest |
+| Карта в слоте → другой слот | Swap/reorder |
+| Карта в слоте → инвентарь | Drag back to remove |
 | Маркер еды → другая колонка | Pointer capture drag, перемещение продукта |
 | Маркер еды → за пределы | Удаление продукта |
 | Маркер упражнения → другая колонка | Pointer capture drag, перемещение упражнения |
@@ -363,11 +495,11 @@ penalty = Σ(orange_cubes × 0.5 + red_cubes × 1.5)
 | Клик по normal кубу | Удаление этого продукта |
 | Клик по burned кубу | Удаление первого упражнения |
 | Медикамент toggle | ON/OFF, мгновенный пересчёт |
-| Pancreas tier | Выбор уровня, пересчёт decay |
+| BOOST toggle | ON/OFF, 1 use per level, adaptive insulin above 200 |
 
 ---
 
-## 13. Настройки
+## 15. Настройки
 
 | Настройка | Значения | Default | Persist |
 |-----------|----------|---------|---------|
@@ -378,41 +510,41 @@ penalty = Σ(orange_cubes × 0.5 + red_cubes × 1.5)
 
 ---
 
-## 14. Модель стека кубиков (v0.39.2)
+## 16. Модель стека кубиков (v0.43.0)
 
 ### 14.1. Визуальный стек (bottom → top)
 
 ```
 ─────────────────────────────────
  Medication prevented (розовый/фиолетовый)    ← GLP-1, Metformin
- Pancreas eaten (оранжевый)                   ← тонкий слой (1-3 куба)
+ Insulin eaten (оранжевый #f59e0b)           ← insulin profile rate
  Burned by SGLT2 (фиолетовый)                ← thresholdDrain
  Burned by Run (тёмно-зелёный)               ← heavyrun
  Burned by Walk (светло-зелёный)             ← lightwalk
  Alive food cubes (синий по палитре)          ← нормальные кубики
 ─────────────────────────────────
- columnCaps = pancreasCaps − interventionReduction − sglt2Reduction
+ columnCaps = insulinCaps − interventionReduction − sglt2Reduction
 ```
 
 ### 14.2. Границы
 
 | Граница | Формула | Роль |
 |---------|---------|------|
-| columnCaps | pancreasCaps − interventions − sglt2 | Верх alive-зоны |
-| pancreasCaps | Сумма decay heights всех продуктов | Верх alive + burned |
-| plateauHeights | Сумма plateau heights всех продуктов | Полная высота без спада |
+| columnCaps | insulinCaps − interventions − sglt2 | Верх alive-зоны |
+| insulinCaps | Сумма insulin-adjusted heights всех продуктов | Верх alive + burned |
+| plateauHeights | Сумма plateau heights всех продуктов | Полная высота без insulin |
 
 ### 14.3. Определение статуса куба
 
 ```
 row < columnCaps[col]          → normal (полный цвет еды)
-columnCaps ≤ row < pancreasCaps → burned (цвет по источнику)
-row ≥ pancreasCaps             → pancreas (оранжевый, тонкий слой)
+columnCaps ≤ row < insulinCaps → burned (цвет по источнику)
+row ≥ insulinCaps             → insulin (оранжевый #f59e0b, fall animation)
 ```
 
 ---
 
-## 15. Известные проблемы
+## 17. Известные проблемы
 
 1. Клик по burned кубику удаляет первое упражнение, а не то которое сожгло этот конкретный куб
 2. Drag-превью еды начинается с pancreasCaps (а не с верха видимых medication/pancreas кубов) — может быть визуальный зазор
@@ -420,40 +552,51 @@ row ≥ pancreasCaps             → pancreas (оранжевый, тонкий 
 
 ---
 
-## 16. Файловая структура
+## 18. Файловая структура
 
 ```
 src/
-├── version.ts                     — Версия (v0.39.2)
+├── version.ts                     — Версия (v0.43.25)
 ├── core/
 │   ├── types.ts                   — Типы, константы, GRAPH_CONFIG
 │   └── cubeEngine.ts              — Алгоритмы кривых, reduction, penalty
 ├── store/
-│   └── gameStore.ts               — Zustand store: state + actions
+│   ├── gameStore.ts               — Zustand store: state + actions
+│   └── configStore.ts             — Config overrides (persisted)
 ├── config/
 │   └── loader.ts                  — Загрузка JSON конфигов
 ├── components/
+│   ├── menu/
+│   │   ├── MainMenu.tsx           — Главное меню (Test/Story/Config)
+│   │   └── MainMenu.css           — Стили кнопок меню
+│   ├── config/
+│   │   ├── ConfigScreen.tsx       — 3-tab editor (Food/Insulin/Interventions)
+│   │   └── ConfigScreen.css       — Стили конфига
 │   ├── graph/
 │   │   ├── BgGraph.tsx            — SVG граф + вся визуализация
 │   │   └── BgGraph.css            — Стили, keyframe анимации
 │   ├── planning/
 │   │   ├── PlanningPhase.tsx      — Оркестратор DnD + callbacks
 │   │   ├── PlanningHeader.tsx     — Хедер: WP, kcal, Submit
+│   │   ├── PancreasButton.tsx     — ON/BOOST toggle overlay
 │   │   ├── ShipCard.tsx           — Карточка еды
 │   │   ├── ShipInventory.tsx      — Инвентарь еды
 │   │   ├── InterventionCard.tsx   — Карточка упражнения
-│   │   ├── InterventionInventory.tsx — Инвентарь упражнений
-│   │   ├── MedicationPanel.tsx    — Панель медикаментов
-│   │   └── MedicationPanel.css    — Стили (purple theme)
+│   │   ├── InterventionInventory.tsx — Комбинированный Actions panel
+│   │   ├── MedicationPanel.css    — Стили (purple theme)
+│   │   └── ResultPanel.tsx        — Звёзды, penalty breakdown, retry/next
 │   └── ui/
 │       └── Tooltip.tsx            — Универсальный тултип
-├── App.tsx                        — Корневой компонент
+├── App.tsx                        — Экран-роутер (menu/test/config)
 └── App.css                        — Layout стили
 
 public/data/
 ├── foods.json                     — 24 продукта
-├── interventions.json             — 2 упражнения
+├── interventions.json             — 4 упражнения (walk, run, break, rest)
 ├── medications.json               — 3 медикамента
 └── levels/
-    └── level-01.json              — 3-дневный уровень
+    └── level-01.json              — 3-дневный уровень (+Day 4 sandbox)
+
+scripts/
+└── balance-calc.ts                — CLI balance calculator & solver
 ```

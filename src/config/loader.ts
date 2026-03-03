@@ -1,4 +1,4 @@
-import type { Ship, LevelConfig, LoadType, AvailableFood, Intervention, Medication, MedicationType, PancreasTier } from '../core/types';
+import type { Ship, LevelConfig, LoadType, AvailableFood, Intervention, Medication, MedicationType, PancreasTier, InsulinProfileConfig } from '../core/types';
 import { PANCREAS_TIERS } from '../core/types';
 import { useConfigStore } from '../store/configStore';
 
@@ -33,6 +33,11 @@ interface RawLevelConfig {
     availableFoods: AvailableFood[] | string[];
     availableInterventions?: AvailableFood[] | string[];
     availableMedications?: string[];
+    preplacedFoods?: Array<{ shipId: string; slotIndex: number }>;
+    preplacedInterventions?: Array<{ interventionId: string; slotIndex: number; slotSize?: number }>;
+    lockedSlots?: number[];
+    stressSlots?: number[];
+    insulinProfile?: InsulinProfileConfig;
   }>;
 }
 
@@ -92,6 +97,11 @@ function transformLevel(raw: RawLevelConfig): LevelConfig {
         ? normalizeAvailableFoods(dc.availableInterventions)
         : undefined,
       availableMedications: dc.availableMedications,
+      preplacedFoods: dc.preplacedFoods,
+      preplacedInterventions: dc.preplacedInterventions,
+      lockedSlots: dc.lockedSlots,
+      stressSlots: dc.stressSlots,
+      insulinProfile: dc.insulinProfile,
     }));
   }
 
@@ -108,6 +118,7 @@ interface RawInterventionConfig {
   boostCols?: number;
   boostExtra?: number;
   isBreak?: boolean;
+  slotSize?: number;
 }
 
 function transformIntervention(raw: RawInterventionConfig): Intervention {
@@ -121,6 +132,7 @@ function transformIntervention(raw: RawInterventionConfig): Intervention {
     boostCols: raw.boostCols,
     boostExtra: raw.boostExtra,
     isBreak: raw.isBreak,
+    slotSize: raw.slotSize,
   };
 }
 

@@ -1,0 +1,80 @@
+{
+  "id": "tutorial-02",
+  "name": "Keep Moving",
+  "description": "Exercise interventions: burn cubes to control glucose peaks.",
+  "days": 3,
+  "dayConfigs": [
+    {
+      "day": 1,
+      "kcalBudget": 1200,
+      "wpBudget": 8,
+      "availableFoods": [
+        { "id": "milk", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 }
+      ],
+      "availableMedications": [],
+      "preplacedFoods": [
+        { "shipId": "burger", "slotIndex": 2 }
+      ],
+      "lockedSlots": [0, 1, 2, 4, 5, 7, 8, 10, 11],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 23, "rate": 2 },
+          { "from": 24, "to": 47, "rate": 1 }
+        ]
+      }
+    },
+    {
+      "day": 2,
+      "kcalBudget": 1400,
+      "wpBudget": 8,
+      "availableFoods": [
+        { "id": "banana", "count": 1 },
+        { "id": "cookie", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 }
+      ],
+      "availableMedications": [],
+      "preplacedFoods": [
+        { "shipId": "chocolatemuffin", "slotIndex": 4 }
+      ],
+      "lockedSlots": [0, 1, 2, 4, 6, 8, 10, 11],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 31, "rate": 2 },
+          { "from": 32, "to": 47, "rate": 1 }
+        ]
+      }
+    },
+    {
+      "day": 3,
+      "kcalBudget": 1400,
+      "wpBudget": 10,
+      "availableFoods": [
+        { "id": "banana", "count": 1 },
+        { "id": "berriesmixed", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 },
+        { "id": "heavyrun", "count": 1 }
+      ],
+      "availableMedications": [],
+      "preplacedFoods": [
+        { "shipId": "chocolatemuffin", "slotIndex": 1 }
+      ],
+      "lockedSlots": [0, 1, 4, 8, 10, 11],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          { "from": 0, "to": 31, "rate": 2 },
+          { "from": 32, "to": 47, "rate": 1 }
+        ]
+      }
+    }
+  ]
+}

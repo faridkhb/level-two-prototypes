@@ -4,7 +4,7 @@
   background: #fff;
   border-radius: 8px;
   border: 2px solid #e2e8f0;
-  padding: 8px;
+  padding: 4px;
   transition: border-color 0.2s;
   overflow: hidden;
 }
@@ -36,16 +36,37 @@
   }
 }
 
-/* Cube burn animation (wave effect on intervention) */
+/* Cube burn animation (epic multi-stage flash on intervention placement) */
 @keyframes cubeBurn {
   0% {
-    opacity: 0.85;
+    opacity: 1;
+    filter: brightness(2.5);
+    transform: scale(1.15);
+  }
+  20% {
+    opacity: 0.8;
+    filter: brightness(0.6);
+    transform: scale(0.92);
   }
   40% {
-    opacity: 0.45;
+    opacity: 0.7;
+    filter: brightness(1.8);
+    transform: scale(1.06);
+  }
+  60% {
+    opacity: 0.4;
+    filter: brightness(0.8);
+    transform: scale(0.97);
+  }
+  80% {
+    opacity: 0.25;
+    filter: brightness(1.2);
+    transform: scale(1.02);
   }
   100% {
-    opacity: 0.55;
+    opacity: 0.20;
+    filter: brightness(1);
+    transform: scale(1);
   }
 }
 
@@ -63,29 +84,83 @@
 }
 
 .bg-graph__cube--burned {
-  animation: cubeBurn 0.4s ease-out both;
+  animation: cubeBurn 0.8s ease-out both;
   cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .bg-graph__cube--burned:hover {
-  opacity: 0.2 !important;
+  opacity: 0.5 !important;
+  filter: brightness(1.5) !important;
+  transform: scale(1.15) !important;
+  transition: all 0.15s ease-out;
 }
 
-/* Pancreas-eaten cubes (orange semi-transparent) */
-@keyframes pancreasDigest {
-  0% {
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 0.4;
-  }
-  100% {
-    opacity: 0.45;
-  }
+/* Digest cubes (eaten food): appear like food, hold, then burn when insulin lands */
+@keyframes digestAppearBurn {
+  0%   { opacity: 0; transform: scale(0.3); }
+  12%  { opacity: 1; transform: scale(1.08); }
+  18%  { opacity: 1; transform: scale(1); }
+  65%  { opacity: 1; transform: scale(1); }
+  80%  { opacity: 0.8; filter: brightness(2.5); transform: scale(1.1); }
+  100% { opacity: 0; filter: brightness(0.5); transform: scale(0.3); }
 }
 
-.bg-graph__cube--pancreas {
-  animation: pancreasDigest 0.4s ease-out both;
+.bg-graph__cube--digest-appear-burn {
+  animation: digestAppearBurn 1.6s ease-in-out both;
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+/* Insulin fall cubes: invisible → appear above food → fall → burn */
+@keyframes insulinFall {
+  0%   { opacity: 0; transform: translateY(0); }
+  18%  { opacity: 0; transform: translateY(0); }
+  25%  { opacity: 0.9; transform: translateY(0); }
+  55%  { opacity: 0.9; transform: translateY(var(--fall-dist)); }
+  65%  { opacity: 0.9; transform: translateY(var(--fall-dist)); }
+  80%  { opacity: 0.8; filter: brightness(2.5); transform: translateY(var(--fall-dist)) scale(1.1); }
+  100% { opacity: 0; transform: translateY(var(--fall-dist)) scale(0.3); }
+}
+
+.bg-graph__cube--insulin-fall {
+  animation: insulinFall 1.6s ease-in-out both;
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+/* Intervention fall cubes: invisible → appear above food → fall → burn */
+@keyframes interventionFall {
+  0%   { opacity: 0; transform: translateY(0); }
+  15%  { opacity: 0; transform: translateY(0); }
+  22%  { opacity: 0.9; transform: translateY(0); }
+  50%  { opacity: 0.9; transform: translateY(var(--fall-dist)); }
+  60%  { opacity: 0.9; transform: translateY(var(--fall-dist)); }
+  75%  { opacity: 0.8; filter: brightness(2); transform: translateY(var(--fall-dist)) scale(1.1); }
+  100% { opacity: 0; transform: translateY(var(--fall-dist)) scale(0.3); }
+}
+
+.bg-graph__cube--intervention-fall {
+  animation: interventionFall 1.4s ease-in-out both;
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+/* Cube burn-out animation (exit animation for food removal) */
+@keyframes cubeBurnOut {
+  0%   { opacity: 1; filter: brightness(1); transform: scale(1); }
+  30%  { opacity: 1; filter: brightness(2.5); transform: scale(1.1); }
+  100% { opacity: 0; filter: brightness(0.5); transform: scale(0.3); }
+}
+
+.bg-graph__cube--exiting {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cubeBurnOut 0.5s ease-out both;
   pointer-events: none;
 }
 
@@ -108,8 +183,8 @@
 }
 
 @keyframes previewBurnPulse {
-  from { opacity: 0.8; }
-  to { opacity: 1; }
+  from { opacity: 0.55; filter: brightness(1.1); }
+  to { opacity: 0.85; filter: brightness(1.4); }
 }
 
 /* Penalty highlight animation (pulsing overlay on cubes above threshold) */
@@ -160,17 +235,18 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* Medication cubes reveal animation */
+/* Medication cubes reveal animation (epic flash) */
 @keyframes medAppear {
-  0% { opacity: 0; transform: scale(0.3); }
-  60% { opacity: 0.45; transform: scale(1.08); }
-  100% { opacity: 0.45; transform: scale(1); }
+  0% { opacity: 0; filter: brightness(2.5); transform: scale(0.3); }
+  30% { opacity: 0.6; filter: brightness(0.7); transform: scale(1.1); }
+  55% { opacity: 0.35; filter: brightness(1.5); transform: scale(1.04); }
+  100% { opacity: 0.25; filter: brightness(1); transform: scale(1); }
 }
 
 .bg-graph__cube--med-reveal {
   transform-box: fill-box;
   transform-origin: center;
-  animation: medAppear 0.35s ease-out both;
+  animation: medAppear 0.7s ease-out both;
 }
 
 /* Floating card when dragging marker outside graph */
