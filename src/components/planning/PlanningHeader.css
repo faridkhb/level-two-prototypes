@@ -19,6 +19,7 @@
   display: flex;
   align-items: center;
   gap: 3px;
+  margin-left: 12px;
 }
 
 .planning-header__wp-label {
