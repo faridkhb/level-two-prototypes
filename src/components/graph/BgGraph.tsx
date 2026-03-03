@@ -155,10 +155,10 @@ export function BgGraph({
   isMobile = false,
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: enlarge fonts & markers so they're readable at ~40% scale
-  const axisFontSize = isMobile ? 22 : 7;
-  const padBottom = isMobile ? 45 : PAD_BOTTOM;
+  const axisFontSize = isMobile ? 16 : 7;
+  const padBottom = isMobile ? 30 : PAD_BOTTOM;
   const localSvgH = PAD_TOP + GRAPH_H + padBottom;
-  const xLabelY = PAD_TOP + GRAPH_H + (isMobile ? 30 : 12);
+  const xLabelY = PAD_TOP + GRAPH_H + (isMobile ? 20 : 12);
 
   const svgRef = useRef<SVGSVGElement>(null);
 
