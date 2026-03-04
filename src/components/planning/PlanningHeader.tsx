@@ -97,10 +97,10 @@ export function KcalBar({
     forecastBadge = '+1 ☀️';
     forecastTooltip = 'Optimal — next day ☀️ bonus';
   } else if (livePenalty.zone === 'overeating') {
-    forecastBadge = `−1 ☀️, +🍦, +${livePenalty.kcalDelta} kcal`;
+    forecastBadge = `−1 ☀️, +${livePenalty.kcalDelta} kcal`;
     forecastTooltip = 'Overeating — next day penalty';
   } else if (livePenalty.zone === 'malnourished' && kcalUsed > 0) {
-    forecastBadge = '−1 ☀️, +🍦';
+    forecastBadge = '−1 ☀️';
     forecastTooltip = 'Malnourished — next day penalty';
   }
 
