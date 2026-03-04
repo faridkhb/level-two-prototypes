@@ -225,7 +225,7 @@
 @media (max-width: 480px) {
   .planning-header {
     gap: 4px;
-    padding: 3px 6px;
+    padding: 3px 6px 3px 12px;
   }
 
   .planning-header__day {
