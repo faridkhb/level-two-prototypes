@@ -1,22 +1,12 @@
-.bg-graph {
+.bg-graph__svg {
   flex: 1;
   min-width: 0;
   min-height: 0;
-  background: transparent;
-  border: none;
-  padding: 0;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.bg-graph--drag-over {
-  box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.2);
-}
-
-.bg-graph__svg {
   width: 100%;
   height: auto;
   display: block;
+  border-radius: 36px;
+  overflow: hidden;
 }
 
 /* Cube appear animation (wave effect on food placement) */
@@ -278,9 +268,6 @@
 
 /* Mobile portrait */
 @media (max-width: 480px) {
-  .bg-graph {
-    padding: 0;
-  }
 
   .bg-graph__reveal-label {
     font-size: 11px;

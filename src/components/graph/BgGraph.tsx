@@ -770,7 +770,6 @@ export function BgGraph({
 
 
   return (
-    <div className="bg-graph">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${localSvgH}`}
@@ -1331,7 +1330,6 @@ export function BgGraph({
           );
         })()}
       </svg>
-    </div>
   );
 }
 
