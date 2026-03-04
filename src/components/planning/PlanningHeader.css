@@ -184,8 +184,7 @@
 
 .planning-header__satiety-indicator {
   display: flex;
-  flex: 1;
-  min-width: 0;
+  justify-content: center;
 }
 
 .planning-header__satiety-badge {

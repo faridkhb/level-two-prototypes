@@ -92,11 +92,6 @@ export function PlanningHeader({
     forecastTooltip = 'Malnourished — next day penalty';
   }
 
-  // Dynamic satiety indicator position
-  const satietyAlign = livePenalty.zone === 'malnourished' ? 'flex-start'
-    : livePenalty.zone === 'overeating' ? 'flex-end'
-    : 'center';
-
   // Satiety label + forecast combined
   const satietyLabel = kcalUsed > 0 ? assessment.label : '';
   const satietyText = satietyLabel + (forecastBadge ? ` ${forecastBadge}` : '');
@@ -104,7 +99,7 @@ export function PlanningHeader({
   const kcalSection = (
     <div className="planning-header__kcal-bar-wrap">
       {satietyText && (
-        <div className="planning-header__satiety-indicator" style={{ justifyContent: satietyAlign }}>
+        <div className="planning-header__satiety-indicator">
           <Tooltip text={forecastTooltip || assessment.label} position="bottom">
             <span
               className="planning-header__satiety-badge"
