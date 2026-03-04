@@ -17,14 +17,14 @@ const CELL_SIZE = 18;
 const PAD_LEFT = 4;
 const PAD_TOP = 4;
 const PAD_RIGHT = 4;
-const PAD_BOTTOM = 4;
+const PAD_BOTTOM = 1;
 
 const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
 const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
 const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
 
 // Insulin floor: insulin cannot eat below this row (100 mg/dL)
-const INSULIN_FLOOR_ROW = 2; // (100 - 60) / 20 = 2
+const INSULIN_FLOOR_ROW = 1; // (100 - 60) / 40 = 1
 
 // Fixed blue palette: each food gets a progressively darker shade
 const FOOD_PALETTE = [
@@ -358,7 +358,7 @@ export function BgGraph({
         if (medTop > maxVisibleRow) maxVisibleRow = medTop;
       }
     }
-    maxVisibleRow += 5; // buffer for visual padding
+    maxVisibleRow += 2; // buffer for visual padding
     const effectiveRows = maxVisibleRow <= TOTAL_ROWS
       ? TOTAL_ROWS
       : TOTAL_ROWS + Math.ceil((maxVisibleRow - TOTAL_ROWS) / 5) * 5;
