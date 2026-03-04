@@ -19,7 +19,7 @@ import { computeMedicationModifiers, calculatePenaltyFromState } from '../../cor
 import type { InsulinParams } from '../../core/cubeEngine';
 import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
 import { BgGraph } from '../graph';
-import { PlanningHeader } from './PlanningHeader';
+import { PlanningHeader, KcalBar } from './PlanningHeader';
 import { TabbedInventory } from './TabbedInventory';
 import { PancreasButton } from './PancreasButton';
 import { ResultPanel } from './ResultPanel';
@@ -567,15 +567,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       <div className="planning-phase">
         <PlanningHeader
           dayLabel={`Day ${currentDay}/${currentLevel.days}`}
-          kcalUsed={kcalUsed}
-          kcalBudget={kcalBudget}
           wpRemaining={wpRemaining}
           satietyPenalty={satietyPenalty}
-          settings={settings}
-          medicationModifiers={medicationModifiers}
-          submitEnabled={submitEnabled}
-          onSubmit={handleSubmit}
-          hideKcal={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
         />
 
         {gamePhase === 'replaying' && (
@@ -616,6 +609,16 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               </div>
             )}
           </div>
+
+          <KcalBar
+            kcalUsed={kcalUsed}
+            kcalBudget={kcalBudget}
+            satietyPenalty={satietyPenalty}
+            medicationModifiers={medicationModifiers}
+            submitEnabled={submitEnabled}
+            onSubmit={handleSubmit}
+            hidden={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
+          />
 
           <SlotGrid
             allShips={allShips}
