@@ -1357,27 +1357,30 @@ export function BgGraph({
         })()}
 
         {/* Y axis labels — rendered last so they appear on top of all layers */}
-        {Array.from({ length: effectiveRows }, (_, i) => {
-          const row = i + 1;
-          const mgDl = GRAPH_CONFIG.bgMin + row * GRAPH_CONFIG.cellHeightMgDl;
-          if (mgDl % 100 !== 0) return null;
-          return (
-            <text
-              key={`y-${row}`}
-              x={PAD_LEFT + 6}
-              y={PAD_TOP + graphH - row * cellHeight + 6}
-              fontSize={18}
-              fontWeight={600}
-              fill="#ffffff"
-              stroke="#1e3a5f"
-              strokeWidth={3}
-              paintOrder="stroke"
-              pointerEvents="none"
-            >
-              {mgDl}
-            </text>
-          );
-        })}
+        {(() => {
+          const maxMgDl = GRAPH_CONFIG.bgMin + effectiveRows * GRAPH_CONFIG.cellHeightMgDl;
+          const labels: React.ReactNode[] = [];
+          for (let mgDl = 100; mgDl < maxMgDl; mgDl += 100) {
+            const rowFrac = (mgDl - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl;
+            labels.push(
+              <text
+                key={`y-${mgDl}`}
+                x={PAD_LEFT + 6}
+                y={PAD_TOP + graphH - rowFrac * cellHeight + 6}
+                fontSize={18}
+                fontWeight={600}
+                fill="#ffffff"
+                stroke="#1e3a5f"
+                strokeWidth={3}
+                paintOrder="stroke"
+                pointerEvents="none"
+              >
+                {mgDl}
+              </text>
+            );
+          }
+          return labels;
+        })()}
       </svg>
   );
 }
