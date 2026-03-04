@@ -141,6 +141,14 @@ export function PlanningHeader({
             </span>
           )}
         </div>
+        <button
+          className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'}`}
+          onClick={onSubmit}
+          disabled={!submitEnabled}
+          title={submitEnabled ? 'Submit your meal plan' : 'Place food to reach Optimal zone (50%+)'}
+        >
+          Submit
+        </button>
       </div>
     </div>
   );
@@ -153,12 +161,11 @@ export function PlanningHeader({
         {wpSection}
 
         <button
-          className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'}`}
-          onClick={onSubmit}
-          disabled={!submitEnabled}
-          title={submitEnabled ? 'Submit your meal plan' : 'Place food to reach Optimal zone (50%+)'}
+          className="planning-header__menu-btn"
+          disabled
+          title="Menu (coming soon)"
         >
-          Submit
+          ☰
         </button>
       </div>
 

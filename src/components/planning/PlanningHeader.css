@@ -188,7 +188,7 @@
 }
 
 .planning-header__satiety-badge {
-  font-size: 30px;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
   cursor: help;
@@ -201,8 +201,8 @@
 
 /* Submit button */
 .planning-header__submit {
-  margin-left: auto;
   flex-shrink: 0;
+  margin-left: auto;
   padding: 4px 14px;
   border: 2px solid #48bb78;
   border-radius: 6px;
@@ -230,6 +230,20 @@
   cursor: not-allowed;
 }
 
+/* Menu icon button (placeholder) */
+.planning-header__menu-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 2px solid #4a5568;
+  border-radius: 6px;
+  background: #4a5568;
+  color: #718096;
+  font-size: 14px;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 
 /* Mobile portrait */
 @media (max-width: 480px) {
@@ -253,6 +267,6 @@
   }
 
   .planning-header__satiety-badge {
-    font-size: 16px;
+    font-size: 12px;
   }
 }
