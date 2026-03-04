@@ -6,7 +6,7 @@
   grid-auto-flow: column;
   gap: 8px 6px;
   padding: 4px 8px;
-  margin-top: 2px;
+  margin-top: -8px;
 }
 
 /* Wrapper: slot + time label stacked vertically */
@@ -39,32 +39,32 @@
 .slot-container--filled {
   border-style: solid;
   border-color: #4299e1;
-  background: rgba(66, 153, 225, 0.12);
+  background: transparent;
   cursor: pointer;
 }
 
 .slot-container--intervention {
   border-color: #48bb78;
-  background: rgba(72, 187, 120, 0.12);
+  background: transparent;
 }
 
 /* Hover state (controlled by React for multi-slot group hover) */
 .slot-container--hover.slot-container--filled {
   border-color: #e53e3e;
-  background: rgba(229, 62, 62, 0.12);
+  background: transparent;
 }
 
 .slot-container--over {
   border-color: #fbbf24;
   border-style: solid;
-  background: rgba(251, 191, 36, 0.12);
+  background: transparent;
   transform: scale(1.08);
 }
 
 .slot-container--dragging {
   border-style: dashed;
   border-color: #4a5568;
-  background: rgba(45, 55, 72, 0.4);
+  background: transparent;
   opacity: 0.5;
 }
 
@@ -136,7 +136,7 @@
 .slot-container--locked {
   border-style: solid;
   border-color: #718096;
-  background: rgba(113, 128, 150, 0.15);
+  background: transparent;
   cursor: not-allowed;
   opacity: 0.85;
 }
@@ -144,7 +144,7 @@
 /* Locked slot with pre-placed content */
 .slot-container--locked.slot-container--filled {
   border-color: #4a5568;
-  background: rgba(45, 55, 72, 0.7);
+  background: transparent;
   cursor: default;
 }
 
@@ -152,13 +152,13 @@
 .slot-container--stressed {
   border-color: #ef4444;
   border-style: dashed;
-  background: rgba(239, 68, 68, 0.08);
+  background: transparent;
 }
 
 .slot-container--stressed.slot-container--filled {
   border-color: #dc2626;
   border-style: solid;
-  background: rgba(239, 68, 68, 0.12);
+  background: transparent;
 }
 
 /* Tooltip — CSS-based via data-tooltip attribute */
