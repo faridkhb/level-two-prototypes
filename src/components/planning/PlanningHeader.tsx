@@ -103,6 +103,18 @@ export function PlanningHeader({
 
   const kcalSection = (
     <div className="planning-header__kcal-bar-wrap">
+      {satietyText && (
+        <div className="planning-header__satiety-indicator" style={{ justifyContent: satietyAlign }}>
+          <Tooltip text={forecastTooltip || assessment.label} position="bottom">
+            <span
+              className="planning-header__satiety-badge"
+              style={{ color: assessment.color, borderColor: `${assessment.color}44`, background: `${assessment.color}15` }}
+            >
+              {satietyText}
+            </span>
+          </Tooltip>
+        </div>
+      )}
       <div className="planning-header__kcal-bar">
         <div
           className="planning-header__kcal-bar-fill"
@@ -134,18 +146,6 @@ export function PlanningHeader({
             </span>
           )}
         </div>
-        {satietyText && (
-          <div className="planning-header__satiety-indicator" style={{ justifyContent: satietyAlign }}>
-            <Tooltip text={forecastTooltip || assessment.label} position="bottom">
-              <span
-                className="planning-header__satiety-badge"
-                style={{ color: assessment.color, borderColor: `${assessment.color}44`, background: `${assessment.color}15` }}
-              >
-                {satietyText}
-              </span>
-            </Tooltip>
-          </div>
-        )}
       </div>
     </div>
   );
