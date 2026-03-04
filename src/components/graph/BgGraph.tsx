@@ -910,26 +910,6 @@ export function BgGraph({
           ];
         })}
 
-        {/* Y axis labels — over graph with left margin */}
-        {Array.from({ length: effectiveRows }, (_, i) => {
-          const row = i + 1;
-          const mgDl = GRAPH_CONFIG.bgMin + row * GRAPH_CONFIG.cellHeightMgDl;
-          if (mgDl % 100 !== 0) return null;
-          return (
-            <text
-              key={`y-${row}`}
-              x={PAD_LEFT + 6}
-              y={PAD_TOP + graphH - row * cellHeight + 4}
-              fontSize={9}
-              fill="#64748b"
-              opacity={0.6}
-              pointerEvents="none"
-            >
-              {mgDl}
-            </text>
-          );
-        })}
-
         {/* X axis labels — hidden */}
 
         {/* Insulin profile bars — disabled for now */}
@@ -1375,6 +1355,26 @@ export function BgGraph({
             </foreignObject>
           );
         })()}
+
+        {/* Y axis labels — rendered last so they appear on top of all layers */}
+        {Array.from({ length: effectiveRows }, (_, i) => {
+          const row = i + 1;
+          const mgDl = GRAPH_CONFIG.bgMin + row * GRAPH_CONFIG.cellHeightMgDl;
+          if (mgDl % 100 !== 0) return null;
+          return (
+            <text
+              key={`y-${row}`}
+              x={PAD_LEFT + 6}
+              y={PAD_TOP + graphH - row * cellHeight + 4}
+              fontSize={9}
+              fill="#64748b"
+              opacity={0.6}
+              pointerEvents="none"
+            >
+              {mgDl}
+            </text>
+          );
+        })}
       </svg>
   );
 }
