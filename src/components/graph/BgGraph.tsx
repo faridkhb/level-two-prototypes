@@ -1365,10 +1365,13 @@ export function BgGraph({
             <text
               key={`y-${row}`}
               x={PAD_LEFT + 6}
-              y={PAD_TOP + graphH - row * cellHeight + 4}
-              fontSize={9}
-              fill="#64748b"
-              opacity={0.6}
+              y={PAD_TOP + graphH - row * cellHeight + 6}
+              fontSize={18}
+              fontWeight="bold"
+              fill="#ffffff"
+              stroke="#1e3a5f"
+              strokeWidth={3}
+              paintOrder="stroke"
               pointerEvents="none"
             >
               {mgDl}
