@@ -1367,7 +1367,7 @@ export function BgGraph({
               x={PAD_LEFT + 6}
               y={PAD_TOP + graphH - row * cellHeight + 6}
               fontSize={18}
-              fontWeight="bold"
+              fontWeight={600}
               fill="#ffffff"
               stroke="#1e3a5f"
               strokeWidth={3}
