@@ -3,14 +3,10 @@ import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, 
 import {
   TOTAL_COLUMNS,
   TOTAL_ROWS,
-  DEFAULT_X_TICKS,
-  DEFAULT_Y_TICKS,
   DEFAULT_MEDICATION_MODIFIERS,
   PENALTY_ORANGE_ROW,
   PENALTY_RED_ROW,
   GRAPH_CONFIG,
-  columnToTimeString,
-  formatBgValue,
 } from '../../core/types';
 import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, calculateSglt2Reduction, calculateBoostReduction } from '../../core/cubeEngine';
 import type { InsulinParams } from '../../core/cubeEngine';
@@ -141,7 +137,7 @@ export function BgGraph({
   allShips,
   placedInterventions,
   allInterventions,
-  settings,
+  settings: _settings,
   decayOrInsulin,
   boostConfig,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
@@ -156,10 +152,8 @@ export function BgGraph({
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
   const graphH = isMobile ? TOTAL_ROWS * 30 : GRAPH_H;  // 510 vs 306 — taller cells on mobile
-  const axisFontSize = isMobile ? 16 : 7;
   const padBottom = isMobile ? 30 : PAD_BOTTOM;
   const localSvgH = PAD_TOP + graphH + padBottom;
-  const xLabelY = PAD_TOP + graphH + (isMobile ? 20 : 12);
 
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -781,12 +775,6 @@ export function BgGraph({
       yTop: PAD_TOP - 3, yBot: PAD_TOP + graphH - 12 * cellHeight + 3 },
   ];
 
-  // Dynamic Y-axis tick labels (extend beyond default ticks when graph expands)
-  const yTicks = [...DEFAULT_Y_TICKS];
-  const maxMgDl = GRAPH_CONFIG.bgMin + effectiveRows * GRAPH_CONFIG.cellHeightMgDl;
-  for (let tick = 400; tick <= maxMgDl; tick += 100) {
-    if (!yTicks.includes(tick)) yTicks.push(tick);
-  }
 
 
   return (
@@ -944,43 +932,9 @@ export function BgGraph({
           ];
         })}
 
-        {/* Y axis labels */}
-        {yTicks.map(tick => {
-          const row = mgdlToRow(tick);
-          if (row > effectiveRows) return null;
-          const y = rowToY(row - 1) + cellHeight / 2;
-          return (
-            <text
-              key={`y-${tick}`}
-              x={PAD_LEFT - 3}
-              y={y}
-              textAnchor="end"
-              dominantBaseline="middle"
-              fontSize={axisFontSize}
-              fill="#718096"
-            >
-              {formatBgValue(tick, settings.bgUnit)}
-            </text>
-          );
-        })}
+        {/* Y axis labels — hidden */}
 
-        {/* X axis labels */}
-        {DEFAULT_X_TICKS.map(hour => {
-          const col = ((hour - GRAPH_CONFIG.startHour) * 60) / GRAPH_CONFIG.cellWidthMin;
-          const x = colToX(col);
-          return (
-            <text
-              key={`x-${hour}`}
-              x={x}
-              y={xLabelY}
-              textAnchor="middle"
-              fontSize={axisFontSize}
-              fill="#718096"
-            >
-              {columnToTimeString(col, settings.timeFormat)}
-            </text>
-          );
-        })}
+        {/* X axis labels — hidden */}
 
         {/* Insulin profile bars — disabled for now */}
 
