@@ -11,7 +11,7 @@ import {
   closestCenter,
 } from '@dnd-kit/core';
 import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BoostConfig } from '../../core/types';
-import { TOTAL_SLOTS, expandInsulinProfile, applyStressToRates, PENALTY_ORANGE_ROW, slotToColumn } from '../../core/types';
+import { TOTAL_SLOTS, expandInsulinProfile, applyStressToRates, PENALTY_ORANGE_ROW, slotToColumn, getBaselineRow } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { useConfigStore } from '../../store/configStore';
@@ -151,6 +151,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     if (!currentLevel) return null;
     return getDayConfig(currentLevel, currentDay);
   }, [currentLevel, currentDay]);
+
+  // Compute baseline row from day's starting BG level
+  const baselineRow = useMemo(() => getBaselineRow(dayConfig?.startingBg), [dayConfig]);
 
   // Compute effective locked slots (pre-placed items + explicitly locked)
   const effectiveLockedSlots = useMemo(() => {
@@ -463,6 +466,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           medicationModifiers,
           insulinParams,
           boostConfig,
+          baselineRow,
         );
 
         // Last day: add WP penalty for unspent WP
@@ -599,6 +603,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               previewInterventionColumn={activeIntervention && previewSlot !== null ? slotToColumn(previewSlot) : undefined}
               stressSlots={stressSlotSet}
               isMobile={isMobile}
+              baselineRow={baselineRow}
             />
             {isPlanning && (
               <div className="planning-phase__pancreas-overlay">

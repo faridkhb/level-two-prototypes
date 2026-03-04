@@ -116,6 +116,7 @@ interface BgGraphProps {
   previewInterventionColumn?: number;   // target column for intervention preview
   stressSlots?: Set<number>;            // slot indices with stress (reduced insulin)
   isMobile?: boolean;                    // mobile-responsive sizing
+  baselineRow?: number;                  // row offset for starting BG (default 0 = 60 mg/dL)
 }
 
 // Convert column to SVG x
@@ -141,6 +142,7 @@ export function BgGraph({
   previewInterventionColumn,
   stressSlots,
   isMobile = false,
+  baselineRow = 0,
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
   const graphH = isMobile ? TOTAL_ROWS * 30 : GRAPH_H;  // 510 vs 306 — taller cells on mobile
@@ -206,7 +208,7 @@ export function BgGraph({
     // Phase 1: Per-column insulin eating model.
     // Uses ONLY plateau curves. Insulin eating computed per-column with 100 mg/dL floor.
     // Foods stacked by alive heights (after eating).
-    const aliveStacks = new Array(TOTAL_COLUMNS).fill(0);
+    const aliveStacks = new Array(TOTAL_COLUMNS).fill(baselineRow);
     const plateauHeights = new Array(TOTAL_COLUMNS).fill(0);
     const originalPlateauHeights = new Array(TOTAL_COLUMNS).fill(0);
     const afterMetPlateauHeights = new Array(TOTAL_COLUMNS).fill(0);
@@ -369,13 +371,13 @@ export function BgGraph({
     const boostReduction = boostConfig
       ? calculateBoostReduction(pancreasCaps, boostConfig)
       : new Array(TOTAL_COLUMNS).fill(0);
-    const afterBoost = pancreasCaps.map((h, i) => Math.max(0, h - boostReduction[i]));
+    const afterBoost = pancreasCaps.map((h, i) => Math.max(baselineRow, h - boostReduction[i]));
     const sglt2 = medicationModifiers.sglt2;
     const sglt2Reduction = sglt2
       ? calculateSglt2Reduction(afterBoost, sglt2.depth, sglt2.floorRow)
       : new Array(TOTAL_COLUMNS).fill(0);
     const columnCaps = afterBoost.map((h, i) =>
-      Math.max(0, h - interventionReduction[i] - sglt2Reduction[i])
+      Math.max(baselineRow, h - interventionReduction[i] - sglt2Reduction[i])
     );
 
     // Phase 4: Per-food layers — stamp cubes, compute markers and skylines
@@ -546,7 +548,7 @@ export function BgGraph({
     }
 
     return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps, medCubes, effectiveRows };
-  }, [placedFoods, allShips, medicationModifiers, decayOrInsulin, boostConfig, interventionReduction, interventionReductions]);
+  }, [placedFoods, allShips, medicationModifiers, decayOrInsulin, boostConfig, interventionReduction, interventionReductions, baselineRow]);
 
   // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
   const { effectiveRows } = graphRenderData;
@@ -835,6 +837,32 @@ export function BgGraph({
         ))}
 
         {/* Graph border — hidden */}
+
+        {/* Baseline BG zone (starting blood sugar level) */}
+        {baselineRow > 0 && (
+          <>
+            <rect
+              x={PAD_LEFT}
+              y={PAD_TOP + graphH - baselineRow * cellHeight}
+              width={GRAPH_W}
+              height={baselineRow * cellHeight}
+              fill="#94a3b8"
+              opacity={0.12}
+              pointerEvents="none"
+            />
+            <line
+              x1={PAD_LEFT}
+              y1={PAD_TOP + graphH - baselineRow * cellHeight}
+              x2={PAD_LEFT + GRAPH_W}
+              y2={PAD_TOP + graphH - baselineRow * cellHeight}
+              stroke="#64748b"
+              strokeWidth={1}
+              strokeDasharray="4 2"
+              opacity={0.5}
+              pointerEvents="none"
+            />
+          </>
+        )}
 
         {/* Stress zone boundary lines and markers */}
         {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).flatMap(slotIndex => {

@@ -370,9 +370,10 @@ export function calculatePenaltyFromState(
   medicationModifiers: MedicationModifiers,
   decayOrInsulin: number | InsulinParams,
   boostConfig?: BoostConfig,
+  baselineRow: number = 0,
 ): PenaltyResult {
-  // Build food heights per column
-  const totalHeights = new Array(TOTAL_COLUMNS).fill(0);
+  // Build food heights per column (starting from baseline BG level)
+  const totalHeights = new Array(TOTAL_COLUMNS).fill(baselineRow);
   for (const placed of placedFoods) {
     const ship = allShips.find(s => s.id === placed.shipId);
     if (!ship) continue;
@@ -400,9 +401,9 @@ export function calculatePenaltyFromState(
     ? calculateSglt2Reduction(totalHeights.map((h, i) => Math.max(0, h - boostRed[i])), sglt2.depth, sglt2.floorRow)
     : new Array(TOTAL_COLUMNS).fill(0);
 
-  // Column caps (effective visible height)
+  // Column caps (effective visible height, cannot go below baseline)
   const columnCaps = totalHeights.map((h, i) =>
-    Math.max(0, h - boostRed[i] - interventionRed[i] - sglt2Red[i])
+    Math.max(baselineRow, h - boostRed[i] - interventionRed[i] - sglt2Red[i])
   );
 
   return calculatePenalty(columnCaps);

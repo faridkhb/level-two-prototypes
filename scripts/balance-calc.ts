@@ -62,6 +62,7 @@ interface DayConfig {
   lockedSlots?: number[];
   stressSlots?: number[];
   insulinProfile?: InsulinProfileConfig;
+  startingBg?: number;
 }
 
 const STRESS_INSULIN_REDUCTION = 2;
@@ -194,7 +195,7 @@ function getMods(medIds: string[], allMeds: Medication[]): MedMods {
   return m;
 }
 
-function calcPenalty(heights: number[], intReduction: number[], mods: MedMods, boost?: BoostConfig): PenaltyResult {
+function calcPenalty(heights: number[], intReduction: number[], mods: MedMods, boost?: BoostConfig, baselineRow: number = 0): PenaltyResult {
   let total = 0, oc = 0, rc = 0;
   for (let i = 0; i < TOTAL_COLUMNS; i++) {
     let h = heights[i];
@@ -205,7 +206,7 @@ function calcPenalty(heights: number[], intReduction: number[], mods: MedMods, b
     }
     h -= intReduction[i];
     if (mods.sglt2) h -= Math.min(mods.sglt2.depth, Math.max(0, heights[i] - mods.sglt2.floorRow));
-    h = Math.max(0, h);
+    h = Math.max(baselineRow, h);
     const orange = Math.max(0, Math.min(h, P_RED_ROW) - P_ORANGE_ROW);
     const red = Math.max(0, h - P_RED_ROW);
     oc += orange; rc += red;
@@ -267,6 +268,7 @@ function loadDayConfig(levelId: string, day: number): DayConfig & { totalDays: n
     lockedSlots: dc.lockedSlots,
     stressSlots: dc.stressSlots,
     insulinProfile: dc.insulinProfile,
+    startingBg: dc.startingBg,
     totalDays: raw.days ?? raw.dayConfigs?.length ?? 1,
   };
 }
@@ -307,8 +309,17 @@ function runCalc(args: Record<string, string>) {
   const medIds = args['meds'] ? args['meds'].split(',') : [];
   const mods = getMods(medIds, allMeds);
 
-  // Build heights
-  const heights = new Array(TOTAL_COLUMNS).fill(0);
+  // Baseline row from starting BG
+  let baselineRow = 0;
+  if (args['starting-bg']) {
+    baselineRow = Math.round((parseFloat(args['starting-bg']) - BG_MIN) / CELL_H);
+  } else if (args['level']) {
+    const loaded = loadDayConfig(args['level'], +(args['day'] ?? '1'));
+    if (loaded.startingBg) baselineRow = Math.round((loaded.startingBg - BG_MIN) / CELL_H);
+  }
+
+  // Build heights (starting from baseline BG)
+  const heights = new Array(TOTAL_COLUMNS).fill(baselineRow);
   for (const f of foods) {
     const ship = allShips.find(s => s.id === f.id);
     if (!ship) continue;
@@ -323,7 +334,7 @@ function runCalc(args: Record<string, string>) {
     for (let i = 0; i < TOTAL_COLUMNS; i++) intRed[i] += c[i];
   }
 
-  const result = calcPenalty(heights, intRed, mods, boost);
+  const result = calcPenalty(heights, intRed, mods, boost, baselineRow);
 
   // Budget
   let kcal = 0, wp = 0;
@@ -454,6 +465,14 @@ function runSolve(args: Record<string, string>) {
     for (let i = 0; i < len; i++) medCombos.push([...medCombos[i], medId]);
   }
 
+  // Baseline row from starting BG
+  let baselineRow = 0;
+  if (args['starting-bg']) {
+    baselineRow = Math.round((parseFloat(args['starting-bg']) - BG_MIN) / CELL_H);
+  } else if (dayConfig.startingBg) {
+    baselineRow = Math.round((dayConfig.startingBg - BG_MIN) / CELL_H);
+  }
+
   console.log('\n=== Solver ===\n');
   console.log(`Level: ${args['level'] ?? 'custom'}, Day: ${dayConfig.day}`);
   // BOOST config
@@ -470,6 +489,7 @@ function runSolve(args: Record<string, string>) {
   if (preInts.length) console.log(`Pre-placed interventions: ${preInts.map(i => `${i.id}@${i.slot}`).join(', ')}`);
   if (useBoost) console.log(`BOOST: active (threshold=200, rate=${boost!.extraRate})`);
   if (dayConfig.stressSlots?.length) console.log(`Stress slots: [${dayConfig.stressSlots.join(', ')}] (-${STRESS_INSULIN_REDUCTION} insulin rate)`);
+  if (baselineRow > 0) console.log(`Starting BG: ${dayConfig.startingBg ?? (baselineRow * CELL_H + BG_MIN)} mg/dL (baselineRow=${baselineRow})`);
   if (isLastDay) console.log(`⚠️  Last day — unspent WP penalty: +${WP_PENALTY_WEIGHT} per unspent WP`);
   console.log('\nSearching...');
 
@@ -516,8 +536,8 @@ function runSolve(args: Record<string, string>) {
       foodKcals.set(fid, Math.round(ship.kcal * mods.kcalMultiplier));
     }
 
-    // Recursive food placement
-    const heights = new Array(TOTAL_COLUMNS).fill(0);
+    // Recursive food placement (starting from baseline BG)
+    const heights = new Array(TOTAL_COLUMNS).fill(baselineRow);
 
     // Add pre-placed food curves
     for (const pf of preFoods) {
@@ -533,7 +553,7 @@ function runSolve(args: Record<string, string>) {
 
     function evaluateWithInterventions(foodList: { id: string; slot: number }[], usedSlots: Set<number>) {
       // Try: no interventions, then each single intervention, then pairs
-      const baseResult = calcPenalty(heights, preIntRed, mods, boost);
+      const baseResult = calcPenalty(heights, preIntRed, mods, boost, baselineRow);
 
       // Record baseline (no player interventions)
       addSolution({
@@ -578,7 +598,7 @@ function runSolve(args: Record<string, string>) {
 
           // Record single intervention only if WP fits
           if (singleWpOk) {
-            const r = calcPenalty(heights, iRed, mods, boost);
+            const r = calcPenalty(heights, iRed, mods, boost, baselineRow);
             addSolution({
               foods: [...preFoods, ...foodList],
               interventions: [...preInts.map(i => ({ id: i.id, slot: i.slot })), { id: intItem.id, slot }],
@@ -612,7 +632,7 @@ function runSolve(args: Record<string, string>) {
               const c2 = intCurve(intv2.depth, intv2.duration, slotToCol(slot2), intv2.boostExtra ?? 0);
               for (let i = 0; i < TOTAL_COLUMNS; i++) iRed2[i] += c2[i];
 
-              const r2 = calcPenalty(heights, iRed2, mods, boost);
+              const r2 = calcPenalty(heights, iRed2, mods, boost, baselineRow);
               addSolution({
                 foods: [...preFoods, ...foodList],
                 interventions: [...preInts.map(i => ({ id: i.id, slot: i.slot })), { id: intItem.id, slot }, { id: intItem2.id, slot: slot2 }],
@@ -756,6 +776,7 @@ Calc:
   --decay 0.5                       Legacy decay rate (overrides insulin profile)
   --boost true                      Enable BOOST (adaptive insulin above 200)
   --boost-rate 4                    BOOST extra rate (default: 4)
+  --starting-bg 100                 Starting BG in mg/dL (default: 60, auto-loaded from level)
   --wp 10 --kcal 2000               Budgets (display only)
 
 Solve:
@@ -765,6 +786,7 @@ Solve:
   --boost-rate 4                    BOOST extra rate (default: 4)
   --max-foods 5                     Max foods to place (default: 5)
   --last-day true                   Force last-day WP penalty (auto-detected from level config)
+  --starting-bg 100                 Starting BG in mg/dL (default: 60, auto-loaded from level)
 
   Custom config:
   --available-foods "banana:1,pizza:1"

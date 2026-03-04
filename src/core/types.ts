@@ -242,6 +242,13 @@ export interface DayConfig {
   lockedSlots?: number[];
   stressSlots?: number[];
   insulinProfile?: InsulinProfileConfig;
+  startingBg?: number;          // Starting BG in mg/dL (default 60 = graph bottom)
+}
+
+/** Compute baseline row from starting BG level. Default = 0 (60 mg/dL) */
+export function getBaselineRow(startingBg?: number): number {
+  if (!startingBg || startingBg <= GRAPH_CONFIG.bgMin) return 0;
+  return Math.round((startingBg - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl);
 }
 
 // === Kcal Assessment (3-zone satiety system) ===
