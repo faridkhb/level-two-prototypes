@@ -108,7 +108,7 @@ export function PlanningHeader({
           <Tooltip text={forecastTooltip || assessment.label} position="bottom">
             <span
               className="planning-header__satiety-badge"
-              style={{ color: assessment.color, borderColor: `${assessment.color}44`, background: `${assessment.color}15` }}
+              style={{ color: assessment.color }}
             >
               {satietyText}
             </span>
