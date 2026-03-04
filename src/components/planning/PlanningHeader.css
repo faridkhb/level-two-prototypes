@@ -22,12 +22,6 @@
   margin-left: 12px;
 }
 
-.planning-header__wp-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #a0aec0;
-  text-transform: uppercase;
-}
 
 .planning-header__wp-value {
   font-size: 13px;
@@ -70,25 +64,6 @@
   color: #ed8936;
 }
 
-/* Assessment badge with forecast */
-.planning-header__assessment-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  border: 1px solid;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: help;
-}
-
-.planning-header__assessment-badge--fasting {
-  color: #718096;
-  border-color: #4a5568;
-  background: rgba(113, 128, 150, 0.1);
-  cursor: default;
-}
 
 /* Kcal progress bar — standalone block below header */
 .planning-header__kcal-bar-wrap {
@@ -254,8 +229,7 @@
   }
 
   .planning-header__day {
-    font-size: 11px;
-    padding: 2px 6px;
+    font-size: 13px;
   }
 
   .planning-header__submit {
