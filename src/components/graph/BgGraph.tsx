@@ -361,7 +361,7 @@ export function BgGraph({
     maxVisibleRow += 2; // buffer for visual padding
     const effectiveRows = maxVisibleRow <= TOTAL_ROWS
       ? TOTAL_ROWS
-      : TOTAL_ROWS + Math.ceil((maxVisibleRow - TOTAL_ROWS) / 5) * 5;
+      : TOTAL_ROWS + Math.ceil((maxVisibleRow - TOTAL_ROWS) / 2) * 2;
     const cellHeight = graphH / effectiveRows;
 
     // pancreasCaps = sum of alive heights (after insulin eating)
