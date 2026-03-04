@@ -14,18 +14,14 @@ import './BgGraph.css';
 
 // SVG layout constants
 const CELL_SIZE = 18;
-const PAD_LEFT = 38;
-const PAD_TOP = 8;
-const PAD_RIGHT = 8;
-const PAD_BOTTOM = 18;
+const PAD_LEFT = 4;
+const PAD_TOP = 4;
+const PAD_RIGHT = 4;
+const PAD_BOTTOM = 4;
 
 const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
 const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
 const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
-// BG zone thresholds (mg/dL)
-const ZONE_NORMAL = 140;
-const ZONE_ELEVATED = 200;
-const ZONE_HIGH = 300;
 
 // Insulin floor: insulin cannot eat below this row (100 mg/dL)
 const INSULIN_FLOOR_ROW = 2; // (100 - 60) / 20 = 2
@@ -127,10 +123,6 @@ function colToX(col: number): number {
   return PAD_LEFT + col * CELL_SIZE;
 }
 
-// Convert mg/dL to row index
-function mgdlToRow(mgdl: number): number {
-  return (mgdl - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl;
-}
 
 export function BgGraph({
   placedFoods,
@@ -798,39 +790,7 @@ export function BgGraph({
           </filter>
         </defs>
 
-        {/* Zone backgrounds */}
-        <rect
-          x={PAD_LEFT}
-          y={rowToY(mgdlToRow(ZONE_NORMAL) - 1)}
-          width={GRAPH_W}
-          height={(mgdlToRow(ZONE_NORMAL) - 0) * cellHeight}
-          fill="#c6f6d5"
-          opacity={0.3}
-        />
-        <rect
-          x={PAD_LEFT}
-          y={rowToY(mgdlToRow(ZONE_ELEVATED) - 1)}
-          width={GRAPH_W}
-          height={(mgdlToRow(ZONE_ELEVATED) - mgdlToRow(ZONE_NORMAL)) * cellHeight}
-          fill="#fefcbf"
-          opacity={0.3}
-        />
-        <rect
-          x={PAD_LEFT}
-          y={rowToY(mgdlToRow(ZONE_HIGH) - 1)}
-          width={GRAPH_W}
-          height={(mgdlToRow(ZONE_HIGH) - mgdlToRow(ZONE_ELEVATED)) * cellHeight}
-          fill="#fed7d7"
-          opacity={0.3}
-        />
-        <rect
-          x={PAD_LEFT}
-          y={PAD_TOP}
-          width={GRAPH_W}
-          height={(effectiveRows - mgdlToRow(ZONE_HIGH)) * cellHeight}
-          fill="#fc8181"
-          opacity={0.2}
-        />
+        {/* Zone backgrounds — hidden */}
 
         {/* Stress zone column bands */}
         {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).map(slotIndex => {
@@ -875,16 +835,7 @@ export function BgGraph({
           />
         ))}
 
-        {/* Graph border */}
-        <rect
-          x={PAD_LEFT}
-          y={PAD_TOP}
-          width={GRAPH_W}
-          height={graphH}
-          fill="none"
-          stroke="#a0aec0"
-          strokeWidth={1}
-        />
+        {/* Graph border — hidden */}
 
         {/* Stress zone boundary lines and markers */}
         {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).flatMap(slotIndex => {
