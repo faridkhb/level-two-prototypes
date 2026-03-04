@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.43.0 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing |
+| `main` | BG Planner | v0.47.12 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -109,7 +109,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.43.0)
+- `src/version.ts` — version number (v0.47.12)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -132,7 +132,7 @@ CONFIG:
 
 #### Planning Phase (`src/components/planning/`)
 - `PlanningPhase.tsx` — single-screen orchestrator with DnD context, submit/reveal/results flow
-- `PlanningHeader.tsx` — header with day label, WP budget, kcal assessment, overeating penalty indicators, settings toggles (time format, BG unit)
+- `PlanningHeader.tsx` — header (day label, WP budget, menu placeholder) + exported KcalBar component (kcal bar, satiety indicator, submit button)
 - `PancreasButton.tsx` — compact ON/BOOST toggle overlay on graph
 - `ShipCard.tsx` — draggable food cards with emoji, kcal, carbs, duration, WP badge
 - `ShipInventory.tsx` — food card list from level config
@@ -159,7 +159,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.43.0) — Insulin Profiles, BOOST System, Visual Insulin Bars
+### Current State (v0.47.12) — Vertical Layout Redesign, startingBg, 50 mg/dL Grid
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -193,23 +193,26 @@ CONFIG:
   - Graph on top, food inventory + Actions panel below (horizontal card layout)
   - No phase transitions within test mode — everything on one screen
 
-- **Dynamic Y-axis Expansion** ✅ (v0.40.4)
-  - When cubes exceed 400 mg/dL, graph auto-expands in +100 mg/dL sections
-  - `GRAPH_H = 306px` stays fixed — cell height compresses to fit more rows
-  - `effectiveRows = TOTAL_ROWS + ceil((maxRow - TOTAL_ROWS) / 5) * 5`
+- **Dynamic Y-axis Expansion** ✅ (v0.40.4, updated v0.47.2)
+  - When cubes exceed 450 mg/dL, graph auto-expands in +100 mg/dL (2-row) sections
+  - `GRAPH_H = 144px` stays fixed — cell height compresses to fit more rows
+  - `effectiveRows = TOTAL_ROWS + ceil((maxRow - TOTAL_ROWS) / 2) * 2`
   - `cellHeight = GRAPH_H / effectiveRows` (replaces fixed CELL_SIZE for Y)
   - Cubes become rectangular (width = CELL_SIZE-1, height = cellHeight-1)
   - Zone backgrounds, grid lines, Y-axis labels, markers all scale dynamically
-  - Y-axis labels expand: 500, 600, 700... as needed
-  - Removing food returns graph to normal size (effectiveRows=17)
+  - Y-axis labels: every 100 mg/dL (100, 200, 300...) with white text + dark blue stroke outline
+  - Removing food returns graph to normal size (effectiveRows=8)
 
-- **BG Graph** ✅
-  - SVG graph with X axis (8 AM to 8 PM, 48 columns × 15 min)
-  - Y axis (60 to 400+ mg/dL, dynamic rows × 20 mg/dL)
-  - Grid lines: major every hour, minor every 15 min
-  - Zone colors: green (60-140), yellow (140-200), orange (200-300), red (300+)
+- **BG Graph** ✅ (updated v0.47.x)
+  - SVG graph with X axis (8 AM to 8 PM, 24 columns × 30 min)
+  - Y axis (50 to 450+ mg/dL, dynamic rows × 50 mg/dL)
+  - Grid lines: major every hour, minor every 30 min; edge lines bold (1.5px)
+  - No border — bold edge grid lines instead
+  - Red threshold line at 200 mg/dL
+  - Zone colors: green (<150), yellow (150-200), orange (200-300), red (300+)
+  - Dynamic zone clip bands using `zoneRow()` helper (mg/dL-based, not hardcoded rows)
   - X axis labels: 8 AM, 11 AM, 2 PM, 5 PM, 8 PM
-  - Y axis labels: 100, 200, 300, 400 (+ 500, 600... when expanded)
+  - Y axis labels: 100, 200, 300, 400 (+ 500, 600...) — white, semi-bold, dark blue stroke outline
   - Droppable zone for @dnd-kit (accepts both food and interventions)
 
 - **Cube Engine** ✅
@@ -334,8 +337,8 @@ CONFIG:
 
 - **Penalty / Rating System** ✅
   - Submit button triggers penalty calculation on current graph state
-  - Orange zone (200-300 mg/dL, rows 7-11): 0.5 penalty weight per cube
-  - Red zone (300+ mg/dL, rows 12+): 1.5 penalty weight per cube
+  - Orange zone (200-300 mg/dL, rows 3-4): 0.5 penalty weight per cube
+  - Red zone (300+ mg/dL, rows 5+): 1.5 penalty weight per cube
   - Star rating: 3★ Perfect (≤12.5), 2★ Good (≤50), 1★ Pass (≤100), 0★ Defeat (>100)
   - Penalty highlight overlays (pulsing orange/red) on cubes above threshold
 
@@ -352,6 +355,22 @@ CONFIG:
     - Extra rate = 4 cubes per column above threshold (configurable)
     - Button overlaid on graph top-left corner
   - Config screen: BOOST threshold and extra rate editable
+
+- **Starting BG Level** ✅ (v0.47.0)
+  - Configurable `startingBg` per day in level config (default: 50 mg/dL = row 0)
+  - Higher values shift all cubes up from a baseline row
+  - Formula: `baselineRow = Math.round((startingBg - bgMin) / cellHeightMgDl)`
+  - Visual: subtle filled rect + dashed line at baseline when baselineRow > 0
+  - Affects: aliveStacks init, columnCaps clamping, penalty calculation
+
+- **Vertical Layout Redesign** ✅ (v0.47.x)
+  - KcalBar extracted as standalone component from PlanningHeader
+  - Layout order: PlanningHeader → Graph → KcalBar → SlotGrid → Inventory
+  - PlanningHeader simplified: day label + WP indicator + disabled menu icon (☰)
+  - KcalBar: satiety indicator (centered above) + kcal progress bar + footer (counter + Submit)
+  - Slot cards: transparent backgrounds (no plates) for all states
+  - Forecast badge: shows ☀️ and kcal only (no food emoji by default)
+  - Dead CSS removed (assessment-badge, wp-label classes)
 
 - **Overeating Penalty System** ✅ (v0.40.6)
   - Each satiety level beyond Well Fed penalizes the next day:
@@ -537,21 +556,27 @@ Key puzzle solutions:
 |----------|-------|----------|
 | startHour | 8 (8 AM) | `types.ts` GRAPH_CONFIG |
 | endHour | 20 (8 PM) | `types.ts` GRAPH_CONFIG |
-| cellWidthMin | 15 min | `types.ts` GRAPH_CONFIG |
-| cellHeightMgDl | 20 mg/dL | `types.ts` GRAPH_CONFIG |
-| bgMin | 60 mg/dL | `types.ts` GRAPH_CONFIG |
-| bgMax | 400 mg/dL | `types.ts` GRAPH_CONFIG |
-| TOTAL_COLUMNS | 48 | `types.ts` derived |
-| TOTAL_ROWS | 17 | `types.ts` derived |
+| cellWidthMin | 30 min | `types.ts` GRAPH_CONFIG |
+| cellHeightMgDl | 50 mg/dL | `types.ts` GRAPH_CONFIG |
+| bgMin | 50 mg/dL | `types.ts` GRAPH_CONFIG |
+| bgMax | 450 mg/dL | `types.ts` GRAPH_CONFIG |
+| TOTAL_COLUMNS | 24 | `types.ts` derived |
+| TOTAL_ROWS | 8 | `types.ts` derived |
 | CELL_SIZE | 18px (SVG) | `BgGraph.tsx` |
+| GRAPH_H | 144px | `BgGraph.tsx` (TOTAL_ROWS × CELL_SIZE) |
+| INSULIN_FLOOR_ROW | 1 | `BgGraph.tsx` (100 mg/dL = (100-50)/50) |
+| PENALTY_ORANGE_ROW | 3 | `types.ts` (200 mg/dL = (200-50)/50) |
+| PENALTY_RED_ROW | 5 | `types.ts` (300 mg/dL = (300-50)/50) |
+| PAD_LEFT/TOP/RIGHT | 4 | `BgGraph.tsx` |
+| PAD_BOTTOM | 1 | `BgGraph.tsx` |
 | PANCREAS_TOTAL_BARS | 1 | `types.ts` — BOOST uses per level |
 | BOOST_EXTRA_RATE | 4 | default — cubes absorbed per col above 200 |
 
 ### Cube Engine Details
 
 #### Ramp + Insulin Drain Algorithm (v0.43.0)
-1. `peakCubes = Math.round(glucose / 20)`
-2. `riseCols = Math.round(duration / 15)`
+1. `peakCubes = Math.round(glucose / cellHeightMgDl)` (glucose in mg/dL units, cellHeightMgDl=50)
+2. `riseCols = Math.round(duration / cellWidthMin)` (cellWidthMin=30)
 3. Rise phase (cols 0..riseCols-1): `height = round(peakCubes × (i+1)/riseCols)` — NO insulin drain during ramp
 4. Post-peak (cumulative mode): `height = round(peakCubes − cumInsulin)` where cumInsulin accumulates insulin rate per column
 5. Post-peak (per-column mode): `height = round(peakCubes − rate[col])` flat subtraction
@@ -587,10 +612,10 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 #### BG Zones
 | Zone | Range | Color |
 |------|-------|-------|
-| Normal | 60-140 mg/dL | Green |
-| Elevated | 140-200 mg/dL | Yellow |
-| High | 200-300 mg/dL | Orange |
-| Danger | 300-400 mg/dL | Red |
+| Normal | 50-150 mg/dL | Green |
+| Elevated | 150-200 mg/dL | Yellow |
+| High | 200-300 mg/dL | Orange (+ red line at 200) |
+| Danger | 300-450+ mg/dL | Red |
 
 ### Removed Systems (archived in `port-planner` branch)
 - Simulation engine (SimulationEngine, RuleEngine)
@@ -610,6 +635,7 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 - `alpha-3-stable` (v0.40.25) — WP remaining display, Take a Break/Rest interventions, bidirectional time blocking, level balancing
 - `alpha-4-stable` (v0.42.19) — Pre-placed foods, locked slots, balance solver, level-01 3-day puzzle design
 - `alpha-5-stable` (v0.43.0) — Insulin profile system, BOOST, visual insulin bars, post-peak drain, re-balanced level-01
+- `alpha-8-vertical` (v0.47.12) — startingBg, 50 mg/dL grid cells, Y-axis labels, vertical layout redesign (KcalBar extracted, transparent slot cards, no graph border, red 200 line, dead CSS cleanup)
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
