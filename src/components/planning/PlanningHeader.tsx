@@ -92,40 +92,17 @@ export function PlanningHeader({
     forecastTooltip = 'Malnourished — next day penalty';
   }
 
+  // Dynamic satiety indicator position
+  const satietyAlign = livePenalty.zone === 'malnourished' ? 'flex-start'
+    : livePenalty.zone === 'overeating' ? 'flex-end'
+    : 'center';
+
+  // Satiety label + forecast combined
+  const satietyLabel = kcalUsed > 0 ? assessment.label : '';
+  const satietyText = satietyLabel + (forecastBadge ? ` ${forecastBadge}` : '');
+
   const kcalSection = (
     <div className="planning-header__kcal-bar-wrap">
-      <div className="planning-header__kcal-bar-header">
-        <div className="planning-header__kcal-left">
-          <span className="planning-header__kcal-value">{kcalUsed}</span>
-          <span className="planning-header__kcal-unit">
-            /{effectiveKcalBudget} kcal
-            {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
-          </span>
-          {satietyPenalty.kcalDelta > 0 && (
-            <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
-              +{satietyPenalty.kcalDelta}
-            </span>
-          )}
-        </div>
-        <span className="planning-header__kcal-zone-name" style={kcalUsed > 0 ? { color: assessment.color } : undefined}>
-          {kcalUsed > 0 ? assessment.label : ''}
-        </span>
-        <div className="planning-header__kcal-right">
-          {forecastBadge && (
-            <Tooltip text={forecastTooltip} position="bottom">
-              <span
-                className="planning-header__assessment-badge"
-                style={{
-                  background: `${assessment.color}22`,
-                  borderColor: `${assessment.color}44`,
-                }}
-              >
-                {forecastBadge}
-              </span>
-            </Tooltip>
-          )}
-        </div>
-      </div>
       <div className="planning-header__kcal-bar">
         <div
           className="planning-header__kcal-bar-fill"
@@ -144,16 +121,31 @@ export function PlanningHeader({
           );
         })}
       </div>
-      <div className="planning-header__kcal-bar-labels">
-        <span className="planning-header__kcal-bar-zone-label" style={{ left: `${(25 / barMaxPct) * 100}%`, color: '#e53e3e' }}>
-          Malnourished
-        </span>
-        <span className="planning-header__kcal-bar-zone-label" style={{ left: `${(75 / barMaxPct) * 100}%`, color: '#48bb78' }}>
-          Optimal
-        </span>
-        <span className="planning-header__kcal-bar-zone-label" style={{ left: `${(125 / barMaxPct) * 100}%`, color: '#ed8936' }}>
-          Overeating
-        </span>
+      <div className="planning-header__kcal-bar-footer">
+        <div className="planning-header__kcal-counter">
+          <span className="planning-header__kcal-value">{kcalUsed}</span>
+          <span className="planning-header__kcal-unit">
+            /{effectiveKcalBudget} kcal
+            {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
+          </span>
+          {satietyPenalty.kcalDelta > 0 && (
+            <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
+              +{satietyPenalty.kcalDelta}
+            </span>
+          )}
+        </div>
+        {satietyText && (
+          <div className="planning-header__satiety-indicator" style={{ justifyContent: satietyAlign }}>
+            <Tooltip text={forecastTooltip || assessment.label} position="bottom">
+              <span
+                className="planning-header__satiety-badge"
+                style={{ color: assessment.color, borderColor: `${assessment.color}44`, background: `${assessment.color}15` }}
+              >
+                {satietyText}
+              </span>
+            </Tooltip>
+          </div>
+        )}
       </div>
     </div>
   );

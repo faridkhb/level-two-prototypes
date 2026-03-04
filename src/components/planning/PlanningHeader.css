@@ -98,22 +98,6 @@
   padding: 4px 12px 2px;
 }
 
-.planning-header__kcal-bar-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 4px;
-}
-
-/* Desktop: wrappers are transparent, zone name hidden */
-.planning-header__kcal-left,
-.planning-header__kcal-right {
-  display: contents;
-}
-
-.planning-header__kcal-zone-name {
-  display: none;
-}
 
 .planning-header__kcal-value {
   font-weight: 700;
@@ -128,9 +112,9 @@
 
 .planning-header__kcal-bar {
   position: relative;
-  height: 10px;
+  height: 13px;
   background: #1a202c;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid #4a5568;
   overflow: hidden;
 }
@@ -185,17 +169,33 @@
   background: #718096;
 }
 
-.planning-header__kcal-bar-labels {
-  position: relative;
-  height: 12px;
+.planning-header__kcal-bar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.planning-header__kcal-bar-zone-label {
-  position: absolute;
-  transform: translateX(-50%);
-  font-size: 9px;
-  font-weight: 600;
+.planning-header__kcal-counter {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.planning-header__satiety-indicator {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.planning-header__satiety-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1px solid;
   white-space: nowrap;
+  cursor: help;
 }
 
 /* When kcal bar is wrapped in Tooltip */
@@ -234,32 +234,6 @@
   cursor: not-allowed;
 }
 
-/* Kcal bar header: 3-column grid (value | zone name | forecast) */
-.planning-header__kcal-bar-header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.planning-header__kcal-left {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.planning-header__kcal-zone-name {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.planning-header__kcal-right {
-  display: flex;
-  align-items: baseline;
-  justify-content: flex-end;
-}
 
 /* Mobile portrait */
 @media (max-width: 480px) {
@@ -282,7 +256,7 @@
     padding: 2px 8px 1px;
   }
 
-  .planning-header__kcal-bar-zone-label {
+  .planning-header__satiety-badge {
     font-size: 8px;
   }
 }
