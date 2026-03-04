@@ -812,32 +812,48 @@ export function BgGraph({
         })}
 
         {/* Grid lines - vertical (time) */}
-        {Array.from({ length: TOTAL_COLUMNS + 1 }, (_, i) => (
-          <line
-            key={`v-${i}`}
-            x1={colToX(i)}
-            y1={PAD_TOP}
-            x2={colToX(i)}
-            y2={PAD_TOP + graphH}
-            stroke="#e2e8f0"
-            strokeWidth={i % 4 === 0 ? 0.8 : 0.3}
-          />
-        ))}
+        {Array.from({ length: TOTAL_COLUMNS + 1 }, (_, i) => {
+          const isEdge = i === 0 || i === TOTAL_COLUMNS;
+          return (
+            <line
+              key={`v-${i}`}
+              x1={colToX(i)}
+              y1={PAD_TOP}
+              x2={colToX(i)}
+              y2={PAD_TOP + graphH}
+              stroke={isEdge ? '#94a3b8' : '#e2e8f0'}
+              strokeWidth={isEdge ? 1.5 : (i % 4 === 0 ? 0.8 : 0.3)}
+            />
+          );
+        })}
 
         {/* Grid lines - horizontal (BG) */}
-        {Array.from({ length: effectiveRows + 1 }, (_, i) => (
-          <line
-            key={`h-${i}`}
-            x1={PAD_LEFT}
-            y1={PAD_TOP + i * cellHeight}
-            x2={PAD_LEFT + GRAPH_W}
-            y2={PAD_TOP + i * cellHeight}
-            stroke="#e2e8f0"
-            strokeWidth={0.3}
-          />
-        ))}
+        {Array.from({ length: effectiveRows + 1 }, (_, i) => {
+          const isEdge = i === 0 || i === effectiveRows;
+          return (
+            <line
+              key={`h-${i}`}
+              x1={PAD_LEFT}
+              y1={PAD_TOP + i * cellHeight}
+              x2={PAD_LEFT + GRAPH_W}
+              y2={PAD_TOP + i * cellHeight}
+              stroke={isEdge ? '#94a3b8' : '#e2e8f0'}
+              strokeWidth={isEdge ? 1.5 : 0.3}
+            />
+          );
+        })}
 
-        {/* Graph border — hidden */}
+        {/* 200 mg/dL danger threshold line */}
+        <line
+          x1={PAD_LEFT}
+          y1={PAD_TOP + graphH - zoneRow(200) * cellHeight}
+          x2={PAD_LEFT + GRAPH_W}
+          y2={PAD_TOP + graphH - zoneRow(200) * cellHeight}
+          stroke="#ef4444"
+          strokeWidth={1.5}
+          opacity={0.7}
+          pointerEvents="none"
+        />
 
         {/* Baseline BG zone (starting blood sugar level) */}
         {baselineRow > 0 && (
