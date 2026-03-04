@@ -12,9 +12,9 @@ export const GRAPH_CONFIG = {
   startHour: 8,       // 8 AM
   endHour: 20,        // 8 PM
   cellWidthMin: 30,   // minutes per column
-  cellHeightMgDl: 40, // mg/dL per row
-  bgMin: 60,          // Y axis minimum
-  bgMax: 380,         // Y axis maximum (60 + 8×40)
+  cellHeightMgDl: 50, // mg/dL per row
+  bgMin: 50,          // Y axis minimum
+  bgMax: 450,         // Y axis maximum (50 + 8×50)
 } as const;
 
 // Derived constants
@@ -323,8 +323,8 @@ export interface PenaltyResult {
 }
 
 /** Penalty zone thresholds (in row units from bgMin) */
-export const PENALTY_ORANGE_ROW = 3.5; // 200 mg/dL = (200-60)/40
-export const PENALTY_RED_ROW = 6;      // 300 mg/dL = (300-60)/40
+export const PENALTY_ORANGE_ROW = 3; // 200 mg/dL = (200-50)/50
+export const PENALTY_RED_ROW = 5;    // 300 mg/dL = (300-50)/50
 export const PENALTY_ORANGE_WEIGHT = 2;   // 4× original (fewer cubes + fewer columns)
 export const PENALTY_RED_WEIGHT = 6;       // 4× original
 

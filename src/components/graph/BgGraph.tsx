@@ -24,7 +24,7 @@ const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
 const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
 
 // Insulin floor: insulin cannot eat below this row (100 mg/dL)
-const INSULIN_FLOOR_ROW = 1; // (100 - 60) / 40 = 1
+const INSULIN_FLOOR_ROW = 1; // (100 - 50) / 50 = 1
 
 // Fixed blue palette: each food gets a progressively darker shade
 const FOOD_PALETTE = [
@@ -757,16 +757,17 @@ export function BgGraph({
     for (const timer of burningIntTimersRef.current.values()) clearTimeout(timer);
   }, []);
 
-  // Dynamic zone clip bands (Y-positions depend on cellHeight)
+  // Dynamic zone clip bands (Y-positions from mg/dL thresholds)
+  const zoneRow = (mgDl: number) => (mgDl - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl;
   const zoneClipBands = [
     { id: 'zone-clip-green', color: '#48bb78',
-      yTop: PAD_TOP + graphH - 4 * cellHeight - 3, yBot: PAD_TOP + graphH + 3 },
+      yTop: PAD_TOP + graphH - zoneRow(150) * cellHeight - 3, yBot: PAD_TOP + graphH + 3 },
     { id: 'zone-clip-yellow', color: '#ecc94b',
-      yTop: PAD_TOP + graphH - 7 * cellHeight - 3, yBot: PAD_TOP + graphH - 4 * cellHeight + 3 },
+      yTop: PAD_TOP + graphH - zoneRow(200) * cellHeight - 3, yBot: PAD_TOP + graphH - zoneRow(150) * cellHeight + 3 },
     { id: 'zone-clip-orange', color: '#ed8936',
-      yTop: PAD_TOP + graphH - 12 * cellHeight - 3, yBot: PAD_TOP + graphH - 7 * cellHeight + 3 },
+      yTop: PAD_TOP + graphH - zoneRow(300) * cellHeight - 3, yBot: PAD_TOP + graphH - zoneRow(200) * cellHeight + 3 },
     { id: 'zone-clip-red', color: '#fc8181',
-      yTop: PAD_TOP - 3, yBot: PAD_TOP + graphH - 12 * cellHeight + 3 },
+      yTop: PAD_TOP - 3, yBot: PAD_TOP + graphH - zoneRow(300) * cellHeight + 3 },
   ];
 
 
