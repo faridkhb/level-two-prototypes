@@ -4,7 +4,7 @@
       "id": "lightwalk",
       "name": "Light Walk",
       "emoji": "🚶",
-      "depth": 3,
+      "depth": 1,
       "duration": 60,
       "wpCost": 2,
       "boostCols": 3,
@@ -14,11 +14,11 @@
       "id": "heavyrun",
       "name": "Heavy Run",
       "emoji": "🏃",
-      "depth": 5,
+      "depth": 2,
       "duration": 180,
       "wpCost": 4,
       "boostCols": 5,
-      "boostExtra": 2,
+      "boostExtra": 1,
       "slotSize": 2
     },
     {

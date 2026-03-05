@@ -54,7 +54,7 @@ export const PANCREAS_TIERS: Record<PancreasTier, { decayRate: number; cost: num
 export const PANCREAS_TOTAL_BARS = 1;
 
 /** Stress slot: insulin rate reduction per column within stressed slot */
-export const STRESS_INSULIN_REDUCTION = 2;
+export const STRESS_INSULIN_REDUCTION = 1;
 
 // === Insulin Profile System ===
 

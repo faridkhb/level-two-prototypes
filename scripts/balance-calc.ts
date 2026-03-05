@@ -299,7 +299,7 @@ function runCalc(args: Record<string, string>) {
 
   // BOOST config
   const useBoost = args['boost'] === 'true';
-  const boost: BoostConfig | undefined = useBoost ? { active: true, thresholdRow: P_ORANGE_ROW, extraRate: +(args['boost-rate'] ?? '4') } : undefined;
+  const boost: BoostConfig | undefined = useBoost ? { active: true, thresholdRow: P_ORANGE_ROW, extraRate: +(args['boost-rate'] ?? '2') } : undefined;
 
   // Parse placements
   const foods: { id: string; slot: number }[] = [];
@@ -477,7 +477,7 @@ function runSolve(args: Record<string, string>) {
   console.log(`Level: ${args['level'] ?? 'custom'}, Day: ${dayConfig.day}`);
   // BOOST config
   const useBoost = args['boost'] === 'true';
-  const boost: BoostConfig | undefined = useBoost ? { active: true, thresholdRow: P_ORANGE_ROW, extraRate: +(args['boost-rate'] ?? '4') } : undefined;
+  const boost: BoostConfig | undefined = useBoost ? { active: true, thresholdRow: P_ORANGE_ROW, extraRate: +(args['boost-rate'] ?? '2') } : undefined;
 
   console.log(`Budget: ${dayConfig.kcalBudget} kcal, ${dayConfig.wpBudget} WP, ${insulinLabel}`);
   console.log(`Free slots: [${freeSlots.join(', ')}] (${freeSlots.length}/${TOTAL_SLOTS})`);

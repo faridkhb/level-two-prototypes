@@ -9,19 +9,46 @@
       "kcalBudget": 600,
       "wpBudget": 4,
       "availableFoods": [
-        { "id": "banana", "count": 1 },
-        { "id": "apple", "count": 1 },
-        { "id": "cookie", "count": 1 }
+        {
+          "id": "banana",
+          "count": 1
+        },
+        {
+          "id": "apple",
+          "count": 1
+        },
+        {
+          "id": "cookie",
+          "count": 1
+        }
       ],
       "availableInterventions": [
-        { "id": "takeabreak", "count": 1 }
+        {
+          "id": "takeabreak",
+          "count": 1
+        }
       ],
       "availableMedications": [],
       "preplacedFoods": [],
-      "lockedSlots": [0, 1, 4, 5, 8, 9, 10, 11],
+      "lockedSlots": [
+        0,
+        1,
+        4,
+        5,
+        8,
+        9,
+        10,
+        11
+      ],
       "insulinProfile": {
         "mode": "cumulative",
-        "segments": [{ "from": 0, "to": 47, "rate": 2 }]
+        "segments": [
+          {
+            "from": 0,
+            "to": 47,
+            "rate": 1
+          }
+        ]
       }
     },
     {
@@ -29,20 +56,50 @@
       "kcalBudget": 500,
       "wpBudget": 8,
       "availableFoods": [
-        { "id": "pizza", "count": 1 },
-        { "id": "banana", "count": 1 },
-        { "id": "cookie", "count": 1 },
-        { "id": "icecream", "count": 1 }
+        {
+          "id": "pizza",
+          "count": 1
+        },
+        {
+          "id": "banana",
+          "count": 1
+        },
+        {
+          "id": "cookie",
+          "count": 1
+        },
+        {
+          "id": "icecream",
+          "count": 1
+        }
       ],
       "availableInterventions": [
-        { "id": "lightwalk", "count": 1 }
+        {
+          "id": "lightwalk",
+          "count": 1
+        }
       ],
       "availableMedications": [],
       "preplacedFoods": [],
-      "lockedSlots": [0, 1, 4, 5, 8, 9, 10, 11],
+      "lockedSlots": [
+        0,
+        1,
+        4,
+        5,
+        8,
+        9,
+        10,
+        11
+      ],
       "insulinProfile": {
         "mode": "cumulative",
-        "segments": [{ "from": 0, "to": 47, "rate": 2 }]
+        "segments": [
+          {
+            "from": 0,
+            "to": 47,
+            "rate": 1
+          }
+        ]
       }
     },
     {
@@ -50,23 +107,54 @@
       "kcalBudget": 800,
       "wpBudget": 8,
       "availableFoods": [
-        { "id": "oatmeal", "count": 1 },
-        { "id": "banana", "count": 1 }
+        {
+          "id": "oatmeal",
+          "count": 1
+        },
+        {
+          "id": "banana",
+          "count": 1
+        }
       ],
       "availableInterventions": [
-        { "id": "lightwalk", "count": 1 },
-        { "id": "takearest", "count": 1 }
+        {
+          "id": "lightwalk",
+          "count": 1
+        },
+        {
+          "id": "takearest",
+          "count": 1
+        }
       ],
       "availableMedications": [],
       "preplacedFoods": [
-        { "shipId": "burger", "slotIndex": 0 }
+        {
+          "shipId": "burger",
+          "slotIndex": 0
+        }
       ],
-      "lockedSlots": [0, 4, 5, 8, 9, 10, 11],
+      "lockedSlots": [
+        0,
+        4,
+        5,
+        8,
+        9,
+        10,
+        11
+      ],
       "insulinProfile": {
         "mode": "cumulative",
         "segments": [
-          { "from": 0, "to": 23, "rate": 2 },
-          { "from": 24, "to": 47, "rate": 1 }
+          {
+            "from": 0,
+            "to": 23,
+            "rate": 1
+          },
+          {
+            "from": 24,
+            "to": 47,
+            "rate": 1
+          }
         ]
       }
     }

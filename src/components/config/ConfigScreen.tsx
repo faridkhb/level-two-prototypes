@@ -302,7 +302,7 @@ export function ConfigScreen({ onBack }: ConfigScreenProps) {
                 <input
                   type="number"
                   className="config-input config-input--small"
-                  value={boostOverride.extraRate ?? 4}
+                  value={boostOverride.extraRate ?? 2}
                   onChange={e => setBoostField('extraRate', Number(e.target.value))}
                 />
               </label>

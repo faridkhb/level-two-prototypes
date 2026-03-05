@@ -220,7 +220,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const boostThresholdRow = boostOverride.thresholdMgDl
     ? Math.round((boostOverride.thresholdMgDl - 60) / 20)
     : PENALTY_ORANGE_ROW;
-  const boostExtraRate = boostOverride.extraRate ?? 4;
+  const boostExtraRate = boostOverride.extraRate ?? 2;
   const boostConfig: BoostConfig | undefined = isBoostActive
     ? { active: true, thresholdRow: boostThresholdRow, extraRate: boostExtraRate }
     : undefined;
@@ -618,6 +618,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             submitEnabled={submitEnabled}
             onSubmit={handleSubmit}
             hidden={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
+            tutorialActive={isTutorial}
           />
 
           <SlotGrid
