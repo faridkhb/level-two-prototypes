@@ -13,9 +13,9 @@
       "name": "SGLT2 Inhibitor",
       "emoji": "\ud83e\uddea",
       "type": "thresholdDrain",
-      "depth": 1,
+      "depth": 2,
       "floorMgDl": 200,
-      "description": "Removes up to 1 cube, floor at 200 mg/dL"
+      "description": "Removes up to 2 cubes, floor at 200 mg/dL"
     },
     {
       "id": "glp1",

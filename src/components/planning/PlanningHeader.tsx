@@ -63,23 +63,48 @@ export function PlanningHeader({
 interface KcalBarProps {
   kcalUsed: number;
   kcalBudget: number;
+  dayLabel: string;
+  wpRemaining: number;
   satietyPenalty?: SatietyPenalty;
   medicationModifiers?: MedicationModifiers;
   submitEnabled: boolean;
   onSubmit: () => void;
   hidden?: boolean;
+  tutorialActive?: boolean;
 }
 
 export function KcalBar({
   kcalUsed,
   kcalBudget,
+  dayLabel,
+  wpRemaining,
   satietyPenalty = DEFAULT_SATIETY_PENALTY,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   submitEnabled,
   onSubmit,
   hidden,
+  tutorialActive,
 }: KcalBarProps) {
-  if (hidden) return null;
+  const wpOver = wpRemaining < 0;
+  const hasWpBonus = satietyPenalty.wpDelta > 0;
+  const hasWpPenalty = satietyPenalty.wpDelta < 0;
+  // When hidden, show only the Submit button (no kcal info)
+  if (hidden) {
+    return (
+      <div className="planning-header__kcal-bar-wrap">
+        <div className="planning-header__kcal-bar-footer" style={{ justifyContent: 'center' }}>
+          <button
+            className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'} ${tutorialActive && submitEnabled ? 'planning-header__submit--tutorial-pulse' : ''}`}
+            onClick={onSubmit}
+            disabled={!submitEnabled}
+            title={submitEnabled ? 'Submit your meal plan' : 'Place food to reach Optimal zone (50%+)'}
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier)
     + satietyPenalty.kcalDelta;
@@ -119,8 +144,20 @@ export function KcalBar({
 
   const content = (
     <div className="planning-header__kcal-bar-wrap">
-      {satietyText && (
-        <div className="planning-header__satiety-indicator">
+      <div className="planning-header__info-row">
+        <div className="planning-header__wp">
+          <span className="planning-header__wp-icon">{'\u2600\uFE0F'}</span>
+          <span className={`planning-header__wp-value ${wpOver ? 'planning-header__wp-value--over' : ''}`}>
+            {wpRemaining}
+          </span>
+          {hasWpBonus && (
+            <span className="planning-header__penalty-badge planning-header__penalty-badge--bonus">+1</span>
+          )}
+          {hasWpPenalty && (
+            <span className="planning-header__penalty-badge planning-header__penalty-badge--wp">−1</span>
+          )}
+        </div>
+        {satietyText ? (
           <Tooltip text={forecastTooltip || assessment.label} position="bottom">
             <span
               className="planning-header__satiety-badge"
@@ -129,40 +166,41 @@ export function KcalBar({
               {satietyText}
             </span>
           </Tooltip>
-        </div>
-      )}
-      <div className="planning-header__kcal-bar">
-        <div
-          className="planning-header__kcal-bar-fill"
-          style={{ width: `${fillPct}%`, background: assessment.color }}
-        />
-        <div className="planning-header__kcal-zone planning-header__kcal-zone--red" style={{ left: '0%', width: `${(50 / barMaxPct) * 100}%` }} />
-        <div className="planning-header__kcal-zone planning-header__kcal-zone--green" style={{ left: `${(50 / barMaxPct) * 100}%`, width: `${(50 / barMaxPct) * 100}%` }} />
-        <div className="planning-header__kcal-zone planning-header__kcal-zone--orange" style={{ left: `${(100 / barMaxPct) * 100}%`, width: `${(50 / barMaxPct) * 100}%` }} />
-        {KCAL_TICKS.map(tick => {
-          const xPct = (tick.pct / barMaxPct) * 100;
-          return (
-            <div key={tick.pct} className="planning-header__kcal-tick" style={{ left: `${xPct}%` }}>
-              <div className="planning-header__kcal-tick-line planning-header__kcal-tick-line--boundary" />
-            </div>
-          );
-        })}
+        ) : <span />}
+        <div className="planning-header__day">{dayLabel}</div>
       </div>
-      <div className="planning-header__kcal-bar-footer">
-        <div className="planning-header__kcal-counter">
-          <span className="planning-header__kcal-value">{kcalUsed}</span>
-          <span className="planning-header__kcal-unit">
-            /{effectiveKcalBudget} kcal
-            {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
-          </span>
-          {satietyPenalty.kcalDelta > 0 && (
-            <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
-              +{satietyPenalty.kcalDelta}
+      <div className="planning-header__kcal-row">
+        <div className="planning-header__kcal-bar">
+          <div
+            className="planning-header__kcal-bar-fill"
+            style={{ width: `${fillPct}%`, background: assessment.color }}
+          />
+          <div className="planning-header__kcal-zone planning-header__kcal-zone--red" style={{ left: '0%', width: `${(50 / barMaxPct) * 100}%` }} />
+          <div className="planning-header__kcal-zone planning-header__kcal-zone--green" style={{ left: `${(50 / barMaxPct) * 100}%`, width: `${(50 / barMaxPct) * 100}%` }} />
+          <div className="planning-header__kcal-zone planning-header__kcal-zone--orange" style={{ left: `${(100 / barMaxPct) * 100}%`, width: `${(50 / barMaxPct) * 100}%` }} />
+          {KCAL_TICKS.map(tick => {
+            const xPct = (tick.pct / barMaxPct) * 100;
+            return (
+              <div key={tick.pct} className="planning-header__kcal-tick" style={{ left: `${xPct}%` }}>
+                <div className="planning-header__kcal-tick-line planning-header__kcal-tick-line--boundary" />
+              </div>
+            );
+          })}
+          <div className="planning-header__kcal-inner-label">
+            <span className="planning-header__kcal-value">{kcalUsed}</span>
+            <span className="planning-header__kcal-unit">
+              /{effectiveKcalBudget} kcal
+              {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
             </span>
-          )}
+            {satietyPenalty.kcalDelta > 0 && (
+              <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
+                +{satietyPenalty.kcalDelta}
+              </span>
+            )}
+          </div>
         </div>
         <button
-          className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'}`}
+          className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'} ${tutorialActive && submitEnabled ? 'planning-header__submit--tutorial-pulse' : ''}`}
           onClick={onSubmit}
           disabled={!submitEnabled}
           title={submitEnabled ? 'Submit your meal plan' : 'Place food to reach Optimal zone (50%+)'}

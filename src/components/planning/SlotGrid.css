@@ -1,4 +1,4 @@
-/* Two-row slot grid: 6 columns × 2 rows, column-first fill order */
+/* Two-row slot grid: 6 columns x 2 rows, column-first fill order */
 .slot-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -6,7 +6,7 @@
   grid-auto-flow: column;
   gap: 8px 6px;
   padding: 4px 8px;
-  margin-top: 12px;
+  margin-top: 15px;
 }
 
 /* Wrapper: slot + time label stacked vertically */
@@ -18,7 +18,7 @@
   width: 100%;
 }
 
-/* Individual slot — vertical layout: emoji + time inside */
+/* Individual slot -- vertical layout: emoji + time inside */
 .slot-container {
   position: relative;
   display: flex;
@@ -63,7 +63,7 @@
 
 .slot-container--dragging {
   border-style: dashed;
-  border-color: #4a5568;
+  border-color: #e2e8f0;
   background: transparent;
   opacity: 0.5;
 }
@@ -96,7 +96,7 @@
 /* Time label inside the slot */
 .slot-container__time {
   font-size: 9px;
-  color: #718096;
+  color: #a0aec0;
   white-space: nowrap;
   user-select: none;
   line-height: 1;
@@ -117,7 +117,7 @@
 
 /* Empty slot */
 .slot-container__empty {
-  color: #a0aec0;
+  color: #cbd5e0;
   font-size: 24px;
   font-weight: 600;
   user-select: none;
@@ -132,10 +132,10 @@
   line-height: 1;
 }
 
-/* Locked slot — blocked empty slot */
+/* Locked slot -- blocked empty slot */
 .slot-container--locked {
   border-style: solid;
-  border-color: #718096;
+  border-color: #a0aec0;
   background: transparent;
   cursor: not-allowed;
   opacity: 0.85;
@@ -143,12 +143,12 @@
 
 /* Locked slot with pre-placed content */
 .slot-container--locked.slot-container--filled {
-  border-color: #4a5568;
+  border-color: #e2e8f0;
   background: transparent;
   cursor: default;
 }
 
-/* Stress slot — player CAN place items, but insulin is reduced */
+/* Stress slot -- player CAN place items, but insulin is reduced */
 .slot-container--stressed {
   border-color: #ef4444;
   border-style: dashed;
@@ -161,18 +161,19 @@
   background: transparent;
 }
 
-/* Tooltip — CSS-based via data-tooltip attribute */
+/* Tooltip -- CSS-based via data-tooltip attribute */
 .slot-container[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
   bottom: calc(100% + 4px);
   left: 50%;
   transform: translateX(-50%);
-  background: #1a202c;
+  background: #2d3748;
   color: #e2e8f0;
   font-size: 11px;
   padding: 4px 8px;
   border-radius: 4px;
+  border: 1px solid #e2e8f0;
   white-space: nowrap;
   z-index: 1000;
   pointer-events: none;

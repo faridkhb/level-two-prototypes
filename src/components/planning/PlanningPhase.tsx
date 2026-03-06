@@ -11,7 +11,7 @@ import {
   closestCenter,
 } from '@dnd-kit/core';
 import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BoostConfig } from '../../core/types';
-import { TOTAL_SLOTS, expandInsulinProfile, applyStressToRates, PENALTY_ORANGE_ROW, slotToColumn, getBaselineRow } from '../../core/types';
+import { TOTAL_SLOTS, expandInsulinProfile, applyStressToRates, PENALTY_ORANGE_ROW, slotToColumn, getBaselineRow, GRAPH_CONFIG } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { useConfigStore } from '../../store/configStore';
@@ -19,7 +19,7 @@ import { computeMedicationModifiers, calculatePenaltyFromState } from '../../cor
 import type { InsulinParams } from '../../core/cubeEngine';
 import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
 import { BgGraph } from '../graph';
-import { PlanningHeader, KcalBar } from './PlanningHeader';
+import { KcalBar } from './PlanningHeader';
 import { TabbedInventory } from './TabbedInventory';
 import { PancreasButton } from './PancreasButton';
 import { ResultPanel } from './ResultPanel';
@@ -218,9 +218,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const totalLockedBars = Object.values(lockedBarsPerDay).reduce((a, b) => a + b, 0);
   const barsAvailable = PANCREAS_TOTAL_BARS - totalLockedBars;
   const boostThresholdRow = boostOverride.thresholdMgDl
-    ? Math.round((boostOverride.thresholdMgDl - 60) / 20)
+    ? Math.round((boostOverride.thresholdMgDl - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl)
     : PENALTY_ORANGE_ROW;
-  const boostExtraRate = boostOverride.extraRate ?? 2;
+  const boostExtraRate = boostOverride.extraRate ?? 4;
   const boostConfig: BoostConfig | undefined = isBoostActive
     ? { active: true, thresholdRow: boostThresholdRow, extraRate: boostExtraRate }
     : undefined;
@@ -565,12 +565,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       onDragEnd={handleDragEnd}
     >
       <div className="planning-phase">
-        <PlanningHeader
-          dayLabel={`Day ${currentDay}/${currentLevel.days}`}
-          wpRemaining={wpRemaining}
-          satietyPenalty={satietyPenalty}
-        />
-
         {gamePhase === 'replaying' && (
           <div className="planning-phase__hint planning-phase__hint--replay">
             Reviewing your meal plan...
@@ -579,6 +573,13 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
 
         <div className="planning-phase__content">
           <div className="planning-phase__graph-wrapper">
+            <button
+              className="planning-phase__menu-btn"
+              disabled
+              title="Menu (coming soon)"
+            >
+              ☰
+            </button>
             <BgGraph
               placedFoods={placedFoods}
               allShips={allShips}
@@ -613,11 +614,14 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           <KcalBar
             kcalUsed={kcalUsed}
             kcalBudget={kcalBudget}
+            dayLabel={`Day ${currentDay}/${currentLevel.days}`}
+            wpRemaining={wpRemaining}
             satietyPenalty={satietyPenalty}
             medicationModifiers={medicationModifiers}
             submitEnabled={submitEnabled}
             onSubmit={handleSubmit}
             hidden={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
+            tutorialActive={isTutorial}
           />
 
           <SlotGrid
@@ -631,12 +635,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             lockedSlots={effectiveLockedSlots}
             stressSlots={stressSlotSet}
           />
-
-          {isPlanning && (
-            <div className="planning-phase__hint">
-              Drag food cards into meal slots to plan your day!
-            </div>
-          )}
 
           {isPlanning && (
             <InventoryDropZone>

@@ -13,28 +13,29 @@ import type { InsulinParams } from '../../core/cubeEngine';
 import './BgGraph.css';
 
 // SVG layout constants
-const CELL_SIZE = 18;
+const CELL_SIZE = 18;       // column width (X)
+const CELL_HEIGHT = 12;     // row height (Y) — 16 rows × 12 = 192px
 const PAD_LEFT = 4;
 const PAD_TOP = 4;
 const PAD_RIGHT = 4;
 const PAD_BOTTOM = 1;
 
 const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
-const GRAPH_H = TOTAL_ROWS * CELL_SIZE;
+const GRAPH_H = TOTAL_ROWS * CELL_HEIGHT;
 const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
 
 // Insulin floor: insulin cannot eat below this row (100 mg/dL)
-const INSULIN_FLOOR_ROW = 1; // (100 - 50) / 50 = 1
+const INSULIN_FLOOR_ROW = 2; // (100 - 50) / 25 = 2
 
-// Fixed blue palette: each food gets a progressively darker shade
+// Distinct blue palette: alternating light/dark shades for maximum contrast between neighbors
 const FOOD_PALETTE = [
-  '#7dd3fc', // sky-300 — light blue (голубой)
-  '#38bdf8', // sky-400
-  '#0ea5e9', // sky-500
-  '#0284c7', // sky-600
-  '#0369a1', // sky-700
-  '#075985', // sky-800
-  '#0c4a6e', // sky-900 — dark navy
+  '#7dd3fc', // sky-300 — lightest
+  '#0369a1', // sky-700 — dark
+  '#38bdf8', // sky-400 — light
+  '#075985', // sky-800 — darker
+  '#0ea5e9', // sky-500 — medium
+  '#0c4a6e', // sky-900 — darkest
+  '#0284c7', // sky-600 — medium-dark
 ];
 
 function getFoodColor(index: number): string {
@@ -145,7 +146,7 @@ export function BgGraph({
   baselineRow = 0,
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
-  const graphH = isMobile ? TOTAL_ROWS * 30 : GRAPH_H;  // 510 vs 306 — taller cells on mobile
+  const graphH = isMobile ? TOTAL_ROWS * 20 : GRAPH_H;  // 320 vs 192 — taller cells on mobile
   const padBottom = isMobile ? 30 : PAD_BOTTOM;
   const localSvgH = PAD_TOP + graphH + padBottom;
 
@@ -773,9 +774,7 @@ export function BgGraph({
   const zoneRow = (mgDl: number) => (mgDl - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl;
   const zoneClipBands = [
     { id: 'zone-clip-green', color: '#48bb78',
-      yTop: PAD_TOP + graphH - zoneRow(150) * cellHeight - 3, yBot: PAD_TOP + graphH + 3 },
-    { id: 'zone-clip-yellow', color: '#ecc94b',
-      yTop: PAD_TOP + graphH - zoneRow(200) * cellHeight - 3, yBot: PAD_TOP + graphH - zoneRow(150) * cellHeight + 3 },
+      yTop: PAD_TOP + graphH - zoneRow(200) * cellHeight - 3, yBot: PAD_TOP + graphH + 3 },
     { id: 'zone-clip-orange', color: '#ed8936',
       yTop: PAD_TOP + graphH - zoneRow(300) * cellHeight - 3, yBot: PAD_TOP + graphH - zoneRow(200) * cellHeight + 3 },
     { id: 'zone-clip-red', color: '#fc8181',
@@ -1260,30 +1259,7 @@ export function BgGraph({
           </g>
         )}
 
-        {/* Individual skylines — AFTER all cube layers so they're not hidden by upper food cubes */}
-        {(revealPhase === undefined || revealPhase >= 1) && [...graphRenderData.layers].reverse().map(layer => (
-          layer.skylinePath ? (
-            <g key={`skyline-${layer.placementId}`} pointerEvents="none">
-              <path
-                d={layer.skylinePath}
-                fill="none"
-                stroke="rgba(0,0,0,0.18)"
-                strokeWidth={5}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                transform="translate(0, 1.5)"
-              />
-              <path
-                d={layer.skylinePath}
-                fill="none"
-                stroke="white"
-                strokeWidth={3}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-            </g>
-          ) : null
-        ))}
+        {/* Individual skylines — hidden, contrast via alternating food colors instead */}
 
         {/* BG skyline — single path with rounded corners + shadow line below */}
         {graphRenderData.mainSkylinePath && (revealPhase === undefined || revealPhase >= 1) && (
