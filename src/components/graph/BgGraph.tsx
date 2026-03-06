@@ -801,9 +801,12 @@ export function BgGraph({
           <filter id="bubble-shadow" x="-50%" y="-50%" width="200%" height="200%">
             <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.12" />
           </filter>
-          {/* Red diagonal hatching for danger zone cubes */}
-          <pattern id="danger-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="7" stroke="#ef4444" strokeWidth="2.5" strokeOpacity="0.5" />
+          {/* Diagonal hatching for danger zone cubes — colored per zone */}
+          <pattern id="hatch-orange" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#ed8936" strokeWidth="3" strokeOpacity="0.55" />
+          </pattern>
+          <pattern id="hatch-red" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#fc8181" strokeWidth="3" strokeOpacity="0.55" />
           </pattern>
         </defs>
 
@@ -1056,7 +1059,7 @@ export function BgGraph({
                       y={rowToY(cube.row) + 0.5}
                       width={CELL_SIZE - 1}
                       height={cellHeight - 1}
-                      fill="url(#danger-hatch)"
+                      fill={cube.row >= PENALTY_RED_ROW ? 'url(#hatch-red)' : 'url(#hatch-orange)'}
                       rx={2}
                       pointerEvents="none"
                     />
