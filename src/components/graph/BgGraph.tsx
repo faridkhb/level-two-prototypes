@@ -801,6 +801,13 @@ export function BgGraph({
           <filter id="bubble-shadow" x="-50%" y="-50%" width="200%" height="200%">
             <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.12" />
           </filter>
+          {/* Diagonal hatching for danger zone cubes — colored per zone */}
+          <pattern id="hatch-orange" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#ed8936" strokeWidth="3" strokeOpacity="0.55" />
+          </pattern>
+          <pattern id="hatch-red" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#fc8181" strokeWidth="3" strokeOpacity="0.55" />
+          </pattern>
         </defs>
 
         {/* Zone backgrounds — hidden */}
@@ -1033,18 +1040,31 @@ export function BgGraph({
               } else {
                 cubeFill = layer.color;
               }
+              const showHatch = cube.status === 'normal' && cube.row >= PENALTY_ORANGE_ROW && revealPhase === undefined && !showPenaltyHighlight;
               return (
-                <rect
-                  key={`${layer.placementId}-${cube.col}-${cube.row}`}
-                  x={colToX(cube.col) + 0.5}
-                  y={rowToY(cube.row) + 0.5}
-                  width={CELL_SIZE - 1}
-                  height={cellHeight - 1}
-                  fill={cubeFill}
-                  rx={2}
-                  className={cubeClass}
-                  style={{ animationDelay: `${waveDelay}ms` }}
-                />
+                <g key={`${layer.placementId}-${cube.col}-${cube.row}`}>
+                  <rect
+                    x={colToX(cube.col) + 0.5}
+                    y={rowToY(cube.row) + 0.5}
+                    width={CELL_SIZE - 1}
+                    height={cellHeight - 1}
+                    fill={cubeFill}
+                    rx={2}
+                    className={cubeClass}
+                    style={{ animationDelay: `${waveDelay}ms` }}
+                  />
+                  {showHatch && (
+                    <rect
+                      x={colToX(cube.col) + 0.5}
+                      y={rowToY(cube.row) + 0.5}
+                      width={CELL_SIZE - 1}
+                      height={cellHeight - 1}
+                      fill={cube.row >= PENALTY_RED_ROW ? 'url(#hatch-red)' : 'url(#hatch-orange)'}
+                      rx={2}
+                      pointerEvents="none"
+                    />
+                  )}
+                </g>
               );
             })}
           </g>
