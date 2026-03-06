@@ -502,16 +502,26 @@ export function BgGraph({
     // Phase 5: Main skyline path from columnCaps
     const mainParts: string[] = [];
     let inSegment = false;
+    let lastSegCol = -1;
     for (let col = 0; col < TOTAL_COLUMNS; col++) {
       const h = columnCaps[col];
       if (h <= 0) {
-        if (inSegment) { mainParts.push(`V ${bottomY}`); inSegment = false; }
+        // Close segment — skip vertical at right edge
+        if (inSegment && lastSegCol < TOTAL_COLUMNS - 1) {
+          mainParts.push(`V ${bottomY}`);
+        }
+        inSegment = false;
         continue;
       }
       const y = PAD_TOP + graphH - h * cellHeight;
       if (!inSegment) {
-        mainParts.push(`M ${colToX(col)} ${bottomY}`);
-        mainParts.push(`V ${y}`);
+        if (col === 0) {
+          // Left edge — start directly at top, no vertical line down
+          mainParts.push(`M ${colToX(col)} ${y}`);
+        } else {
+          mainParts.push(`M ${colToX(col)} ${bottomY}`);
+          mainParts.push(`V ${y}`);
+        }
         inSegment = true;
       } else {
         const prevH = columnCaps[col - 1];
@@ -520,8 +530,10 @@ export function BgGraph({
         }
       }
       mainParts.push(`H ${colToX(col) + CELL_SIZE}`);
+      lastSegCol = col;
     }
-    if (inSegment) mainParts.push(`V ${bottomY}`);
+    // Close last segment — skip vertical at right edge
+    if (inSegment && lastSegCol < TOTAL_COLUMNS - 1) mainParts.push(`V ${bottomY}`);
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
     // Phase 6: Medication cubes — show what medications prevented (above pancreas zone)
@@ -812,36 +824,30 @@ export function BgGraph({
         })}
 
         {/* Grid lines - vertical (time) */}
-        {Array.from({ length: TOTAL_COLUMNS + 1 }, (_, i) => {
-          const isEdge = i === 0 || i === TOTAL_COLUMNS;
-          return (
+        {Array.from({ length: TOTAL_COLUMNS + 1 }, (_, i) => (
             <line
               key={`v-${i}`}
               x1={colToX(i)}
               y1={PAD_TOP}
               x2={colToX(i)}
               y2={PAD_TOP + graphH}
-              stroke={isEdge ? '#94a3b8' : '#e2e8f0'}
-              strokeWidth={isEdge ? 1.5 : (i % 4 === 0 ? 0.8 : 0.3)}
+              stroke={'#e2e8f0'}
+              strokeWidth={i % 4 === 0 ? 0.8 : 0.3}
             />
-          );
-        })}
+        ))}
 
         {/* Grid lines - horizontal (BG) */}
-        {Array.from({ length: effectiveRows + 1 }, (_, i) => {
-          const isEdge = i === 0 || i === effectiveRows;
-          return (
+        {Array.from({ length: effectiveRows + 1 }, (_, i) => (
             <line
               key={`h-${i}`}
               x1={PAD_LEFT}
               y1={PAD_TOP + i * cellHeight}
               x2={PAD_LEFT + GRAPH_W}
               y2={PAD_TOP + i * cellHeight}
-              stroke={isEdge ? '#94a3b8' : '#e2e8f0'}
-              strokeWidth={isEdge ? 1.5 : 0.3}
+              stroke={'#e2e8f0'}
+              strokeWidth={0.3}
             />
-          );
-        })}
+        ))}
 
         {/* 200 mg/dL danger threshold line */}
         <line

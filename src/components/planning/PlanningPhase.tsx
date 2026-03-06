@@ -618,7 +618,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             submitEnabled={submitEnabled}
             onSubmit={handleSubmit}
             hidden={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
-            tutorialActive={isTutorial}
           />
 
           <SlotGrid

@@ -77,12 +77,13 @@
 
 .planning-header__kcal-value {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 11px;
   color: #e2e8f0;
 }
 
 .planning-header__kcal-unit {
   color: #718096;
+  font-weight: 700;
   font-size: 11px;
 }
 
@@ -142,7 +143,7 @@
 
 .planning-header__kcal-tick-line--boundary {
   width: 2px;
-  background: #718096;
+  background: #1a202c;
 }
 
 .planning-header__kcal-bar-footer {
