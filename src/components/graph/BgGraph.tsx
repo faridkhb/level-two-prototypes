@@ -829,14 +829,25 @@ export function BgGraph({
           );
         })}
 
-        {/* Danger zone fill above 200 mg/dL — subtle red tint */}
+        {/* Danger zone hatching above 200 mg/dL — orange 200-300, red 300+ */}
+        {zoneRow(300) > 0 && (
+          <rect
+            x={PAD_LEFT}
+            y={PAD_TOP}
+            width={GRAPH_W}
+            height={Math.max(0, graphH - zoneRow(300) * cellHeight)}
+            fill="url(#hatch-red)"
+            opacity={0.35}
+            pointerEvents="none"
+          />
+        )}
         <rect
           x={PAD_LEFT}
-          y={PAD_TOP}
+          y={PAD_TOP + (graphH - zoneRow(300) * cellHeight)}
           width={GRAPH_W}
-          height={graphH - zoneRow(200) * cellHeight}
-          fill="#ef4444"
-          opacity={0.2}
+          height={Math.max(0, (zoneRow(300) - zoneRow(200)) * cellHeight)}
+          fill="url(#hatch-orange)"
+          opacity={0.35}
           pointerEvents="none"
         />
 
