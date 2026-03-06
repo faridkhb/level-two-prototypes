@@ -11,7 +11,7 @@
 
 .planning-phase__hint {
   font-size: 13px;
-  color: #a0aec0;
+  color: #718096;
   text-align: center;
   padding: 0 8px;
   margin-top: 12px;
@@ -33,7 +33,7 @@
   align-items: center;
   justify-content: center;
   min-height: 400px;
-  color: #a0aec0;
+  color: #718096;
   font-size: 16px;
 }
 
@@ -51,10 +51,27 @@
   position: relative;
 }
 
+/* Menu button -- top-right corner of graph */
+.planning-phase__menu-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  padding: 4px 8px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: #718096;
+  font-size: 14px;
+  cursor: not-allowed;
+}
+
+/* Boost button -- top-center of graph */
 .planning-phase__pancreas-overlay {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
 }
 
@@ -67,7 +84,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  margin-top: 8px;
+  margin-top: 11px;
 }
 
 .planning-phase__inventory-zone--over {
@@ -75,7 +92,7 @@
   background: rgba(251, 191, 36, 0.06);
 }
 
-/* Day navigation — fixed to bottom of screen */
+/* Day navigation -- fixed to bottom of screen */
 .planning-phase__day-nav {
   position: fixed;
   bottom: 0;
@@ -85,17 +102,17 @@
   justify-content: center;
   gap: 8px;
   padding: 6px 0;
-  background: #1a202c;
-  border-top: 1px solid #4a5568;
+  background: #f7fafc;
+  border-top: 1px solid #e2e8f0;
   z-index: 50;
 }
 
 .planning-phase__day-btn {
   padding: 4px 14px;
   border-radius: 6px;
-  border: 1px solid #4a5568;
-  background: #2d3748;
-  color: #a0aec0;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #718096;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -104,8 +121,8 @@
 }
 
 .planning-phase__day-btn:hover:not(:disabled) {
-  background: #4a5568;
-  color: #e2e8f0;
+  background: #e2e8f0;
+  color: #2d3748;
 }
 
 .planning-phase__day-btn--active {

@@ -4,9 +4,9 @@
   align-items: center;
   gap: 12px;
   padding: 24px 16px;
-  background: #2d3748;
+  background: #ffffff;
   border-radius: 12px;
-  border: 2px solid #4a5568;
+  border: 2px solid #e2e8f0;
   animation: resultFadeIn 0.5s ease-out both;
 }
 
@@ -64,7 +64,7 @@
 .result-panel__label {
   font-size: 22px;
   font-weight: 800;
-  color: #e2e8f0;
+  color: #2d3748;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -89,7 +89,7 @@
 
 .result-panel__penalty-text {
   font-size: 13px;
-  color: #a0aec0;
+  color: #718096;
 }
 
 /* Breakdown */
@@ -146,7 +146,7 @@
 .result-panel__wp-warning-text {
   font-size: 13px;
   font-weight: 600;
-  color: #fbbf24;
+  color: #d69e2e;
 }
 
 .result-panel__wp-perfect {
@@ -183,13 +183,13 @@
 }
 
 .result-panel__btn--retry {
-  background: #4a5568;
-  border-color: #718096;
-  color: #e2e8f0;
+  background: #e2e8f0;
+  border-color: #a0aec0;
+  color: #2d3748;
 }
 
 .result-panel__btn--retry:hover {
-  background: #718096;
+  background: #a0aec0;
 }
 
 .result-panel__btn--next {
@@ -204,15 +204,15 @@
 
 .result-panel__btn--back {
   background: transparent;
-  border-color: #718096;
-  color: #a0aec0;
+  border-color: #a0aec0;
+  color: #718096;
   font-size: 12px;
   padding: 8px 16px;
 }
 
 .result-panel__btn--back:hover {
-  color: #e2e8f0;
-  border-color: #a0aec0;
+  color: #2d3748;
+  border-color: #718096;
 }
 
 /* Mobile portrait */

@@ -14,12 +14,12 @@ const HIGHLIGHT_SELECTORS: Record<string, string> = {
   'wp-counter': '.planning-header__wp',
   'kcal-bar': '.planning-header__kcal-bar-wrap',
   'submit-btn': '.planning-header__submit',
-  'forecast-badge': '.planning-header__assessment-badge',
+  'forecast-badge': '.planning-header__satiety-badge',
   'graph': '.bg-graph__svg',
   'insulin-bars': '.bg-graph__svg',
   'ship-inventory': '.ship-inventory',
-  'intervention-inventory': '.planning-phase__interventions-row',
-  'med-toggles': '.medication-panel',
+  'intervention-inventory': '.ship-inventory__grid--actions',
+  'med-toggles': '.ship-inventory__grid--actions',
   'slot-grid': '.slot-grid',
   'boost-btn': '.pancreas-button',
 };
@@ -28,10 +28,10 @@ function getHighlightSelector(target: string): string | null {
   // Direct lookup
   if (HIGHLIGHT_SELECTORS[target]) return HIGHLIGHT_SELECTORS[target];
 
-  // slot:N → .slot-grid__slot[data-slot="N"]
+  // slot:N → .slot-container-wrap[data-slot="N"]
   if (target.startsWith('slot:')) {
     const n = target.split(':')[1];
-    return `.slot-grid__slot[data-slot="${n}"]`;
+    return `.slot-container-wrap[data-slot="${n}"]`;
   }
 
   // food:id → .ship-card[data-food="id"]
@@ -124,19 +124,32 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
   const bubbleType = step.bubble?.type ?? 'dialogue';
   const bubblePosition = step.bubble?.position ?? 'bottom';
 
-  // Position bubble near first spotlight rect if available, otherwise center
+  // Position bubble near first spotlight rect if available, otherwise center horizontally
   const primaryRect = spotlightRects[0] ?? null;
   const bubbleStyle: React.CSSProperties = {};
   if (primaryRect && bubblePosition !== 'center') {
-    if (bubblePosition === 'top' || primaryRect.top > window.innerHeight * 0.5) {
+    if (bubblePosition === 'bottom') {
+      // Force bubble below the spotlight, centered horizontally (clamped to viewport)
+      const belowTop = primaryRect.bottom + 16;
+      bubbleStyle.top = `${Math.min(belowTop, window.innerHeight - 80)}px`;
+      bubbleStyle.left = '50%';
+    } else if (bubblePosition === 'top' || primaryRect.top > window.innerHeight * 0.5) {
       // Show bubble above the spotlight
       bubbleStyle.bottom = `${window.innerHeight - primaryRect.top + 16}px`;
       bubbleStyle.left = `${Math.max(16, Math.min(primaryRect.left, window.innerWidth - 340))}px`;
     } else {
-      // Show bubble below the spotlight
+      // Show bubble below the spotlight (auto)
       bubbleStyle.top = `${primaryRect.bottom + 16}px`;
       bubbleStyle.left = `${Math.max(16, Math.min(primaryRect.left, window.innerWidth - 340))}px`;
     }
+  }
+  // Floating: centered horizontally with translateX(-50%) — needs special animation
+  const needsCenterTransform = bubblePosition === 'bottom' && primaryRect;
+  const isFloating = needsCenterTransform || (!primaryRect && bubblePosition !== 'center');
+  if (!primaryRect && bubblePosition !== 'center') {
+    // No spotlight — center horizontally, 52px from top
+    bubbleStyle.top = '52px';
+    bubbleStyle.left = '50%';
   }
 
   // Build clip-path polygon that cuts out ALL highlighted areas
@@ -189,7 +202,7 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
       {/* Bubble — always visible, only clickable for tap steps */}
       {step.bubble && (
         <div
-          className={`tutorial-bubble tutorial-bubble--${bubbleType} ${bubblePosition === 'center' ? 'tutorial-bubble--center' : ''} ${isPassthrough ? 'tutorial-bubble--action' : ''}`}
+          className={`tutorial-bubble tutorial-bubble--${bubbleType} ${bubblePosition === 'center' ? 'tutorial-bubble--center' : ''} ${isFloating ? 'tutorial-bubble--floating' : ''} ${isPassthrough ? 'tutorial-bubble--action' : ''}`}
           style={bubblePosition !== 'center' ? bubbleStyle : undefined}
           onClick={handleBubbleClick}
         >

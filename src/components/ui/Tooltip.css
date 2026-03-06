@@ -7,19 +7,20 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  background: #1a202c;
-  color: #e2e8f0;
+  background: #ffffff;
+  color: #2d3748;
   font-size: 12px;
   line-height: 1.4;
   padding: 6px 10px;
   border-radius: 6px;
+  border: 1px solid #e2e8f0;
   white-space: normal;
   max-width: 220px;
   width: max-content;
   z-index: 1000;
   pointer-events: none;
   animation: tooltip-fade-in 0.15s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .tooltip--top {
@@ -42,12 +43,12 @@
 
 .tooltip__arrow--top {
   bottom: -5px;
-  border-top: 6px solid #1a202c;
+  border-top: 6px solid #ffffff;
 }
 
 .tooltip__arrow--bottom {
   top: -5px;
-  border-bottom: 6px solid #1a202c;
+  border-bottom: 6px solid #ffffff;
 }
 
 @keyframes tooltip-fade-in {

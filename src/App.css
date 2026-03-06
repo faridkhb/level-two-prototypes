@@ -1,23 +1,23 @@
-/* ── Phone Frame (desktop preview) ── */
+/* -- Phone Frame (desktop preview) -- */
 
 .phone-frame {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #0d1117;
+  background: #e2e8f0;
 }
 
 .phone-frame__bezel {
   position: relative;
-  width: 408px;   /* 390 + 2×9 border */
-  height: 862px;  /* 844 + 2×9 border */
-  background: #1c1c1e;
+  width: 408px;   /* 390 + 2x9 border */
+  height: 862px;  /* 844 + 2x9 border */
+  background: #d1d5db;
   border-radius: 44px;
   padding: 9px;
   box-shadow:
-    0 0 0 2px #333,
-    0 20px 60px rgba(0, 0, 0, 0.6);
+    0 0 0 2px #b0b8c4,
+    0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
 .phone-frame__notch {
@@ -27,7 +27,7 @@
   transform: translateX(-50%);
   width: 120px;
   height: 28px;
-  background: #1c1c1e;
+  background: #d1d5db;
   border-radius: 0 0 18px 18px;
   z-index: 10;
 }
@@ -38,7 +38,7 @@
   border: none;
   border-radius: 36px;
   overflow: hidden;
-  background: #1a1a2e;
+  background: #f5f7fa;
 }
 
 /* Mobile First Styles */
@@ -48,8 +48,8 @@
   display: flex;
   flex-direction: column;
   font-family: system-ui, -apple-system, sans-serif;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: #eee;
+  background: linear-gradient(135deg, #f5f7fa 0%, #edf2f7 100%);
+  color: #1a202c;
 }
 
 
@@ -58,7 +58,7 @@
   justify-content: center;
   gap: 1rem;
   font-size: 0.875rem;
-  color: #aaa;
+  color: #718096;
 }
 
 .app-main {
@@ -69,8 +69,8 @@
 
 .app-footer {
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.04);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .degradation-status {
@@ -85,9 +85,9 @@
   bottom: 8px;
   right: 8px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(0, 0, 0, 0.35);
   font-family: monospace;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.06);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -97,7 +97,7 @@
 .phase-placeholder {
   text-align: center;
   padding: 2rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.03);
   border-radius: 1rem;
   max-width: 400px;
   width: 100%;
@@ -109,7 +109,7 @@
 
 .phase-placeholder p {
   margin: 0 0 1.5rem 0;
-  color: #aaa;
+  color: #718096;
 }
 
 .button-group {

@@ -7,7 +7,7 @@
 .tutorial-select__back {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: #718096;
   font-size: 14px;
   cursor: pointer;
   padding: 4px 8px;
@@ -17,11 +17,11 @@
 }
 
 .tutorial-select__back:hover {
-  color: #e2e8f0;
+  color: #2d3748;
 }
 
 .tutorial-select__title {
-  color: #e2e8f0;
+  color: #2d3748;
   font-size: 22px;
   font-weight: 700;
   text-align: center;
@@ -49,7 +49,7 @@
 
 .tutorial-select__card:hover {
   transform: scale(1.03);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
 .tutorial-select__card:active {

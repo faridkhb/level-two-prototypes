@@ -12,9 +12,9 @@ export const GRAPH_CONFIG = {
   startHour: 8,       // 8 AM
   endHour: 20,        // 8 PM
   cellWidthMin: 30,   // minutes per column
-  cellHeightMgDl: 50, // mg/dL per row
+  cellHeightMgDl: 25, // mg/dL per row
   bgMin: 50,          // Y axis minimum
-  bgMax: 450,         // Y axis maximum (50 + 8×50)
+  bgMax: 450,         // Y axis maximum (50 + 16×25)
 } as const;
 
 // Derived constants
@@ -323,10 +323,10 @@ export interface PenaltyResult {
 }
 
 /** Penalty zone thresholds (in row units from bgMin) */
-export const PENALTY_ORANGE_ROW = 3; // 200 mg/dL = (200-50)/50
-export const PENALTY_RED_ROW = 5;    // 300 mg/dL = (300-50)/50
-export const PENALTY_ORANGE_WEIGHT = 2;   // 4× original (fewer cubes + fewer columns)
-export const PENALTY_RED_WEIGHT = 6;       // 4× original
+export const PENALTY_ORANGE_ROW = 6;  // 200 mg/dL = (200-50)/25
+export const PENALTY_RED_ROW = 10;    // 300 mg/dL = (300-50)/25
+export const PENALTY_ORANGE_WEIGHT = 1;   // halved (twice as many cubes with 25 mg/dL cells)
+export const PENALTY_RED_WEIGHT = 3;       // halved
 
 /** Star rating thresholds (softened 25% from original 10/40/80) */
 export function calculateStars(penalty: number): { stars: number; label: string } {

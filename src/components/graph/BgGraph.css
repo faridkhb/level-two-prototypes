@@ -68,7 +68,7 @@
 
 .bg-graph__cube:hover {
   opacity: 1 !important;
-  stroke: #2d3748;
+  stroke: #e2e8f0;
   stroke-width: 1;
 }
 
@@ -103,7 +103,7 @@
   pointer-events: none;
 }
 
-/* Insulin fall cubes: invisible → appear above food → fall → burn */
+/* Insulin fall cubes: invisible -> appear above food -> fall -> burn */
 @keyframes insulinFall {
   0%   { opacity: 0; transform: translateY(0); }
   18%  { opacity: 0; transform: translateY(0); }
@@ -121,7 +121,7 @@
   pointer-events: none;
 }
 
-/* Intervention fall cubes: invisible → appear above food → fall → burn */
+/* Intervention fall cubes: invisible -> appear above food -> fall -> burn */
 @keyframes interventionFall {
   0%   { opacity: 0; transform: translateY(0); }
   15%  { opacity: 0; transform: translateY(0); }
@@ -198,20 +198,20 @@
   to { opacity: 0.9; }
 }
 
-/* Reveal phase label — floating badge in graph corner */
+/* Reveal phase label -- floating badge in graph corner */
 .bg-graph__reveal-label {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(45, 55, 72, 0.92);
-  color: white;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2d3748;
   padding: 6px 14px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   animation: revealLabelIn 0.4s ease-out both;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -243,11 +243,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #2d3748;
-  color: #e2e8f0;
+  background: #ffffff;
+  color: #2d3748;
   padding: 8px 14px;
   border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   pointer-events: none;
   z-index: 9999;
   white-space: nowrap;

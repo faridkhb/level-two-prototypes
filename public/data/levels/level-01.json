@@ -61,17 +61,17 @@
           {
             "from": 0,
             "to": 15,
-            "rate": 1
+            "rate": 2
           },
           {
             "from": 16,
             "to": 31,
-            "rate": 1
+            "rate": 2
           },
           {
             "from": 32,
             "to": 47,
-            "rate": 1
+            "rate": 2
           }
         ]
       }
@@ -135,17 +135,17 @@
           {
             "from": 0,
             "to": 15,
-            "rate": 1
+            "rate": 2
           },
           {
             "from": 16,
             "to": 25,
-            "rate": 1
+            "rate": 2
           },
           {
             "from": 26,
             "to": 47,
-            "rate": 1
+            "rate": 2
           }
         ]
       }
@@ -216,17 +216,17 @@
           {
             "from": 0,
             "to": 15,
-            "rate": 2
+            "rate": 4
           },
           {
             "from": 16,
             "to": 31,
-            "rate": 1
+            "rate": 2
           },
           {
             "from": 32,
             "to": 47,
-            "rate": 1
+            "rate": 2
           }
         ]
       }
@@ -277,9 +277,9 @@
       "insulinProfile": {
         "mode": "cumulative",
         "segments": [
-          { "from": 0, "to": 15, "rate": 1 },
-          { "from": 16, "to": 31, "rate": 1 },
-          { "from": 32, "to": 47, "rate": 1 }
+          { "from": 0, "to": 15, "rate": 2 },
+          { "from": 16, "to": 31, "rate": 2 },
+          { "from": 32, "to": 47, "rate": 2 }
         ]
       }
     }

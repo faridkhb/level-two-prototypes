@@ -99,6 +99,7 @@ export function InterventionInventory({
             key={medId}
             className={`medication-toggle ${isActive ? 'medication-toggle--active' : ''}`}
             onClick={() => onMedicationToggle?.(medId)}
+            data-medication={medId}
             data-tooltip={tooltip}
           >
             <span className="medication-toggle__emoji">{med.emoji}</span>

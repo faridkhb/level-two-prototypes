@@ -94,7 +94,7 @@ function SlotContainer({
   })();
 
   return (
-    <div className="slot-container-wrap">
+    <div className="slot-container-wrap" data-slot={String(index)}>
       <div
         ref={combinedRef}
         className={

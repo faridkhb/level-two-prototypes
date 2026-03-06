@@ -18,7 +18,7 @@
 
 .ship-card:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .ship-card:active {
@@ -38,7 +38,7 @@
 
 .ship-card--overlay {
   cursor: grabbing;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
   transition: none;
   transform: none !important;
 }
@@ -89,7 +89,7 @@
   position: absolute;
   font-size: 16px;
   line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
   z-index: 1;
 }
 
@@ -124,7 +124,7 @@
   left: -6px;
   font-size: 14px;
   z-index: 2;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
 }
 
 /* Disabled (WP insufficient) */
@@ -146,12 +146,13 @@
   bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
-  background: #1a202c;
-  color: #e2e8f0;
+  background: #ffffff;
+  color: #2d3748;
   font-size: 12px;
   font-weight: 400;
   padding: 4px 8px;
   border-radius: 4px;
+  border: 1px solid #e2e8f0;
   white-space: nowrap;
   z-index: 1000;
   pointer-events: none;
@@ -163,7 +164,7 @@
   opacity: 1;
 }
 
-/* Mobile portrait — vertical compact card */
+/* Mobile portrait -- vertical compact card */
 @media (max-width: 480px) {
   .ship-card {
     flex-direction: column;
