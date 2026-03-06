@@ -801,6 +801,10 @@ export function BgGraph({
           <filter id="bubble-shadow" x="-50%" y="-50%" width="200%" height="200%">
             <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.12" />
           </filter>
+          {/* Red diagonal hatching for danger zone cubes */}
+          <pattern id="danger-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="4" stroke="#ef4444" strokeWidth="1.5" strokeOpacity="0.5" />
+          </pattern>
         </defs>
 
         {/* Zone backgrounds — hidden */}
@@ -1033,18 +1037,31 @@ export function BgGraph({
               } else {
                 cubeFill = layer.color;
               }
+              const showHatch = cube.status === 'normal' && cube.row >= PENALTY_ORANGE_ROW && revealPhase === undefined && !showPenaltyHighlight;
               return (
-                <rect
-                  key={`${layer.placementId}-${cube.col}-${cube.row}`}
-                  x={colToX(cube.col) + 0.5}
-                  y={rowToY(cube.row) + 0.5}
-                  width={CELL_SIZE - 1}
-                  height={cellHeight - 1}
-                  fill={cubeFill}
-                  rx={2}
-                  className={cubeClass}
-                  style={{ animationDelay: `${waveDelay}ms` }}
-                />
+                <g key={`${layer.placementId}-${cube.col}-${cube.row}`}>
+                  <rect
+                    x={colToX(cube.col) + 0.5}
+                    y={rowToY(cube.row) + 0.5}
+                    width={CELL_SIZE - 1}
+                    height={cellHeight - 1}
+                    fill={cubeFill}
+                    rx={2}
+                    className={cubeClass}
+                    style={{ animationDelay: `${waveDelay}ms` }}
+                  />
+                  {showHatch && (
+                    <rect
+                      x={colToX(cube.col) + 0.5}
+                      y={rowToY(cube.row) + 0.5}
+                      width={CELL_SIZE - 1}
+                      height={cellHeight - 1}
+                      fill="url(#danger-hatch)"
+                      rx={2}
+                      pointerEvents="none"
+                    />
+                  )}
+                </g>
               );
             })}
           </g>
