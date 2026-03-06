@@ -822,6 +822,17 @@ export function BgGraph({
           );
         })}
 
+        {/* Danger zone fill above 200 mg/dL — subtle red tint */}
+        <rect
+          x={PAD_LEFT}
+          y={PAD_TOP}
+          width={GRAPH_W}
+          height={graphH - zoneRow(200) * cellHeight}
+          fill="#ef4444"
+          opacity={0.07}
+          pointerEvents="none"
+        />
+
         {/* Grid lines - vertical (time) */}
         {Array.from({ length: TOTAL_COLUMNS + 1 }, (_, i) => (
             <line
