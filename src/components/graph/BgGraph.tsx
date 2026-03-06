@@ -802,8 +802,8 @@ export function BgGraph({
             <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.12" />
           </filter>
           {/* Red diagonal hatching for danger zone cubes */}
-          <pattern id="danger-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="4" stroke="#ef4444" strokeWidth="1.5" strokeOpacity="0.5" />
+          <pattern id="danger-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#ef4444" strokeWidth="2.5" strokeOpacity="0.5" />
           </pattern>
         </defs>
 
