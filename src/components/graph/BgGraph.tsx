@@ -829,7 +829,7 @@ export function BgGraph({
           width={GRAPH_W}
           height={graphH - zoneRow(200) * cellHeight}
           fill="#ef4444"
-          opacity={0.5}
+          opacity={0.2}
           pointerEvents="none"
         />
 
