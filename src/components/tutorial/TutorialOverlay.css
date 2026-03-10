@@ -112,20 +112,21 @@
 /* Fallback: no spotlight target — center horizontally, 32px from top to clear camera notch */
 .tutorial-bubble--top-center {
   top: 32px;
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: 400px;
+  left: 16px;
+  right: 16px;
+  width: auto;
+  max-width: none;
   animation-name: bubbleTopCenterAppear;
 }
 
 @keyframes bubbleTopCenterAppear {
   from {
     opacity: 0;
-    transform: translate(-50%, 8px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translateY(0);
   }
 }
 
