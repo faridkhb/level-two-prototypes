@@ -137,6 +137,11 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
       bubbleStyle.top = `${primaryRect.bottom + 16}px`;
       bubbleStyle.left = `${Math.max(16, Math.min(primaryRect.left, window.innerWidth - 340))}px`;
     }
+  } else if (!primaryRect && bubblePosition !== 'center') {
+    // No spotlight target — center horizontally, 32px from top to clear camera notch
+    bubbleStyle.top = '32px';
+    bubbleStyle.left = '50%';
+    bubbleStyle.transform = 'translateX(-50%)';
   }
 
   // Build clip-path polygon that cuts out ALL highlighted areas
