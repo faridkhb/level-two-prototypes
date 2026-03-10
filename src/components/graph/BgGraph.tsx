@@ -89,6 +89,7 @@ interface GraphRenderData {
   columnCaps: number[];
   plateauHeights: number[];
   pancreasCaps: number[];
+  visualTops: number[];   // pancreasCaps + drain of topmost food (for preview base row)
   medCubes: MedCube[];
   effectiveRows: number;
 }
@@ -425,7 +426,9 @@ export function BgGraph({
         }
 
         // Digest cubes — flat insulin drain (constant depth = rate per column, on top of alive zone)
-        if (c.aliveCount > 0) {
+        // Only render for the topmost food at this column — lower foods' drain rows overlap with
+        // the next food's alive cubes, causing a visual gap (drain cube drawn over alive cube).
+        if (c.aliveCount > 0 && c.baseRow + c.aliveCount === pancreasCaps[c.col]) {
           for (let i = 0; i < c.drainCount; i++) {
             const row = c.baseRow + c.aliveCount + i;
             if (row >= effectiveRows) break;
@@ -537,6 +540,17 @@ export function BgGraph({
     if (inSegment && lastSegCol < TOTAL_COLUMNS - 1) mainParts.push(`V ${bottomY}`);
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
+    // Visual tops: pancreasCaps + drain count of topmost food per column.
+    // Used by drag preview so new food stacks above the drain indicator, not inside it.
+    const visualTops = [...pancreasCaps];
+    for (const food of rawFoods) {
+      for (const c of food.columns) {
+        if (c.aliveCount > 0 && c.baseRow + c.aliveCount === pancreasCaps[c.col]) {
+          visualTops[c.col] = pancreasCaps[c.col] + c.drainCount;
+        }
+      }
+    }
+
     // Phase 6: Medication cubes — show what medications prevented (above pancreas zone)
     const medCubes: MedCube[] = [];
     if (hasMedEffect) {
@@ -560,7 +574,7 @@ export function BgGraph({
       }
     }
 
-    return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps, medCubes, effectiveRows };
+    return { layers, mainSkylinePath, columnCaps, plateauHeights, pancreasCaps, visualTops, medCubes, effectiveRows };
   }, [placedFoods, allShips, medicationModifiers, decayOrInsulin, boostConfig, interventionReduction, interventionReductions, baselineRow]);
 
   // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
@@ -579,7 +593,7 @@ export function BgGraph({
     const plateauCurve = calculateCurve(glucose, duration, previewColumn, 0);
     const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
 
-    const { pancreasCaps } = graphRenderData;
+    const { visualTops } = graphRenderData;
     const foodCubes: Array<{ col: number; row: number }> = [];
     const wrapCubes: Array<{ col: number; row: number }> = [];
 
@@ -588,7 +602,7 @@ export function BgGraph({
     for (const pc of plateauCurve) {
       const col = previewColumn + pc.columnOffset;
       if (col < 0 || col >= TOTAL_COLUMNS) continue;
-      const baseRow = pancreasCaps[col];
+      const baseRow = visualTops[col];
       const plateauCount = pc.cubeCount;
 
       // Compute insulin eating (same algorithm as main render)
@@ -1181,7 +1195,7 @@ export function BgGraph({
                 );
               })}
               {showFall && layer.colSummary
-                .filter(cs => cs.drainCount > 0)
+                .filter(cs => cs.drainCount > 0 && cs.baseRow + cs.aliveCount === graphRenderData.pancreasCaps[cs.col])
                 .flatMap(cs => {
                   const drainTop = cs.baseRow + cs.aliveCount + cs.drainCount;
                   const fallDist = cs.drainCount * cellHeight;
