@@ -57,7 +57,7 @@
     {
       "day": 2,
       "kcalBudget": 1200,
-      "wpBudget": 8,
+      "wpBudget": 11,
       "availableFoods": [
         {
           "id": "banana",
@@ -81,7 +81,7 @@
       "availableMedications": [],
       "preplacedFoods": [
         {
-          "shipId": "chocolatemuffin",
+          "shipId": "pizza",
           "slotIndex": 4
         }
       ],
