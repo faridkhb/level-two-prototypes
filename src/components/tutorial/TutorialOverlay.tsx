@@ -18,10 +18,10 @@ const HIGHLIGHT_SELECTORS: Record<string, string> = {
   'graph': '.bg-graph__svg',
   'insulin-bars': '.bg-graph__svg',
   'ship-inventory': '.ship-inventory',
-  'intervention-inventory': '.planning-phase__interventions-row',
-  'med-toggles': '.medication-panel',
+  'intervention-inventory': '.ship-inventory__grid--actions',
+  'med-toggles': '.medication-section',
   'slot-grid': '.slot-grid',
-  'boost-btn': '.pancreas-button',
+  'boost-btn': '.pancreas-btn',
   'tab-actions': '.tabbed-inventory__tab[data-tab="actions"]',
 };
 

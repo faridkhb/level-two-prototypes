@@ -89,29 +89,34 @@ export function InterventionInventory({
 
   return (
     <div className="ship-inventory__grid ship-inventory__grid--actions">
-      {hasMedications && availableMedicationIds.map(medId => {
-        const med = allMedications.find(m => m.id === medId);
-        if (!med) return null;
-        const isActive = activeMedications.includes(medId);
-        const tooltip = getMedicationTooltip(med);
-        return (
-          <button
-            key={medId}
-            className={`medication-toggle ${isActive ? 'medication-toggle--active' : ''}`}
-            onClick={() => onMedicationToggle?.(medId)}
-            data-tooltip={tooltip}
-          >
-            <span className="medication-toggle__emoji">{med.emoji}</span>
-            <div className="medication-toggle__details">
-              <span className="medication-toggle__name">{med.name}</span>
-              <span className="medication-toggle__desc">{tooltip}</span>
-            </div>
-            <span className="medication-toggle__status">
-              {isActive ? 'ON' : 'OFF'}
-            </span>
-          </button>
-        );
-      })}
+      {hasMedications && (
+        <div className="medication-section">
+          {availableMedicationIds.map(medId => {
+            const med = allMedications.find(m => m.id === medId);
+            if (!med) return null;
+            const isActive = activeMedications.includes(medId);
+            const tooltip = getMedicationTooltip(med);
+            return (
+              <button
+                key={medId}
+                data-medication={medId}
+                className={`medication-toggle ${isActive ? 'medication-toggle--active' : ''}`}
+                onClick={() => onMedicationToggle?.(medId)}
+                data-tooltip={tooltip}
+              >
+                <span className="medication-toggle__emoji">{med.emoji}</span>
+                <div className="medication-toggle__details">
+                  <span className="medication-toggle__name">{med.name}</span>
+                  <span className="medication-toggle__desc">{tooltip}</span>
+                </div>
+                <span className="medication-toggle__status">
+                  {isActive ? 'ON' : 'OFF'}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       {inventoryItems.length === 0 && !hasMedications ? (
         <div className="ship-inventory__empty">All interventions placed!</div>
       ) : (
