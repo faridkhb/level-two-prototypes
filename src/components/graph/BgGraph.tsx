@@ -593,7 +593,7 @@ export function BgGraph({
     const plateauCurve = calculateCurve(glucose, duration, previewColumn, 0);
     const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
 
-    const { visualTops } = graphRenderData;
+    const { pancreasCaps } = graphRenderData;
     const foodCubes: Array<{ col: number; row: number }> = [];
     const wrapCubes: Array<{ col: number; row: number }> = [];
 
@@ -602,7 +602,7 @@ export function BgGraph({
     for (const pc of plateauCurve) {
       const col = previewColumn + pc.columnOffset;
       if (col < 0 || col >= TOTAL_COLUMNS) continue;
-      const baseRow = visualTops[col];
+      const baseRow = pancreasCaps[col];
       const plateauCount = pc.cubeCount;
 
       // Compute insulin eating (same algorithm as main render)
@@ -1165,6 +1165,9 @@ export function BgGraph({
           const isReveal = revealPhase !== undefined;
           const showDigest = isReveal ? revealPhase! >= 1 : digestingFoodIds.has(layer.placementId);
           if (!showDigest) return null;
+          // Hide drain cubes during drag preview (preview cube covers them) or
+          // intervention burn animation (orange cube above burn zone is confusing).
+          if (!isReveal && (previewShip !== undefined || burningInterventions.size > 0)) return null;
 
           // Phase 1 reveal: cubes appear as normal food. Phase 2+/gameplay: burn animation
           const showFall = isReveal ? revealPhase! >= 2 : true;
