@@ -651,6 +651,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                 activeMedications={activeMedications}
                 onMedicationToggle={handleMedicationToggle}
                 onTabChange={(tab) => notifyTutorialAction({ type: 'switch-tab', tabName: tab })}
+              disabledTab={tutorialStep?.lockedTab as 'food' | 'actions' | undefined}
               />
             </InventoryDropZone>
           )}

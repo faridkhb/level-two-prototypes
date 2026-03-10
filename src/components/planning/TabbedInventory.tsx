@@ -26,6 +26,7 @@ interface TabbedInventoryProps {
   activeMedications?: string[];
   onMedicationToggle?: (medicationId: string) => void;
   onTabChange?: (tab: InventoryTab) => void;
+  disabledTab?: InventoryTab;
 }
 
 export function TabbedInventory({
@@ -41,6 +42,7 @@ export function TabbedInventory({
   activeMedications = [],
   onMedicationToggle,
   onTabChange,
+  disabledTab,
 }: TabbedInventoryProps) {
   const [tab, setTab] = useState<InventoryTab>('food');
 
@@ -79,15 +81,17 @@ export function TabbedInventory({
       <div className="tabbed-inventory__tabs">
         <button
           data-tab="food"
-          className={`tabbed-inventory__tab${tab === 'food' ? ' tabbed-inventory__tab--active' : ''}`}
+          className={`tabbed-inventory__tab${tab === 'food' ? ' tabbed-inventory__tab--active' : ''}${disabledTab === 'food' ? ' tabbed-inventory__tab--locked' : ''}`}
           onClick={() => handleTabSwitch('food')}
+          disabled={disabledTab === 'food'}
         >
           Food ({foodCount})
         </button>
         <button
           data-tab="actions"
-          className={`tabbed-inventory__tab${tab === 'actions' ? ' tabbed-inventory__tab--active' : ''}`}
+          className={`tabbed-inventory__tab${tab === 'actions' ? ' tabbed-inventory__tab--active' : ''}${disabledTab === 'actions' ? ' tabbed-inventory__tab--locked' : ''}`}
           onClick={() => handleTabSwitch('actions')}
+          disabled={disabledTab === 'actions'}
         >
           Actions ({actionsCount})
         </button>

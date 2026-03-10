@@ -30,3 +30,13 @@
   color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
+
+.tabbed-inventory__tab--locked {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.tabbed-inventory__tab--locked:hover {
+  color: #a0aec0;
+  background: transparent;
+}

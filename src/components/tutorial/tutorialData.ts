@@ -36,6 +36,7 @@ export interface TutorialStep {
   highlight?: string | string[];
   highlightType?: HighlightType;
   noBackdrop?: boolean;
+  lockedTab?: string;
   cta?: TutorialCTA;
   advanceOn: AdvanceOn;
   blockInteraction?: boolean;
@@ -191,6 +192,7 @@ const L2D1: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'The \ud83d\udeb6 Light Walk burns glucose from the top. Drag it next to the rice peak!', expression: 'thinking' },
     highlight: ['intervention:lightwalk', 'slot:3'],
     highlightType: 'pulse',
+    lockedTab: 'actions',
     cta: { type: 'drag-arrow', source: 'intervention:lightwalk', dest: 'slot:3' },
     advanceOn: 'action',
     expectedAction: { type: 'place-intervention', interventionId: 'lightwalk', slotIndex: 3 },
@@ -554,7 +556,8 @@ const L6D2: TutorialStep[] = [
     id: 'L6D2-4',
     bubble: { type: 'dialogue', text: 'You have Metformin AND SGLT2 today. Toggle both ON to reduce glucose across the board.', expression: 'neutral' },
     highlight: 'med-toggles',
-    highlightType: 'spotlight',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'med-toggles' },
     advanceOn: 'tap',
   },
   {
@@ -652,7 +655,8 @@ const L7D2: TutorialStep[] = [
     id: 'L7D2-2',
     bubble: { type: 'dialogue', text: 'Toggle all three medications ON. Watch how they stack!', expression: 'neutral' },
     highlight: 'med-toggles',
-    highlightType: 'spotlight',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'med-toggles' },
     advanceOn: 'tap',
   },
   {
