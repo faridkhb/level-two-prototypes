@@ -25,6 +25,7 @@ interface TabbedInventoryProps {
   availableMedicationIds?: string[];
   activeMedications?: string[];
   onMedicationToggle?: (medicationId: string) => void;
+  onTabChange?: (tab: InventoryTab) => void;
 }
 
 export function TabbedInventory({
@@ -39,8 +40,14 @@ export function TabbedInventory({
   availableMedicationIds = [],
   activeMedications = [],
   onMedicationToggle,
+  onTabChange,
 }: TabbedInventoryProps) {
   const [tab, setTab] = useState<InventoryTab>('food');
+
+  const handleTabSwitch = (newTab: InventoryTab) => {
+    setTab(newTab);
+    onTabChange?.(newTab);
+  };
 
   const foodCount = useMemo(() => {
     const placed = new Map<string, number>();
@@ -71,14 +78,16 @@ export function TabbedInventory({
     <div className="ship-inventory">
       <div className="tabbed-inventory__tabs">
         <button
+          data-tab="food"
           className={`tabbed-inventory__tab${tab === 'food' ? ' tabbed-inventory__tab--active' : ''}`}
-          onClick={() => setTab('food')}
+          onClick={() => handleTabSwitch('food')}
         >
           Food ({foodCount})
         </button>
         <button
+          data-tab="actions"
           className={`tabbed-inventory__tab${tab === 'actions' ? ' tabbed-inventory__tab--active' : ''}`}
-          onClick={() => setTab('actions')}
+          onClick={() => handleTabSwitch('actions')}
         >
           Actions ({actionsCount})
         </button>

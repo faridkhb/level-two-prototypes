@@ -650,6 +650,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                 availableMedicationIds={dayConfig?.availableMedications ?? []}
                 activeMedications={activeMedications}
                 onMedicationToggle={handleMedicationToggle}
+                onTabChange={(tab) => notifyTutorialAction({ type: 'switch-tab', tabName: tab })}
               />
             </InventoryDropZone>
           )}

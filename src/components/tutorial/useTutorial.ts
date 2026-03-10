@@ -7,16 +7,17 @@ export interface UseTutorialReturn {
   stepIndex: number;
   stepsTotal: number;
   advance: () => void;
-  notifyAction: (action: { type: string; foodId?: string; slotIndex?: number; interventionId?: string; medicationId?: string }) => void;
+  notifyAction: (action: { type: string; foodId?: string; slotIndex?: number; interventionId?: string; medicationId?: string; tabName?: string }) => void;
   isActive: boolean;
 }
 
-function matchesExpectedAction(expected: ExpectedAction, actual: { type: string; foodId?: string; slotIndex?: number; interventionId?: string; medicationId?: string }): boolean {
+function matchesExpectedAction(expected: ExpectedAction, actual: { type: string; foodId?: string; slotIndex?: number; interventionId?: string; medicationId?: string; tabName?: string }): boolean {
   if (expected.type !== actual.type) return false;
   if (expected.foodId !== undefined && expected.foodId !== actual.foodId) return false;
   if (expected.slotIndex !== undefined && expected.slotIndex !== actual.slotIndex) return false;
   if (expected.interventionId !== undefined && expected.interventionId !== actual.interventionId) return false;
   if (expected.medicationId !== undefined && expected.medicationId !== actual.medicationId) return false;
+  if (expected.tabName !== undefined && expected.tabName !== actual.tabName) return false;
   return true;
 }
 
@@ -40,7 +41,7 @@ export function useTutorial(levelId: string | null, day: number): UseTutorialRet
     });
   }, [steps]);
 
-  const notifyAction = useCallback((action: { type: string; foodId?: string; slotIndex?: number; interventionId?: string; medicationId?: string }) => {
+  const notifyAction = useCallback((action: { type: string; foodId?: string; slotIndex?: number; interventionId?: string; medicationId?: string; tabName?: string }) => {
     if (!currentStep || currentStep.advanceOn !== 'action') return;
     if (!currentStep.expectedAction) return;
     if (matchesExpectedAction(currentStep.expectedAction, action)) {

@@ -22,11 +22,12 @@ export interface TutorialCTA {
 }
 
 export interface ExpectedAction {
-  type: 'place-food' | 'place-intervention' | 'toggle-medication' | 'toggle-boost' | 'click-submit';
+  type: 'place-food' | 'place-intervention' | 'toggle-medication' | 'toggle-boost' | 'click-submit' | 'switch-tab';
   foodId?: string;
   slotIndex?: number;
   interventionId?: string;
   medicationId?: string;
+  tabName?: string;
 }
 
 export interface TutorialStep {
@@ -161,15 +162,30 @@ const L1D3: TutorialStep[] = [
 const L2D1: TutorialStep[] = [
   {
     id: 'L2D1-1',
-    bubble: { type: 'dialogue', text: 'Level 2 \u2014 Exercise! The \ud83d\udeb6 Light Walk burns glucose for energy, lowering the curve from the top. It works for 1 hour \u2014 great for flattening spikes!', expression: 'neutral' },
-    highlight: 'intervention-inventory',
-    highlightType: 'spotlight',
+    bubble: { type: 'dialogue', text: 'Level 2 \u2014 Exercise! Today something important happened to your blood glucose. Tap to see.', expression: 'neutral' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L2D1-2',
-    bubble: { type: 'dialogue', text: 'The \ud83c\udf54 Burger is pre-placed at slot 2. Its 20g of carbs create a big glucose spike! Drag the walk nearby to bring the peak down.', expression: 'thinking' },
+    bubble: { type: 'warning', text: '\u26a0\ufe0f The \ud83c\udf4c Banana was already eaten \u2014 its peak reached 230\u00a0mg/dL, above the 200 danger threshold! Exercises can help lower the spike!', expression: 'concerned' },
+    highlight: 'graph',
+    highlightType: 'glow',
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'L2D1-3',
+    bubble: { type: 'dialogue', text: 'Open the Actions tab to see your exercise options!', expression: 'neutral' },
+    highlight: 'tab-actions',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'tab-actions' },
+    advanceOn: 'action',
+    expectedAction: { type: 'switch-tab', tabName: 'actions' },
+  },
+  {
+    id: 'L2D1-4',
+    bubble: { type: 'dialogue', text: 'The \ud83d\udeb6 Light Walk burns glucose from the top. Drag it next to the banana peak!', expression: 'thinking' },
     highlight: ['intervention:lightwalk', 'slot:3'],
     highlightType: 'pulse',
     cta: { type: 'drag-arrow', source: 'intervention:lightwalk', dest: 'slot:3' },
@@ -177,15 +193,15 @@ const L2D1: TutorialStep[] = [
     expectedAction: { type: 'place-intervention', interventionId: 'lightwalk', slotIndex: 3 },
   },
   {
-    id: 'L2D1-3',
-    bubble: { type: 'success', text: 'When you drag an intervention over the graph, green overlays show exactly how much glucose will be reduced. Nice!', expression: 'happy' },
+    id: 'L2D1-5',
+    bubble: { type: 'success', text: '\u2728 See the green preview? That shows exactly how much glucose the walk will burn!', expression: 'happy' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
   },
   {
-    id: 'L2D1-4',
-    bubble: { type: 'dialogue', text: 'Place your food and submit!', expression: 'neutral', position: 'bottom' },
+    id: 'L2D1-6',
+    bubble: { type: 'dialogue', text: 'Now place your Milk and submit!', expression: 'neutral', position: 'bottom' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
