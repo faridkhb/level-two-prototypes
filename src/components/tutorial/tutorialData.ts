@@ -126,7 +126,7 @@ const L1D2: TutorialStep[] = [
   },
   {
     id: 'L1D2-4',
-    bubble: { type: 'dialogue', text: 'Place your foods and submit when ready!', expression: 'happy', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Place your foods and submit when ready!', expression: 'happy', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -152,7 +152,7 @@ const L1D3: TutorialStep[] = [
   },
   {
     id: 'L1D3-4',
-    bubble: { type: 'dialogue', text: 'Place your food and submit!', expression: 'happy', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Place your food and submit!', expression: 'happy', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -315,7 +315,7 @@ const L3D1: TutorialStep[] = [
   },
   {
     id: 'L3D1-3',
-    bubble: { type: 'dialogue', text: 'Plan your meal within the WP budget. Remember: Break gives you +1 WP back!', expression: 'thinking', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Plan your meal within the WP budget. Remember: Break gives you +1 WP back!', expression: 'thinking', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -342,7 +342,7 @@ const L3D2: TutorialStep[] = [
   },
   {
     id: 'L3D2-3',
-    bubble: { type: 'dialogue', text: 'Plan wisely! The \ud83c\udf55 Pizza looks tempting but check its kcal...', expression: 'thinking', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Plan wisely! The \ud83c\udf55 Pizza looks tempting but check its kcal...', expression: 'thinking', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -369,7 +369,7 @@ const L3D3: TutorialStep[] = [
   },
   {
     id: 'L3D3-3',
-    bubble: { type: 'dialogue', text: 'The burger is pre-placed. Use your tools to manage the spike and submit!', expression: 'happy', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'The burger is pre-placed. Use your tools to manage the spike and submit!', expression: 'happy', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -400,7 +400,7 @@ const L4D1: TutorialStep[] = [
   },
   {
     id: 'L4D1-3',
-    bubble: { type: 'dialogue', text: 'You have 2 bananas. Try placing one in the morning and one in the evening \u2014 see the difference!', expression: 'happy', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'You have 2 bananas. Try placing one in the morning and one in the evening \u2014 see the difference!', expression: 'happy', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -422,7 +422,7 @@ const L4D2: TutorialStep[] = [
   },
   {
     id: 'L4D2-3',
-    bubble: { type: 'dialogue', text: 'Place your food, walk, and submit!', expression: 'happy', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Place your food, walk, and submit!', expression: 'happy', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -469,7 +469,7 @@ const L5D1: TutorialStep[] = [
   },
   {
     id: 'L5D1-5',
-    bubble: { type: 'dialogue', text: 'Place your foods and submit.', expression: 'neutral', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Place your foods and submit.', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -497,7 +497,7 @@ const L5D2: TutorialStep[] = [
   },
   {
     id: 'L5D2-3',
-    bubble: { type: 'dialogue', text: 'Place a \ud83d\udeb6 Walk near each peak. Fill in your food and submit!', expression: 'neutral', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Place a \ud83d\udeb6 Walk near each peak. Fill in your food and submit!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -549,7 +549,7 @@ const L6D1: TutorialStep[] = [
   },
   {
     id: 'L6D1-6',
-    bubble: { type: 'dialogue', text: 'Place your food and walk, then submit.', expression: 'neutral', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Place your food and walk, then submit.', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -596,7 +596,7 @@ const L6D2: TutorialStep[] = [
   },
   {
     id: 'L6D2-6',
-    bubble: { type: 'dialogue', text: 'Plan carefully and submit!', expression: 'neutral', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Plan carefully and submit!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -662,7 +662,7 @@ const L7D1: TutorialStep[] = [
   },
   {
     id: 'L7D1-8',
-    bubble: { type: 'dialogue', text: 'Place your food and walk, then submit.', expression: 'neutral', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Place your food and walk, then submit.', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -698,7 +698,7 @@ const L7D2: TutorialStep[] = [
   },
   {
     id: 'L7D2-4',
-    bubble: { type: 'dialogue', text: 'Place your food, walk, and break. Submit when ready!', expression: 'neutral', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Place your food, walk, and break. Submit when ready!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -727,7 +727,7 @@ const L8D1: TutorialStep[] = [
   },
   {
     id: 'L8D1-4',
-    bubble: { type: 'dialogue', text: 'Good luck! No more hand-holding \u2014 show me what you\'ve learned!', expression: 'happy', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Good luck! No more hand-holding \u2014 show me what you\'ve learned!', expression: 'happy', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -749,7 +749,7 @@ const L8D2: TutorialStep[] = [
   },
   {
     id: 'L8D2-3',
-    bubble: { type: 'dialogue', text: 'Go!', expression: 'neutral', position: 'bottom' },
+    bubble: { type: 'dialogue', text: 'Go!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
