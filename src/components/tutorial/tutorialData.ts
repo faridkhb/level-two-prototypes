@@ -189,13 +189,13 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-4',
-    bubble: { type: 'dialogue', text: 'The \ud83d\udeb6 Light Walk burns glucose from the top. Drag it next to the rice peak!', expression: 'thinking' },
+    bubble: { type: 'dialogue', text: 'The \ud83d\udeb6 Light Walk burns glucose from the top. Drag it next to the rice peak!', expression: 'thinking', position: 'inventory' },
     highlight: ['intervention:lightwalk', 'slot:3'],
     highlightType: 'pulse',
     lockedTab: 'actions',
     cta: { type: 'drag-arrow', source: 'intervention:lightwalk', dest: 'slot:3' },
     advanceOn: 'action',
-    expectedAction: { type: 'place-intervention', interventionId: 'lightwalk', slotIndex: 3 },
+    expectedAction: { type: 'place-intervention', interventionId: 'lightwalk' },
   },
   {
     id: 'L2D1-5',
