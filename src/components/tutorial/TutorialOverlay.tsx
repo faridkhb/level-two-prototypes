@@ -138,8 +138,16 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
   const primaryRect = spotlightRects[0] ?? null;
   const isFallbackCenter = !primaryRect && bubblePosition !== 'center' && bubblePosition !== 'inventory';
   const isInventory = bubblePosition === 'inventory';
+  // Spotlights in the lower half of the screen would place the bubble in the slot grid area,
+  // covering slots. Auto-redirect to inventory-style bottom positioning in that case.
+  const isLowerHalfSpotlight = primaryRect !== null
+    && bubblePosition !== 'center'
+    && bubblePosition !== 'inventory'
+    && bubblePosition !== 'top'
+    && primaryRect.top > window.innerHeight * 0.5;
+  const effectiveInventory = isInventory || isLowerHalfSpotlight;
   const bubbleStyle: React.CSSProperties = {};
-  if (primaryRect && bubblePosition !== 'center' && bubblePosition !== 'inventory') {
+  if (primaryRect && bubblePosition !== 'center' && !effectiveInventory) {
     if (bubblePosition === 'top' || primaryRect.top > window.innerHeight * 0.5) {
       // Show bubble above the spotlight
       bubbleStyle.bottom = `${window.innerHeight - primaryRect.top + 16}px`;
@@ -201,8 +209,8 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
       {/* Bubble — always visible, only clickable for tap steps */}
       {step.bubble && (
         <div
-          className={`tutorial-bubble tutorial-bubble--${bubbleType} ${bubblePosition === 'center' ? 'tutorial-bubble--center' : ''} ${isFallbackCenter ? 'tutorial-bubble--top-center' : ''} ${isInventory ? 'tutorial-bubble--inventory' : ''} ${isPassthrough ? 'tutorial-bubble--action' : ''}`}
-          style={!bubblePosition || (bubblePosition !== 'center' && !isFallbackCenter && !isInventory) ? bubbleStyle : undefined}
+          className={`tutorial-bubble tutorial-bubble--${bubbleType} ${bubblePosition === 'center' ? 'tutorial-bubble--center' : ''} ${isFallbackCenter ? 'tutorial-bubble--top-center' : ''} ${effectiveInventory ? 'tutorial-bubble--inventory' : ''} ${isPassthrough ? 'tutorial-bubble--action' : ''}`}
+          style={!bubblePosition || (bubblePosition !== 'center' && !isFallbackCenter && !effectiveInventory) ? bubbleStyle : undefined}
           onClick={handleBubbleClick}
         >
           <span className="tutorial-bubble__avatar">
