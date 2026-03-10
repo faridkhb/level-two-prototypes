@@ -208,7 +208,7 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-6',
-    bubble: { type: 'dialogue', text: 'Great! Now switch to the Food tab to place your Milk!', expression: 'neutral', position: 'inventory' },
+    bubble: { type: 'dialogue', text: 'Great! Now switch to the Food tab to place your Chicken Meal!', expression: 'neutral', position: 'inventory' },
     highlight: 'tab-food',
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'tab-food' },
@@ -217,10 +217,10 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-7',
-    bubble: { type: 'dialogue', text: 'Drag the \ud83e\udd5b Milk onto the graph, then hit Submit!', expression: 'neutral', position: 'inventory' },
-    highlight: 'food:milk',
+    bubble: { type: 'dialogue', text: 'Drag the \ud83c\udf57 Chicken Meal onto the graph, then hit Submit!', expression: 'neutral', position: 'inventory' },
+    highlight: 'food:chicken',
     highlightType: 'pulse',
-    cta: { type: 'drag-arrow', source: 'food:milk' },
+    cta: { type: 'drag-arrow', source: 'food:chicken' },
     advanceOn: 'action',
     expectedAction: { type: 'click-submit' },
   },

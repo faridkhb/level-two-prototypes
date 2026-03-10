@@ -6,11 +6,11 @@
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 1600,
+      "kcalBudget": 800,
       "wpBudget": 9,
       "availableFoods": [
         {
-          "id": "milk",
+          "id": "chicken",
           "count": 1
         }
       ],
@@ -56,7 +56,7 @@
     },
     {
       "day": 2,
-      "kcalBudget": 1400,
+      "kcalBudget": 1200,
       "wpBudget": 8,
       "availableFoods": [
         {
@@ -109,7 +109,7 @@
     },
     {
       "day": 3,
-      "kcalBudget": 1400,
+      "kcalBudget": 1200,
       "wpBudget": 10,
       "availableFoods": [
         {
@@ -117,7 +117,7 @@
           "count": 1
         },
         {
-          "id": "berriesmixed",
+          "id": "nutsmixed",
           "count": 1
         }
       ],
