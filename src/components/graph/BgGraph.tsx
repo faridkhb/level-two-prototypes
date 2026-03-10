@@ -1163,13 +1163,14 @@ export function BgGraph({
           if (layer.digestCubes.length === 0) return null;
 
           const isReveal = revealPhase !== undefined;
-          const showDigest = isReveal ? revealPhase! >= 1 : digestingFoodIds.has(layer.placementId);
+          // Phase 2+ reveal: drain cubes appear with pancreas phase (not phase 1 — exercise-burned
+          // cubes are hidden in phase 1, which would create a gap above alive cubes).
+          const showDigest = isReveal ? revealPhase! >= 2 : digestingFoodIds.has(layer.placementId);
           if (!showDigest) return null;
           // Hide drain cubes during drag preview (preview cube covers them) or
           // intervention burn animation (orange cube above burn zone is confusing).
           if (!isReveal && (previewShip !== undefined || burningInterventions.size > 0)) return null;
 
-          // Phase 1 reveal: cubes appear as normal food. Phase 2+/gameplay: burn animation
           const showFall = isReveal ? revealPhase! >= 2 : true;
           const digestCls = showFall ? 'bg-graph__cube--digest-appear-burn' : 'bg-graph__cube';
 

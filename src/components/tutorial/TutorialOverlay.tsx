@@ -84,6 +84,13 @@ function resolveHighlightRects(highlight: string | string[] | undefined): DOMRec
   const targets = Array.isArray(highlight) ? highlight : [highlight];
   const rects: DOMRect[] = [];
   for (const target of targets) {
+    // Special: 'locked-slots' → highlight all locked slot containers
+    if (target === 'locked-slots') {
+      document.querySelectorAll('.slot-container--locked').forEach(el => {
+        rects.push(el.getBoundingClientRect());
+      });
+      continue;
+    }
     const selector = getHighlightSelector(target);
     if (!selector) continue;
     const el = document.querySelector(selector);
