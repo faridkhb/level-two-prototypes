@@ -109,6 +109,27 @@
   }
 }
 
+/* Forced bottom — dialog stays in inventory area, not covering graph or slots */
+.tutorial-bubble--inventory {
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  width: auto;
+  max-width: none;
+  animation-name: bubbleInventoryAppear;
+}
+
+@keyframes bubbleInventoryAppear {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Fallback: no spotlight target — center horizontally, 32px from top to clear camera notch */
 .tutorial-bubble--top-center {
   top: 32px;

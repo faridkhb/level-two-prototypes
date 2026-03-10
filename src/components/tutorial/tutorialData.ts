@@ -11,7 +11,7 @@ export interface TutorialBubble {
   type: BubbleType;
   text: string;
   expression?: Expression;
-  position?: 'top' | 'bottom' | 'center';
+  position?: 'top' | 'bottom' | 'center' | 'inventory';
 }
 
 export interface TutorialCTA {
@@ -77,7 +77,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-5',
-    bubble: { type: 'success', text: 'Great! See the glucose curve? The banana\'s carbs raised your blood glucose. It rises during absorption, then insulin brings it back down.', expression: 'happy' },
+    bubble: { type: 'success', text: 'Great! See the glucose curve? The banana\'s carbs raised your blood glucose. It rises during absorption, then insulin brings it back down.', expression: 'happy', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -168,7 +168,7 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-2',
-    bubble: { type: 'warning', text: '\u26a0\ufe0f The \ud83c\udf5a Bowl of Rice was already eaten \u2014 its peak reached 380\u00a0mg/dL, well above the 200 danger threshold! Exercises can help lower the spike!', expression: 'concerned' },
+    bubble: { type: 'warning', text: '\u26a0\ufe0f The \ud83c\udf5a Bowl of Rice was already eaten \u2014 its peak reached 380\u00a0mg/dL, well above the 200 danger threshold! Exercises can help lower the spike!', expression: 'concerned', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -194,7 +194,7 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-5',
-    bubble: { type: 'success', text: '\u2728 See the green preview? That shows exactly how much glucose the walk will burn!', expression: 'happy' },
+    bubble: { type: 'success', text: '\u2728 See the green preview? That shows exactly how much glucose the walk will burn!', expression: 'happy', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -421,7 +421,7 @@ const L5D1: TutorialStep[] = [
   },
   {
     id: 'L5D1-4',
-    bubble: { type: 'success', text: 'The glucose peak dropped by 20%! That\'s a big reduction in the danger zone. Metformin reduces glucose from ALL foods.', expression: 'happy' },
+    bubble: { type: 'success', text: 'The glucose peak dropped by 20%! That\'s a big reduction in the danger zone. Metformin reduces glucose from ALL foods.', expression: 'happy', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -499,7 +499,7 @@ const L6D1: TutorialStep[] = [
   },
   {
     id: 'L6D1-5',
-    bubble: { type: 'success', text: 'The peak dropped! SGLT2 flushed out excess glucose above 200 mg/dL.', expression: 'happy' },
+    bubble: { type: 'success', text: 'The peak dropped! SGLT2 flushed out excess glucose above 200 mg/dL.', expression: 'happy', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -581,14 +581,14 @@ const L7D1: TutorialStep[] = [
   },
   {
     id: 'L7D1-3',
-    bubble: { type: 'dialogue', text: 'Effect 1: Duration \u00d71.5 \u2014 food takes 50% longer to absorb. The curve gets WIDER and LOWER.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Effect 1: Duration \u00d71.5 \u2014 food takes 50% longer to absorb. The curve gets WIDER and LOWER.', expression: 'neutral', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
   },
   {
     id: 'L7D1-4',
-    bubble: { type: 'dialogue', text: 'Effect 2: Glucose \u00d70.90 \u2014 10% less glucose overall. Smaller peaks!', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Effect 2: Glucose \u00d70.90 \u2014 10% less glucose overall. Smaller peaks!', expression: 'neutral', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -640,7 +640,7 @@ const L7D2: TutorialStep[] = [
   },
   {
     id: 'L7D2-3',
-    bubble: { type: 'dialogue', text: 'Metformin \u00d7 GLP-1: glucose is now 72% of original (\u221228%!). SGLT2 drains the remaining peaks above 200.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Metformin \u00d7 GLP-1: glucose is now 72% of original (\u221228%!). SGLT2 drains the remaining peaks above 200.', expression: 'neutral', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -749,7 +749,7 @@ const L8D3: TutorialStep[] = [
   },
   {
     id: 'L8D3-6',
-    bubble: { type: 'success', text: 'BOOST is absorbing the dangerous peaks above 200 mg/dL! Combined with medications, the curves are much more manageable.', expression: 'happy' },
+    bubble: { type: 'success', text: 'BOOST is absorbing the dangerous peaks above 200 mg/dL! Combined with medications, the curves are much more manageable.', expression: 'happy', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
