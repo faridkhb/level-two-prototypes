@@ -35,6 +35,7 @@ export interface TutorialStep {
   bubble?: TutorialBubble;
   highlight?: string | string[];
   highlightType?: HighlightType;
+  noBackdrop?: boolean;
   cta?: TutorialCTA;
   advanceOn: AdvanceOn;
   blockInteraction?: boolean;
@@ -138,6 +139,7 @@ const L1D3: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'Day 3! Notice the \ud83c\udf7f Popcorn is already on the graph. That\'s a pre-placed food \u2014 you can\'t remove it.', expression: 'neutral' },
     highlight: 'slot:3',
     highlightType: 'spotlight',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -169,8 +171,9 @@ const L2D1: TutorialStep[] = [
   {
     id: 'L2D1-2',
     bubble: { type: 'warning', text: '\u26a0\ufe0f The \ud83c\udf5a Bowl of Rice was already eaten \u2014 its peak reached 380\u00a0mg/dL, well above the 200 danger threshold! Exercises can help lower the spike!', expression: 'concerned', position: 'inventory' },
-    highlight: 'graph',
-    highlightType: 'glow',
+    highlight: 'slot:2',
+    highlightType: 'spotlight',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -221,6 +224,9 @@ const L2D2: TutorialStep[] = [
   {
     id: 'L2D2-2',
     bubble: { type: 'dialogue', text: 'The \ud83e\uddc1 Muffin is pre-placed at slot 4. Use the walk to cover its peak!', expression: 'thinking' },
+    highlight: 'slot:4',
+    highlightType: 'spotlight',
+    noBackdrop: true,
     advanceOn: 'tap',
   },
   {
@@ -348,6 +354,7 @@ const L4D1: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'Level 4 \u2014 Insulin Rhythm! Look at the amber bars on the graph. They show your insulin rate at each time.', expression: 'neutral' },
     highlight: 'insulin-bars',
     highlightType: 'spotlight',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -356,6 +363,7 @@ const L4D1: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'Morning insulin (rate 4) is STRONG \u2014 it absorbs glucose quickly. Evening insulin (rate 1) is WEAK \u2014 glucose lingers!', expression: 'thinking' },
     highlight: 'graph',
     highlightType: 'glow',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -399,6 +407,7 @@ const L5D1: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'Level 5 \u2014 your first medication! See the purple panel below the graph? That\'s the medication area.', expression: 'neutral' },
     highlight: 'med-toggles',
     highlightType: 'spotlight',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -407,6 +416,7 @@ const L5D1: TutorialStep[] = [
     bubble: { type: 'dialogue', text: '\ud83d\udc8a Metformin reduces ALL food glucose by 20%. It costs no WP \u2014 it\'s a free toggle.', expression: 'neutral' },
     highlight: 'medication:metformin',
     highlightType: 'glow',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -442,6 +452,7 @@ const L5D2: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'Two big pre-placed foods today! You\'ll need everything: Metformin AND exercise.', expression: 'neutral' },
     highlight: 'graph',
     highlightType: 'spotlight',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -480,6 +491,7 @@ const L6D1: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'SGLT2 removes excess glucose through the kidneys \u2014 but ONLY above 200 mg/dL. See the purple dashed line on the graph? That\'s the threshold.', expression: 'neutral' },
     highlight: 'graph',
     highlightType: 'glow',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -520,6 +532,7 @@ const L6D2: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'See the red-tinted columns on the graph? Those are stress slots!', expression: 'neutral' },
     highlight: 'slot:6',
     highlightType: 'spotlight',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -528,6 +541,7 @@ const L6D2: TutorialStep[] = [
     bubble: { type: 'warning', text: '\ud83d\ude30 Stress reduces insulin by 2 in those time slots. If the base rate was 2, it drops to 0 \u2014 no insulin at all!', expression: 'concerned' },
     highlight: 'insulin-bars',
     highlightType: 'glow',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -584,6 +598,7 @@ const L7D1: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'Effect 1: Duration \u00d71.5 \u2014 food takes 50% longer to absorb. The curve gets WIDER and LOWER.', expression: 'neutral', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
+    noBackdrop: true,
     advanceOn: 'tap',
   },
   {
@@ -591,6 +606,7 @@ const L7D1: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'Effect 2: Glucose \u00d70.90 \u2014 10% less glucose overall. Smaller peaks!', expression: 'neutral', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
+    noBackdrop: true,
     advanceOn: 'tap',
   },
   {
@@ -628,6 +644,7 @@ const L7D2: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'The ultimate medication test! \ud83e\uddc1 Muffin and \ud83c\udf5a Rice \u2014 two massive pre-placed foods. You have all 3 medications.', expression: 'neutral' },
     highlight: 'graph',
     highlightType: 'spotlight',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -643,6 +660,7 @@ const L7D2: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'Metformin \u00d7 GLP-1: glucose is now 72% of original (\u221228%!). SGLT2 drains the remaining peaks above 200.', expression: 'neutral', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
+    noBackdrop: true,
     advanceOn: 'tap',
   },
   {
@@ -712,6 +730,7 @@ const L8D3: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'The final day! Three massive pre-placed foods. Even with all medications, the peaks are brutal.', expression: 'concerned' },
     highlight: 'graph',
     highlightType: 'spotlight',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -752,6 +771,7 @@ const L8D3: TutorialStep[] = [
     bubble: { type: 'success', text: 'BOOST is absorbing the dangerous peaks above 200 mg/dL! Combined with medications, the curves are much more manageable.', expression: 'happy', position: 'inventory' },
     highlight: 'graph',
     highlightType: 'glow',
+    noBackdrop: true,
     advanceOn: 'tap',
   },
   {

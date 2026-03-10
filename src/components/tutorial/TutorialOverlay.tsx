@@ -98,6 +98,7 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
 
   // For 'action' steps: overlay is pass-through, user interacts with game
   const isPassthrough = step.advanceOn === 'action';
+  const showBackdrop = !isPassthrough && !step.noBackdrop;
 
   // Compute spotlight positions for all highlight targets
   useEffect(() => {
@@ -166,8 +167,8 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
       className={`tutorial-overlay ${isPassthrough ? 'tutorial-overlay--passthrough' : ''}`}
       onClick={isPassthrough ? undefined : handleOverlayClick}
     >
-      {/* Dark backdrop with spotlight cutouts — hidden in passthrough mode */}
-      {!isPassthrough && (
+      {/* Dark backdrop with spotlight cutouts — hidden in passthrough mode and noBackdrop steps */}
+      {showBackdrop && (
         <div
           className="tutorial-overlay__backdrop"
           style={clipPath ? { clipPath } : undefined}
