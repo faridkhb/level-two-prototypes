@@ -126,6 +126,7 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
 
   // Position bubble near first spotlight rect if available, otherwise center
   const primaryRect = spotlightRects[0] ?? null;
+  const isFallbackCenter = !primaryRect && bubblePosition !== 'center';
   const bubbleStyle: React.CSSProperties = {};
   if (primaryRect && bubblePosition !== 'center') {
     if (bubblePosition === 'top' || primaryRect.top > window.innerHeight * 0.5) {
@@ -189,8 +190,8 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
       {/* Bubble — always visible, only clickable for tap steps */}
       {step.bubble && (
         <div
-          className={`tutorial-bubble tutorial-bubble--${bubbleType} ${bubblePosition === 'center' ? 'tutorial-bubble--center' : ''} ${isPassthrough ? 'tutorial-bubble--action' : ''}`}
-          style={bubblePosition !== 'center' ? bubbleStyle : undefined}
+          className={`tutorial-bubble tutorial-bubble--${bubbleType} ${bubblePosition === 'center' ? 'tutorial-bubble--center' : ''} ${isFallbackCenter ? 'tutorial-bubble--top-center' : ''} ${isPassthrough ? 'tutorial-bubble--action' : ''}`}
+          style={bubblePosition !== 'center' && !isFallbackCenter ? bubbleStyle : undefined}
           onClick={handleBubbleClick}
         >
           <span className="tutorial-bubble__avatar">
