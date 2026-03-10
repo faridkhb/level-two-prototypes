@@ -48,6 +48,7 @@ export function InterventionCard({
       ]
         .filter(Boolean)
         .join(' ')}
+      data-intervention={intervention.id}
       data-tooltip={tooltip}
       {...(disabled ? {} : listeners)}
       {...attributes}

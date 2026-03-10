@@ -29,10 +29,10 @@ function getHighlightSelector(target: string): string | null {
   // Direct lookup
   if (HIGHLIGHT_SELECTORS[target]) return HIGHLIGHT_SELECTORS[target];
 
-  // slot:N → .slot-grid__slot[data-slot="N"]
+  // slot:N → .slot-container[data-slot="N"]
   if (target.startsWith('slot:')) {
     const n = target.split(':')[1];
-    return `.slot-grid__slot[data-slot="${n}"]`;
+    return `.slot-container[data-slot="${n}"]`;
   }
 
   // food:id → .ship-card[data-food="id"]
@@ -234,6 +234,19 @@ export function TutorialOverlay({ step, onAdvance }: TutorialOverlayProps) {
           }}
         >
           {'\u261d\ufe0f'}
+        </div>
+      )}
+
+      {/* drag-arrow: grab hand bouncing on source (primaryRect) */}
+      {step.cta?.type === 'drag-arrow' && primaryRect && (
+        <div
+          className="tutorial-cta tutorial-cta--drag-source"
+          style={{
+            top: primaryRect.top + primaryRect.height / 2,
+            left: primaryRect.left + primaryRect.width / 2,
+          }}
+        >
+          {'\ud83e\udd0f'}
         </div>
       )}
     </div>

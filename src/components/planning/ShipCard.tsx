@@ -59,6 +59,7 @@ export function ShipCard({
       ]
         .filter(Boolean)
         .join(' ')}
+      data-food={ship.id}
       data-tooltip={getCardTooltip(ship)}
       {...(disabled ? {} : listeners)}
       {...attributes}

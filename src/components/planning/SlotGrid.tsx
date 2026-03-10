@@ -97,6 +97,7 @@ function SlotContainer({
     <div className="slot-container-wrap">
       <div
         ref={combinedRef}
+        data-slot={index}
         className={
           'slot-container' +
           (showContent ? ' slot-container--filled' : '') +
