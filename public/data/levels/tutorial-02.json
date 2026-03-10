@@ -121,10 +121,6 @@
       ],
       "availableInterventions": [
         {
-          "id": "lightwalk",
-          "count": 1
-        },
-        {
           "id": "heavyrun",
           "count": 1
         }
