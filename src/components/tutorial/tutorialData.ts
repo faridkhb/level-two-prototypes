@@ -633,7 +633,7 @@ const L7D1: TutorialStep[] = [
   },
   {
     id: 'L7D1-6',
-    bubble: { type: 'warning', text: 'Effect 4: Calorie budget reduced by 15%! Check the kcal bar \u2014 the target is smaller now. You need to eat LESS.', expression: 'concerned' },
+    bubble: { type: 'warning', text: 'Effect 4: Calorie budget reduced by 30%! Check the kcal bar \u2014 the target is smaller now. You need to eat LESS.', expression: 'concerned' },
     highlight: 'kcal-bar',
     highlightType: 'glow',
     advanceOn: 'tap',
