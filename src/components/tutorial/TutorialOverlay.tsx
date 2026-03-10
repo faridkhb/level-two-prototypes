@@ -23,6 +23,7 @@ const HIGHLIGHT_SELECTORS: Record<string, string> = {
   'slot-grid': '.slot-grid',
   'boost-btn': '.pancreas-btn',
   'tab-actions': '.tabbed-inventory__tab[data-tab="actions"]',
+  'tab-food': '.tabbed-inventory__tab[data-tab="food"]',
 };
 
 function getHighlightSelector(target: string): string | null {

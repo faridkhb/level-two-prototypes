@@ -171,10 +171,11 @@
   background: #0f1a12;
 }
 
-/* Action bubble: not clickable to advance, visual distinction */
+/* Action bubble: not clickable to advance, does not block interaction with game */
 .tutorial-bubble--action {
   cursor: default;
   opacity: 0.92;
+  pointer-events: none;
 }
 
 .tutorial-bubble__avatar {
