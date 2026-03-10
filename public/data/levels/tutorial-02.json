@@ -6,7 +6,7 @@
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 900,
+      "kcalBudget": 1600,
       "wpBudget": 8,
       "availableFoods": [
         {
@@ -23,7 +23,7 @@
       "availableMedications": [],
       "preplacedFoods": [
         {
-          "shipId": "banana",
+          "shipId": "rice",
           "slotIndex": 2
         }
       ],

@@ -168,7 +168,7 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-2',
-    bubble: { type: 'warning', text: '\u26a0\ufe0f The \ud83c\udf4c Banana was already eaten \u2014 its peak reached 230\u00a0mg/dL, above the 200 danger threshold! Exercises can help lower the spike!', expression: 'concerned' },
+    bubble: { type: 'warning', text: '\u26a0\ufe0f The \ud83c\udf5a Bowl of Rice was already eaten \u2014 its peak reached 380\u00a0mg/dL, well above the 200 danger threshold! Exercises can help lower the spike!', expression: 'concerned' },
     highlight: 'graph',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -185,7 +185,7 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-4',
-    bubble: { type: 'dialogue', text: 'The \ud83d\udeb6 Light Walk burns glucose from the top. Drag it next to the banana peak!', expression: 'thinking' },
+    bubble: { type: 'dialogue', text: 'The \ud83d\udeb6 Light Walk burns glucose from the top. Drag it next to the rice peak!', expression: 'thinking' },
     highlight: ['intervention:lightwalk', 'slot:3'],
     highlightType: 'pulse',
     cta: { type: 'drag-arrow', source: 'intervention:lightwalk', dest: 'slot:3' },
