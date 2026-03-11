@@ -23,6 +23,7 @@ const PAD_BOTTOM = 1;
 const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
 const GRAPH_H = TOTAL_ROWS * CELL_HEIGHT;
 const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
+const INSULIN_STRIP_H = 16; // px — height of insulin rate bar strip below graph
 
 // Insulin floor: insulin cannot eat below this row (100 mg/dL)
 const INSULIN_FLOOR_ROW = 2; // (100 - 50) / 25 = 2
@@ -148,7 +149,19 @@ export function BgGraph({
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
   const graphH = isMobile ? TOTAL_ROWS * 20 : GRAPH_H;  // 320 vs 192 — taller cells on mobile
-  const padBottom = isMobile ? 30 : PAD_BOTTOM;
+
+  // Insulin profile visualization: extract rates for background rendering
+  const insulinRatesBars = typeof decayOrInsulin !== 'number'
+    ? (decayOrInsulin as InsulinParams).rates
+    : null;
+  const hasVariableInsulin = insulinRatesBars !== null &&
+    insulinRatesBars.slice(0, TOTAL_COLUMNS).some(r => r !== insulinRatesBars![0]);
+  const maxInsulinRate = insulinRatesBars
+    ? Math.max(1, ...insulinRatesBars.slice(0, TOTAL_COLUMNS))
+    : 1;
+  const insulinStripExtra = insulinRatesBars ? INSULIN_STRIP_H + 4 : 0;
+
+  const padBottom = isMobile ? 30 : PAD_BOTTOM + insulinStripExtra;
   const localSvgH = PAD_TOP + graphH + padBottom;
 
   const svgRef = useRef<SVGSVGElement>(null);
@@ -887,6 +900,21 @@ export function BgGraph({
           </pattern>
         </defs>
 
+        {/* Insulin profile column tinting — amber shade proportional to rate, morning stronger */}
+        {insulinRatesBars && hasVariableInsulin && Array.from({ length: TOTAL_COLUMNS }, (_, col) => {
+          const rate = insulinRatesBars[col] ?? 0;
+          const opacity = (rate / maxInsulinRate) * 0.10;
+          if (opacity < 0.01) return null;
+          return (
+            <rect key={`insulin-bg-${col}`}
+              x={colToX(col)} y={PAD_TOP}
+              width={CELL_SIZE} height={graphH}
+              fill="#f59e0b" opacity={opacity}
+              pointerEvents="none"
+            />
+          );
+        })}
+
         {/* Zone backgrounds — hidden */}
 
         {/* Stress zone column bands */}
@@ -940,6 +968,23 @@ export function BgGraph({
               strokeWidth={i % 4 === 0 ? 0.8 : 0.3}
             />
         ))}
+
+        {/* Insulin profile segment boundary dashed lines */}
+        {insulinRatesBars && hasVariableInsulin && Array.from({ length: TOTAL_COLUMNS }, (_, col) => {
+          if (col === 0) return null;
+          const prev = insulinRatesBars[col - 1] ?? 0;
+          const curr = insulinRatesBars[col] ?? 0;
+          if (prev === curr) return null;
+          return (
+            <line key={`insulin-boundary-${col}`}
+              x1={colToX(col)} y1={PAD_TOP}
+              x2={colToX(col)} y2={PAD_TOP + graphH + insulinStripExtra}
+              stroke="#f59e0b" strokeWidth={0.8}
+              strokeDasharray="2,3" opacity={0.5}
+              pointerEvents="none"
+            />
+          );
+        })}
 
         {/* Grid lines - horizontal (BG) */}
         {Array.from({ length: effectiveRows + 1 }, (_, i) => (
@@ -1516,6 +1561,29 @@ export function BgGraph({
             );
           }
           return labels;
+        })()}
+
+        {/* Insulin profile mini-bars strip below graph grid */}
+        {insulinRatesBars && (() => {
+          const stripTop = PAD_TOP + graphH + 4;
+          return (
+            <g pointerEvents="none">
+              <rect x={PAD_LEFT} y={stripTop} width={GRAPH_W}
+                height={INSULIN_STRIP_H} fill="#f59e0b" opacity={0.04} />
+              {Array.from({ length: TOTAL_COLUMNS }, (_, col) => {
+                const rate = insulinRatesBars[col] ?? 0;
+                const barH = Math.max(2, Math.round((rate / maxInsulinRate) * (INSULIN_STRIP_H - 2)));
+                return (
+                  <rect key={`insulin-bar-${col}`}
+                    x={colToX(col) + 1}
+                    y={stripTop + INSULIN_STRIP_H - barH}
+                    width={CELL_SIZE - 2} height={barH}
+                    fill="#f59e0b" opacity={0.78} rx={1}
+                  />
+                );
+              })}
+            </g>
+          );
         })()}
       </svg>
   );
