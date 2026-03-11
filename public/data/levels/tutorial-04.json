@@ -17,7 +17,7 @@
       "preplacedFoods": [
         { "shipId": "chocolatemuffin", "slotIndex": 1 }
       ],
-      "lockedSlots": [0, 1, 4, 5, 6, 7, 8, 9, 10, 11],
+      "lockedSlots": [],
       "insulinProfile": {
         "mode": "cumulative",
         "segments": [{ "from": 0, "to": 47, "rate": 1 }]

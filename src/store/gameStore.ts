@@ -278,11 +278,16 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           const dc = state.currentLevel ? getDayConfig(state.currentLevel, day) : null;
           const pre = getPreplacedItems(dc);
+          // Recompute total bonus bars for all days 2..day (bonusBoostBars is granted on arrival)
+          const totalBonus = state.currentLevel?.dayConfigs
+            ?.filter(d => d.day > 1 && d.day <= day)
+            .reduce((sum, d) => sum + (d.bonusBoostBars ?? 0), 0) ?? 0;
           return {
             currentDay: day,
             placedFoods: pre.foods,
             placedInterventions: pre.interventions,
             activeMedications: [],
+            totalBonusBoostBars: totalBonus,
           };
         }),
 
