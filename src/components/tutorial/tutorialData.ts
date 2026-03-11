@@ -299,7 +299,7 @@ const L2D3: TutorialStep[] = [
 const L3D1: TutorialStep[] = [
   {
     id: 'L3D1-1',
-    bubble: { type: 'dialogue', text: 'Only 4 \u2600\ufe0f today. Three foods to place \u2014 but you might not have enough WP for all of them!', expression: 'concerned' },
+    bubble: { type: 'dialogue', text: 'Only 5 \u2600\ufe0f today. Three foods to place \u2014 but you might not have enough WP for all of them!', expression: 'concerned' },
     highlight: 'wp-counter',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -323,7 +323,7 @@ const L3D1: TutorialStep[] = [
   },
   {
     id: 'L3D1-4',
-    bubble: { type: 'warning', text: 'You have 2 WP left, but \ud83e\udd5b Milk costs 3! Open the Actions tab \u2014 Take a Break refunds 1 WP.', expression: 'concerned' },
+    bubble: { type: 'warning', text: '1 WP left, but the last food costs 2! Open the Actions tab \u2014 Take a Break refunds 1 WP.', expression: 'concerned' },
     highlight: 'tab-actions',
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'tab-actions' },
@@ -342,7 +342,7 @@ const L3D1: TutorialStep[] = [
   },
   {
     id: 'L3D1-6',
-    bubble: { type: 'success', text: 'You now have 3 WP! Switch back to Food tab.', expression: 'happy' },
+    bubble: { type: 'success', text: 'You now have 2 WP! Switch back to Food tab.', expression: 'happy' },
     highlight: 'tab-food',
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'tab-food' },
