@@ -53,23 +53,23 @@
     },
     {
       "day": 2,
-      "kcalBudget": 500,
+      "kcalBudget": 1400,
       "wpBudget": 8,
       "availableFoods": [
+        {
+          "id": "burger",
+          "count": 1
+        },
+        {
+          "id": "chocolatemuffin",
+          "count": 1
+        },
         {
           "id": "pizza",
           "count": 1
         },
         {
           "id": "banana",
-          "count": 1
-        },
-        {
-          "id": "cookie",
-          "count": 1
-        },
-        {
-          "id": "icecream",
           "count": 1
         }
       ],

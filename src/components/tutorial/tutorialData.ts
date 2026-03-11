@@ -362,7 +362,7 @@ const L3D1: TutorialStep[] = [
 const L3D2: TutorialStep[] = [
   {
     id: 'L3D2-1',
-    bubble: { type: 'dialogue', text: 'Watch the kcal bar closely today! The budget is only 500 kcal. If you eat too much, there are penalties tomorrow.', expression: 'concerned' },
+    bubble: { type: 'dialogue', text: 'Watch the kcal bar today! The budget is 1400 kcal \u2014 looks comfortable, but the \ud83c\udf54 Burger and \ud83e\uddc1 Muffin together can easily push you over!', expression: 'concerned' },
     highlight: 'kcal-bar',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -378,7 +378,7 @@ const L3D2: TutorialStep[] = [
   },
   {
     id: 'L3D2-3',
-    bubble: { type: 'dialogue', text: 'Plan wisely! The \ud83c\udf55 Pizza looks tempting but check its kcal...', expression: 'thinking', position: 'inventory' },
+    bubble: { type: 'dialogue', text: 'Think twice before piling everything in! Can you stay in the green zone?', expression: 'thinking', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
