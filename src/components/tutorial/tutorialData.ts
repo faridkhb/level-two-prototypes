@@ -287,7 +287,7 @@ const L2D3: TutorialStep[] = [
   {
     id: 'L2D3-4',
     bubble: { type: 'dialogue', text: 'Place everything and submit!', expression: 'happy', position: 'inventory' },
-    highlight: 'ship-inventory',
+    highlight: 'tab-food',
     highlightType: 'glow',
     advanceOn: 'action',
     expectedAction: { type: 'click-submit' },
