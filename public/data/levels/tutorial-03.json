@@ -7,7 +7,7 @@
     {
       "day": 1,
       "kcalBudget": 1750,
-      "wpBudget": 5,
+      "wpBudget": 7,
       "availableFoods": [
         {
           "id": "burger",
@@ -30,13 +30,18 @@
       ],
       "availableMedications": [],
       "preplacedFoods": [],
+      "preplacedInterventions": [
+        {
+          "interventionId": "lightwalk",
+          "slotIndex": 8
+        }
+      ],
       "lockedSlots": [
         0,
         1,
         4,
         5,
         8,
-        9,
         10,
         11
       ],
