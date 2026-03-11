@@ -165,7 +165,7 @@ const L1D3: TutorialStep[] = [
 const L2D1: TutorialStep[] = [
   {
     id: 'L2D1-1',
-    bubble: { type: 'dialogue', text: 'Level 2 \u2014 Exercise! Today something important happened to your blood glucose. Tap to see.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Today something important happened to your blood glucose. Tap to see.', expression: 'neutral' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -299,7 +299,7 @@ const L2D3: TutorialStep[] = [
 const L3D1: TutorialStep[] = [
   {
     id: 'L3D1-1',
-    bubble: { type: 'dialogue', text: 'Level 3 \u2014 Willpower! Today your WP budget is tight: only 4 \u2600\ufe0f. Choose carefully what to eat!', expression: 'concerned' },
+    bubble: { type: 'dialogue', text: 'Today your WP budget is tight: only 4 \u2600\ufe0f. Choose carefully what to eat!', expression: 'concerned' },
     highlight: 'wp-counter',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -382,7 +382,7 @@ const L3D3: TutorialStep[] = [
 const L4D1: TutorialStep[] = [
   {
     id: 'L4D1-1',
-    bubble: { type: 'dialogue', text: 'Level 4 \u2014 Insulin Rhythm! Look at the amber bars on the graph. They show your insulin rate at each time.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Look at the amber bars on the graph. They show your insulin rate at each time.', expression: 'neutral' },
     highlight: 'insulin-bars',
     highlightType: 'spotlight',
     noBackdrop: true,
@@ -435,7 +435,7 @@ const L4D2: TutorialStep[] = [
 const L5D1: TutorialStep[] = [
   {
     id: 'L5D1-1',
-    bubble: { type: 'dialogue', text: 'Level 5 \u2014 your first medication! See the purple panel below the graph? That\'s the medication area.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'See the purple panel below the graph? That\'s the medication area.', expression: 'neutral' },
     highlight: 'med-toggles',
     highlightType: 'spotlight',
     noBackdrop: true,
@@ -711,7 +711,7 @@ const L7D2: TutorialStep[] = [
 const L8D1: TutorialStep[] = [
   {
     id: 'L8D1-1',
-    bubble: { type: 'dialogue', text: 'The Final Exam! Level 8 \u2014 everything you\'ve learned comes together.', expression: 'neutral', position: 'center' },
+    bubble: { type: 'dialogue', text: 'The Final Exam! Everything you\'ve learned comes together.', expression: 'neutral', position: 'center' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
