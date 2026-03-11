@@ -63,7 +63,6 @@ interface GameState {
   // BOOST system (adaptive insulin above threshold)
   boostActivePerDay: Record<number, boolean>;
   lockedBarsPerDay: Record<number, number>;
-  totalBonusBoostBars: number;  // accumulates bonusBoostBars from day configs
 
   // WP carry-over tracking
   submittedWpPerDay: Record<number, { wpUsed: number; effectiveWpBudget: number }>;
@@ -107,7 +106,6 @@ export const useGameStore = create<GameState>()(
       activeMedications: [],
       boostActivePerDay: {},
       lockedBarsPerDay: {},
-      totalBonusBoostBars: 0,
       submittedWpPerDay: {},
       satietyPenaltyPerDay: {},
       settings: DEFAULT_SETTINGS,
@@ -127,7 +125,6 @@ export const useGameStore = create<GameState>()(
           activeMedications: [],
           boostActivePerDay: {},
           lockedBarsPerDay: {},
-          totalBonusBoostBars: 0,
           submittedWpPerDay: {},
           satietyPenaltyPerDay: {},
         });
@@ -278,10 +275,6 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           const dc = state.currentLevel ? getDayConfig(state.currentLevel, day) : null;
           const pre = getPreplacedItems(dc);
-          // Recompute total bonus bars for all days 2..day (bonusBoostBars is granted on arrival)
-          const totalBonus = state.currentLevel?.dayConfigs
-            ?.filter(d => d.day > 1 && d.day <= day)
-            .reduce((sum, d) => sum + (d.bonusBoostBars ?? 0), 0) ?? 0;
           // Clear locked/active boost for target day and beyond (stale persisted data corrupts barsAvailable)
           const cleanedLockedBars = Object.fromEntries(
             Object.entries(state.lockedBarsPerDay).filter(([d]) => Number(d) < day)
@@ -294,7 +287,6 @@ export const useGameStore = create<GameState>()(
             placedFoods: pre.foods,
             placedInterventions: pre.interventions,
             activeMedications: [],
-            totalBonusBoostBars: totalBonus,
             lockedBarsPerDay: cleanedLockedBars,
             boostActivePerDay: cleanedBoostActive,
           };
@@ -305,7 +297,6 @@ export const useGameStore = create<GameState>()(
           const nextDay = state.currentDay + 1;
           const dc = state.currentLevel ? getDayConfig(state.currentLevel, nextDay) : null;
           const pre = getPreplacedItems(dc);
-          const bonus = dc?.bonusBoostBars ?? 0;
           // Clear locked/active boost for incoming day (stale persisted data corrupts barsAvailable)
           const cleanedLockedBars = Object.fromEntries(
             Object.entries(state.lockedBarsPerDay).filter(([d]) => Number(d) < nextDay)
@@ -318,7 +309,6 @@ export const useGameStore = create<GameState>()(
             placedFoods: pre.foods,
             placedInterventions: pre.interventions,
             activeMedications: [],
-            totalBonusBoostBars: state.totalBonusBoostBars + bonus,
             lockedBarsPerDay: cleanedLockedBars,
             boostActivePerDay: cleanedBoostActive,
           };
@@ -332,7 +322,6 @@ export const useGameStore = create<GameState>()(
           activeMedications: [],
           boostActivePerDay: {},
           lockedBarsPerDay: {},
-          totalBonusBoostBars: 0,
           submittedWpPerDay: {},
           satietyPenaltyPerDay: {},
         }),

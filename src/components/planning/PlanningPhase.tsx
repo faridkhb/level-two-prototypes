@@ -84,7 +84,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     settings,
     boostActivePerDay,
     lockedBarsPerDay,
-    totalBonusBoostBars,
     toggleBoost,
     lockBoostBars,
     unlockBoostBars,
@@ -217,7 +216,14 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   // BOOST system
   const isBoostActive = boostActivePerDay[currentDay] ?? false;
   const totalLockedBars = Object.values(lockedBarsPerDay).reduce((a, b) => a + b, 0);
-  const barsAvailable = PANCREAS_TOTAL_BARS + totalBonusBoostBars - totalLockedBars;
+  // Compute bonus boost bars directly from level config (sum of bonusBoostBars for days 2..currentDay)
+  const bonusBoostBars = useMemo(() => {
+    if (!currentLevel?.dayConfigs) return 0;
+    return currentLevel.dayConfigs
+      .filter(dc => dc.day > 1 && dc.day <= currentDay)
+      .reduce((sum, dc) => sum + (dc.bonusBoostBars ?? 0), 0);
+  }, [currentLevel, currentDay]);
+  const barsAvailable = PANCREAS_TOTAL_BARS + bonusBoostBars - totalLockedBars;
   const boostThresholdRow = boostOverride.thresholdMgDl
     ? Math.round((boostOverride.thresholdMgDl - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl)
     : PENALTY_ORANGE_ROW;
