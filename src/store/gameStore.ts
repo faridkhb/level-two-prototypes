@@ -63,6 +63,7 @@ interface GameState {
   // BOOST system (adaptive insulin above threshold)
   boostActivePerDay: Record<number, boolean>;
   lockedBarsPerDay: Record<number, number>;
+  totalBonusBoostBars: number;  // accumulates bonusBoostBars from day configs
 
   // WP carry-over tracking
   submittedWpPerDay: Record<number, { wpUsed: number; effectiveWpBudget: number }>;
@@ -106,6 +107,7 @@ export const useGameStore = create<GameState>()(
       activeMedications: [],
       boostActivePerDay: {},
       lockedBarsPerDay: {},
+      totalBonusBoostBars: 0,
       submittedWpPerDay: {},
       satietyPenaltyPerDay: {},
       settings: DEFAULT_SETTINGS,
@@ -125,6 +127,7 @@ export const useGameStore = create<GameState>()(
           activeMedications: [],
           boostActivePerDay: {},
           lockedBarsPerDay: {},
+          totalBonusBoostBars: 0,
           submittedWpPerDay: {},
           satietyPenaltyPerDay: {},
         });
@@ -288,11 +291,13 @@ export const useGameStore = create<GameState>()(
           const nextDay = state.currentDay + 1;
           const dc = state.currentLevel ? getDayConfig(state.currentLevel, nextDay) : null;
           const pre = getPreplacedItems(dc);
+          const bonus = dc?.bonusBoostBars ?? 0;
           return {
             currentDay: nextDay,
             placedFoods: pre.foods,
             placedInterventions: pre.interventions,
             activeMedications: [],
+            totalBonusBoostBars: state.totalBonusBoostBars + bonus,
           };
         }),
 
@@ -304,6 +309,7 @@ export const useGameStore = create<GameState>()(
           activeMedications: [],
           boostActivePerDay: {},
           lockedBarsPerDay: {},
+          totalBonusBoostBars: 0,
           submittedWpPerDay: {},
           satietyPenaltyPerDay: {},
         }),

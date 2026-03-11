@@ -423,30 +423,44 @@ const L3D3: TutorialStep[] = [
   },
 ];
 
-// ======= LEVEL 4 — Insulin Rhythm =======
+// ======= LEVEL 4 — Pancreas Boost =======
 
 const L4D1: TutorialStep[] = [
   {
     id: 'L4D1-1',
-    bubble: { type: 'dialogue', text: 'Look at the amber bars on the graph. They show your insulin rate at each time.', expression: 'neutral' },
-    highlight: 'insulin-bars',
+    bubble: { type: 'warning', text: 'That \ud83e\uddc1 Muffin spiked way above 200 mg/dL! Today you have no exercise \u2014 but there\'s another tool: the Pancreas BOOST!', expression: 'concerned' },
+    highlight: 'boost-btn',
     highlightType: 'spotlight',
-    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L4D1-2',
-    bubble: { type: 'dialogue', text: 'Morning insulin (rate 4) is STRONG \u2014 it absorbs glucose quickly. Evening insulin (rate 1) is WEAK \u2014 glucose lingers!', expression: 'thinking' },
-    highlight: 'graph',
+    bubble: { type: 'hint', text: 'BOOST supercharges insulin ONLY above 200 mg/dL \u2014 it cuts 4 cubes per column in the danger zone!', expression: 'thinking' },
+    highlight: 'boost-btn',
     highlightType: 'glow',
-    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L4D1-3',
-    bubble: { type: 'dialogue', text: 'You have 2 bananas. Try placing one in the morning and one in the evening \u2014 see the difference!', expression: 'happy', position: 'inventory' },
+    bubble: { type: 'dialogue', text: 'Tap BOOST ON and watch the spike drop!', expression: 'happy' },
+    highlight: 'boost-btn',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'boost-btn' },
+    advanceOn: 'action',
+    expectedAction: { type: 'toggle-boost' },
+  },
+  {
+    id: 'L4D1-4',
+    bubble: { type: 'success', text: 'See that? BOOST crushed the peak above 200! Now place your food and submit.', expression: 'celebrating' },
+    highlight: 'graph',
+    highlightType: 'glow',
+    advanceOn: 'tap',
+  },
+  {
+    id: 'L4D1-5',
+    bubble: { type: 'dialogue', text: 'Place your food and submit!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -457,18 +471,60 @@ const L4D1: TutorialStep[] = [
 const L4D2: TutorialStep[] = [
   {
     id: 'L4D2-1',
-    bubble: { type: 'dialogue', text: 'Today you have more variety. Match high-carb food with high-insulin times for best results!', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Day 2! The doctor replenished your BOOST \u2014 you have 1 charge again. But remember: it\'s limited. Use it wisely!', expression: 'neutral' },
+    highlight: 'boost-btn',
+    highlightType: 'glow',
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L4D2-2',
-    bubble: { type: 'hint', text: '\ud83d\udca1 Oatmeal (24g carbs, absorbs over 2h) works great in the morning with rate 3 insulin. Chickpeas (23g carbs, 90 min) are good mid-day with rate 2.', expression: 'thinking' },
+    bubble: { type: 'hint', text: 'Today you have a \ud83c\udfc3 Heavy Run! It burns 5 cubes/col for 3 hours \u2014 very powerful. Try using it near the peak BEFORE reaching for BOOST.', expression: 'thinking' },
+    highlight: 'intervention-inventory',
+    highlightType: 'spotlight',
     advanceOn: 'tap',
+    blockInteraction: true,
   },
   {
     id: 'L4D2-3',
-    bubble: { type: 'dialogue', text: 'Place your food, walk, and submit!', expression: 'happy', position: 'inventory' },
+    bubble: { type: 'hint', text: 'Save BOOST for Day 3 if you can \u2014 the peak there is even bigger!', expression: 'thinking' },
+    advanceOn: 'tap',
+  },
+  {
+    id: 'L4D2-4',
+    bubble: { type: 'dialogue', text: 'Place your run, food, and submit!', expression: 'happy', position: 'inventory' },
+    highlight: 'ship-inventory',
+    highlightType: 'glow',
+    advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
+  },
+];
+
+const L4D3: TutorialStep[] = [
+  {
+    id: 'L4D3-1',
+    bubble: { type: 'warning', text: 'Day 3 \u2014 the hardest! Two big pre-placed foods. The combined peak is brutal.', expression: 'concerned' },
+    highlight: 'graph',
+    highlightType: 'spotlight',
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'L4D3-2',
+    bubble: { type: 'hint', text: 'If you saved your BOOST from yesterday \u2014 now is the time! BOOST + Light Walk is a powerful combo.', expression: 'thinking' },
+    highlight: 'boost-btn',
+    highlightType: 'glow',
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'L4D3-3',
+    bubble: { type: 'hint', text: 'Even without BOOST, smart walk placement + good food timing can earn 2 stars. With BOOST: 3 stars are possible!', expression: 'thinking' },
+    advanceOn: 'tap',
+  },
+  {
+    id: 'L4D3-4',
+    bubble: { type: 'dialogue', text: 'Plan your best day and submit!', expression: 'happy', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -894,7 +950,7 @@ const TUTORIAL_STEPS: Record<string, Record<number, TutorialStep[]>> = {
   'tutorial-01': { 1: L1D1, 2: L1D2, 3: L1D3 },
   'tutorial-02': { 1: L2D1, 2: L2D2, 3: L2D3 },
   'tutorial-03': { 1: L3D1, 2: L3D2, 3: L3D3 },
-  'tutorial-04': { 1: L4D1, 2: L4D2 },
+  'tutorial-04': { 1: L4D1, 2: L4D2, 3: L4D3 },
   'tutorial-05': { 1: L5D1, 2: L5D2 },
   'tutorial-06': { 1: L6D1, 2: L6D2 },
   'tutorial-07': { 1: L7D1, 2: L7D2 },
