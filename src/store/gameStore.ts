@@ -282,12 +282,17 @@ export const useGameStore = create<GameState>()(
           const totalBonus = state.currentLevel?.dayConfigs
             ?.filter(d => d.day > 1 && d.day <= day)
             .reduce((sum, d) => sum + (d.bonusBoostBars ?? 0), 0) ?? 0;
+          // Clear locked bars for target day and beyond (stale persisted data would incorrectly reduce barsAvailable)
+          const cleanedLockedBars = Object.fromEntries(
+            Object.entries(state.lockedBarsPerDay).filter(([d]) => Number(d) < day)
+          );
           return {
             currentDay: day,
             placedFoods: pre.foods,
             placedInterventions: pre.interventions,
             activeMedications: [],
             totalBonusBoostBars: totalBonus,
+            lockedBarsPerDay: cleanedLockedBars,
           };
         }),
 
