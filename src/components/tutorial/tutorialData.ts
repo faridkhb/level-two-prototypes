@@ -48,7 +48,7 @@ export interface TutorialStep {
 const L1D1: TutorialStep[] = [
   {
     id: 'L1D1-1',
-    bubble: { type: 'dialogue', text: "Tutorial 1 — First Steps! I'm Alice, and I'll guide you through our Type 2 Diabetes game.", expression: 'happy', position: 'center' },
+    bubble: { type: 'dialogue', text: "Welcome to Level Two! I'm Alice, and I'll guide you through our Type 2 Diabetes game.", expression: 'happy', position: 'center' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -165,7 +165,7 @@ const L1D3: TutorialStep[] = [
 const L2D1: TutorialStep[] = [
   {
     id: 'L2D1-1',
-    bubble: { type: 'dialogue', text: 'Tutorial 2 \u2014 Keep Moving! Today something important happened to your blood glucose. Tap to see.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Level 2 \u2014 Exercise! Today something important happened to your blood glucose. Tap to see.', expression: 'neutral' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -299,7 +299,7 @@ const L2D3: TutorialStep[] = [
 const L3D1: TutorialStep[] = [
   {
     id: 'L3D1-1',
-    bubble: { type: 'dialogue', text: 'Tutorial 3 \u2014 Willpower Mgmt! Today your WP budget is tight: only 4 \u2600\ufe0f. Choose carefully what to eat!', expression: 'concerned' },
+    bubble: { type: 'dialogue', text: 'Level 3 \u2014 Willpower! Today your WP budget is tight: only 4 \u2600\ufe0f. Choose carefully what to eat!', expression: 'concerned' },
     highlight: 'wp-counter',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -382,7 +382,7 @@ const L3D3: TutorialStep[] = [
 const L4D1: TutorialStep[] = [
   {
     id: 'L4D1-1',
-    bubble: { type: 'dialogue', text: 'Tutorial 4 \u2014 Insulin Rhythm! Look at the amber bars on the graph. They show your insulin rate at each time.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Level 4 \u2014 Insulin Rhythm! Look at the amber bars on the graph. They show your insulin rate at each time.', expression: 'neutral' },
     highlight: 'insulin-bars',
     highlightType: 'spotlight',
     noBackdrop: true,
@@ -435,7 +435,7 @@ const L4D2: TutorialStep[] = [
 const L5D1: TutorialStep[] = [
   {
     id: 'L5D1-1',
-    bubble: { type: 'dialogue', text: 'Tutorial 5 \u2014 First Medication! See the purple panel below the graph? That\'s the medication area.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Level 5 \u2014 your first medication! See the purple panel below the graph? That\'s the medication area.', expression: 'neutral' },
     highlight: 'med-toggles',
     highlightType: 'spotlight',
     noBackdrop: true,
@@ -510,7 +510,7 @@ const L5D2: TutorialStep[] = [
 const L6D1: TutorialStep[] = [
   {
     id: 'L6D1-1',
-    bubble: { type: 'dialogue', text: 'Tutorial 6 \u2014 Threshold Drain! New medication: \ud83e\uddea SGLT2 Inhibitor. It works differently from Metformin.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'New medication: \ud83e\uddea SGLT2 Inhibitor! It works differently from Metformin.', expression: 'neutral' },
     highlight: 'medication:sglt2',
     highlightType: 'spotlight',
     cta: { type: 'bounce', target: 'medication:sglt2' },
@@ -609,7 +609,7 @@ const L6D2: TutorialStep[] = [
 const L7D1: TutorialStep[] = [
   {
     id: 'L7D1-1',
-    bubble: { type: 'dialogue', text: 'Tutorial 7 \u2014 GLP-1! The most complex medication. \ud83d\udc89 It has FOUR effects at once.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Welcome to GLP-1 \u2014 the most complex medication! \ud83d\udc89 It has FOUR effects at once.', expression: 'neutral' },
     highlight: 'medication:glp1',
     highlightType: 'spotlight',
     cta: { type: 'bounce', target: 'medication:glp1' },
@@ -711,7 +711,7 @@ const L7D2: TutorialStep[] = [
 const L8D1: TutorialStep[] = [
   {
     id: 'L8D1-1',
-    bubble: { type: 'dialogue', text: 'Tutorial 8 \u2014 Final Exam! Everything you\'ve learned comes together.', expression: 'neutral', position: 'center' },
+    bubble: { type: 'dialogue', text: 'The Final Exam! Level 8 \u2014 everything you\'ve learned comes together.', expression: 'neutral', position: 'center' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
