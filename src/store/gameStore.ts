@@ -386,7 +386,11 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'bg-graph-save',
-      version: 9,
+      version: 10,
+      migrate: (stored: unknown) => ({
+        // Only carry over settings; all BOOST/WP/penalty state resets (clears stale localStorage)
+        settings: (stored as { settings?: unknown })?.settings ?? DEFAULT_SETTINGS,
+      }),
       partialize: (state) => ({
         currentDay: state.currentDay,
         settings: state.settings,
