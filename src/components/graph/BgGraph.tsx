@@ -593,8 +593,9 @@ export function BgGraph({
     const plateauCurve = calculateCurve(glucose, duration, previewColumn, 0);
     const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
 
-    const { pancreasCaps } = graphRenderData;
+    const { pancreasCaps, columnCaps } = graphRenderData;
     const foodCubes: Array<{ col: number; row: number }> = [];
+    const burnedByIntCubes: Array<{ col: number; row: number }> = [];
     const wrapCubes: Array<{ col: number; row: number }> = [];
 
     let cumInsulin = 0;
@@ -626,11 +627,25 @@ export function BgGraph({
 
       const aliveCount = plateauCount - eatenCount;
 
-      // Alive cubes — final result after insulin eating
-      for (let i = 0; i < aliveCount; i++) {
+      // How many of the preview food's alive cubes would be burned by existing interventions.
+      // Intervention burns N cubes from the combined top; since preview food sits above existing,
+      // the top N cubes of preview food are the first to be burned.
+      const interventionBurn = Math.max(0, pancreasCaps[col] - columnCaps[col]);
+      const burnedByInt = Math.min(aliveCount, interventionBurn);
+      const trueAlive = aliveCount - burnedByInt;
+
+      // Truly alive cubes (below intervention burn zone)
+      for (let i = 0; i < trueAlive; i++) {
         const row = baseRow + i;
         if (row >= effectiveRows) break;
         foodCubes.push({ col, row });
+      }
+
+      // Exercise-burned preview cubes (top of preview food that intervention would remove)
+      for (let i = 0; i < burnedByInt; i++) {
+        const row = baseRow + trueAlive + i;
+        if (row >= effectiveRows) break;
+        burnedByIntCubes.push({ col, row });
       }
 
       // Insulin drain layer — flat rate on top of alive skyline (only where food exists)
@@ -643,7 +658,7 @@ export function BgGraph({
       }
     }
 
-    return { foodCubes, wrapCubes, dropColumn: previewColumn };
+    return { foodCubes, burnedByIntCubes, wrapCubes, dropColumn: previewColumn };
   }, [previewShip, previewColumn, medicationModifiers, decayOrInsulin, graphRenderData, effectiveRows]);
 
   // Preview: intervention burn overlay — green cubes on food that would be burned
@@ -675,9 +690,11 @@ export function BgGraph({
       const currentTop = columnCaps[col];
       if (currentTop <= 0) continue;
       const wrapCount = Math.min(reduction, currentTop);
+      // Show burns WITHIN the food stack (top N cubes that would be removed)
+      const burnStart = currentTop - wrapCount;
       for (let i = 0; i < wrapCount; i++) {
-        const row = currentTop + i; // ABOVE food stack (wrap style)
-        if (row >= effectiveRows) break;
+        const row = burnStart + i;
+        if (row < 0) continue;
         wrapCubes.push({ col, row, color: burnColor });
       }
     }
@@ -723,10 +740,56 @@ export function BgGraph({
         }, 2000); // 1.6s animation + buffer
         digestTimersRef.current.set(a.placementId, timer);
       }
+
+      // Re-burn: trigger fall animation for exercise interventions overlapping new food
+      // Delayed so food appears first (cubeAppear), then intervention burns play on top
+      const addedCols = new Set<number>(
+        added.flatMap(a => a.cubes.map(c => c.col))
+      );
+      const REBURN_DELAY = 800;
+      for (const placed of placedInterventions) {
+        const intervention = allInterventions.find(i => i.id === placed.interventionId);
+        if (!intervention || intervention.depth <= 0) continue;
+
+        const curve = calculateInterventionCurve(
+          intervention.depth, intervention.duration, placed.dropColumn,
+          intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+        );
+        const reduction = new Array(TOTAL_COLUMNS).fill(0);
+        let hasOverlap = false;
+        for (const c of curve) {
+          const graphCol = placed.dropColumn + c.columnOffset;
+          if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
+            reduction[graphCol] = c.cubeCount;
+            if (addedCols.has(graphCol)) hasOverlap = true;
+          }
+        }
+        if (!hasOverlap) continue;
+
+        const color = intervention.id === 'lightwalk' ? '#86efac' : '#22c55e';
+        const reburnKey = `reburn-${placed.id}`;
+        if (burningIntTimersRef.current.has(reburnKey)) clearTimeout(burningIntTimersRef.current.get(reburnKey));
+
+        const reburnTimer = setTimeout(() => {
+          burningIntTimersRef.current.delete(reburnKey);
+          setBurningInterventions(prev => {
+            if (prev.has(placed.id)) return prev; // already animating from explicit placement
+            const next = new Map(prev);
+            next.set(placed.id, { id: placed.id, interventionId: intervention.id, dropColumn: placed.dropColumn, reduction, color });
+            return next;
+          });
+          const clearTimer = setTimeout(() => {
+            setBurningInterventions(prev => { const n = new Map(prev); n.delete(placed.id); return n; });
+            burningIntTimersRef.current.delete(`reburnClear-${placed.id}`);
+          }, 2000);
+          burningIntTimersRef.current.set(`reburnClear-${placed.id}`, clearTimer);
+        }, REBURN_DELAY);
+        burningIntTimersRef.current.set(reburnKey, reburnTimer);
+      }
     }
 
     prevLayersRef.current = graphRenderData.layers;
-  }, [graphRenderData.layers]);
+  }, [graphRenderData.layers, placedInterventions, allInterventions]);
 
   // Detect added interventions → fall animation
   useLayoutEffect(() => {
@@ -1010,6 +1073,22 @@ export function BgGraph({
                 className="bg-graph__cube--preview"
               />
             ))}
+            {/* Exercise-burned preview cubes — green, intervention would remove these */}
+            {previewData.burnedByIntCubes.map(cube => (
+              <rect
+                key={`preview-intburn-${cube.col}-${cube.row}`}
+                x={colToX(cube.col) + 0.5}
+                y={rowToY(cube.row) + 0.5}
+                width={CELL_SIZE - 1}
+                height={cellHeight - 1}
+                fill="#86efac"
+                opacity={0.5}
+                rx={2}
+                className="bg-graph__cube--preview"
+                stroke="#4ade80"
+                strokeWidth={0.5}
+              />
+            ))}
             {/* Insulin drain — amber cubes showing per-column drain depth */}
             {previewData.wrapCubes.map(cube => (
               <rect
@@ -1034,15 +1113,13 @@ export function BgGraph({
           <g key={`food-layer-${layer.placementId}`} className="bg-graph__food-group">
             {layer.cubes
               .filter(cube => {
-                // Hide exercise-burned cubes entirely (they disappear after intervention fall animation)
-                if (cube.status === 'burned') {
-                  const isExercise = cube.burnColor === '#86efac' || cube.burnColor === '#22c55e';
-                  if (isExercise) return false;
-                }
                 // During reveal, progressively show cube layers
                 if (revealPhase === undefined) return true;
                 if (cube.status === 'normal') return revealPhase >= 1;
-                if (cube.status === 'burned') return revealPhase >= 4; // only SGLT2 remains
+                if (cube.status === 'burned') {
+                  const isExercise = cube.burnColor === '#86efac' || cube.burnColor === '#22c55e';
+                  return isExercise ? revealPhase >= 3 : revealPhase >= 4; // exercise in phase 3, SGLT2 in phase 4
+                }
                 return false;
               })
               .map(cube => {
