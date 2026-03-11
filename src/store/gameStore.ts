@@ -282,9 +282,12 @@ export const useGameStore = create<GameState>()(
           const totalBonus = state.currentLevel?.dayConfigs
             ?.filter(d => d.day > 1 && d.day <= day)
             .reduce((sum, d) => sum + (d.bonusBoostBars ?? 0), 0) ?? 0;
-          // Clear locked bars for target day and beyond (stale persisted data would incorrectly reduce barsAvailable)
+          // Clear locked/active boost for target day and beyond (stale persisted data corrupts barsAvailable)
           const cleanedLockedBars = Object.fromEntries(
             Object.entries(state.lockedBarsPerDay).filter(([d]) => Number(d) < day)
+          );
+          const cleanedBoostActive = Object.fromEntries(
+            Object.entries(state.boostActivePerDay).filter(([d]) => Number(d) < day)
           );
           return {
             currentDay: day,
@@ -293,6 +296,7 @@ export const useGameStore = create<GameState>()(
             activeMedications: [],
             totalBonusBoostBars: totalBonus,
             lockedBarsPerDay: cleanedLockedBars,
+            boostActivePerDay: cleanedBoostActive,
           };
         }),
 
@@ -302,12 +306,21 @@ export const useGameStore = create<GameState>()(
           const dc = state.currentLevel ? getDayConfig(state.currentLevel, nextDay) : null;
           const pre = getPreplacedItems(dc);
           const bonus = dc?.bonusBoostBars ?? 0;
+          // Clear locked/active boost for incoming day (stale persisted data corrupts barsAvailable)
+          const cleanedLockedBars = Object.fromEntries(
+            Object.entries(state.lockedBarsPerDay).filter(([d]) => Number(d) < nextDay)
+          );
+          const cleanedBoostActive = Object.fromEntries(
+            Object.entries(state.boostActivePerDay).filter(([d]) => Number(d) < nextDay)
+          );
           return {
             currentDay: nextDay,
             placedFoods: pre.foods,
             placedInterventions: pre.interventions,
             activeMedications: [],
             totalBonusBoostBars: state.totalBonusBoostBars + bonus,
+            lockedBarsPerDay: cleanedLockedBars,
+            boostActivePerDay: cleanedBoostActive,
           };
         }),
 
