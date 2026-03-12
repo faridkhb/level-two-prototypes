@@ -57,9 +57,10 @@
       "kcalBudget": 2000,
       "wpBudget": 9,
       "availableFoods": [
-        { "id": "banana", "count": 1 },
+        { "id": "cookie", "count": 1 },
         { "id": "chickpeas", "count": 1 },
-        { "id": "cookie", "count": 1 }
+        { "id": "greekyogurt", "count": 1 },
+        { "id": "oatmeal", "count": 1 }
       ],
       "availableInterventions": [
         { "id": "lightwalk", "count": 1 },
@@ -67,10 +68,10 @@
       ],
       "availableMedications": [],
       "preplacedFoods": [
-        { "shipId": "chocolatemuffin", "slotIndex": 0 },
-        { "shipId": "pizza", "slotIndex": 5 }
+        { "shipId": "berriesmixed", "slotIndex": 3 },
+        { "shipId": "popcorn", "slotIndex": 7 }
       ],
-      "lockedSlots": [0, 5, 6, 11],
+      "lockedSlots": [0, 3, 7, 11],
       "stressSlots": [2, 3, 7],
       "insulinProfile": {
         "mode": "cumulative",
