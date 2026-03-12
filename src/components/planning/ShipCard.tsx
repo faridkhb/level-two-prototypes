@@ -3,10 +3,16 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Ship } from '../../core/types';
 import './ShipCard.css';
 
+function getSpeedLabel(duration: number): string {
+  if (duration <= 45) return 'Fast';
+  if (duration <= 120) return 'Medium';
+  return 'Slow';
+}
+
 function getCardTooltip(ship: Ship): string {
   const cost = ship.wpCost ?? 0;
   const costText = cost > 0 ? `${cost} ☀️` : 'Free';
-  return `${ship.name} · ${ship.kcal} kcal · ${ship.carbs ?? 0}g carbs · ${ship.duration} min · ${costText}`;
+  return `${ship.name} · ${ship.kcal} kcal · ${ship.carbs ?? 0}g carbs · ${getSpeedLabel(ship.duration)} absorption · ${costText}`;
 }
 
 interface ShipCardProps {
@@ -75,7 +81,7 @@ export function ShipCard({
       <div className="ship-card__details">
         <span className="ship-card__name">{ship.name}</span>
         <span className="ship-card__info">
-          {ship.kcal} kcal · {ship.carbs ?? 0}g · {ship.duration}m
+          {ship.kcal} kcal · {ship.carbs ?? 0}g · {getSpeedLabel(ship.duration)}
         </span>
       </div>
 
@@ -101,7 +107,7 @@ export function ShipCardOverlay({ ship }: { ship: Ship }) {
       <div className="ship-card__details">
         <span className="ship-card__name">{ship.name}</span>
         <span className="ship-card__info">
-          {ship.kcal} kcal · {ship.carbs ?? 0}g · {ship.duration}m
+          {ship.kcal} kcal · {ship.carbs ?? 0}g · {getSpeedLabel(ship.duration)}
         </span>
       </div>
     </div>

@@ -62,7 +62,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-3',
-    bubble: { type: 'dialogue', text: 'When you eat, carbs in food raise your blood glucose. More carbs = higher peak on the graph. The glycemic index controls the speed \u2014 high-GI foods spike fast, low-GI foods rise gradually.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'When you eat, carbs raise your blood glucose. More carbs = higher peak. Each food card shows its absorption speed \u2014 Fast foods spike quickly, Slow foods rise gradually.', expression: 'neutral' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'tap',
