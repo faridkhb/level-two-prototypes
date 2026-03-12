@@ -39,6 +39,7 @@ interface RawLevelConfig {
     stressSlots?: number[];
     insulinProfile?: InsulinProfileConfig;
     startingBg?: number;
+    bonusBoostBars?: number;
   }>;
 }
 
@@ -104,6 +105,7 @@ function transformLevel(raw: RawLevelConfig): LevelConfig {
       stressSlots: dc.stressSlots,
       insulinProfile: dc.insulinProfile,
       startingBg: dc.startingBg,
+      bonusBoostBars: dc.bonusBoostBars,
     }));
   }
 
