@@ -23,11 +23,11 @@
       "availableMedications": [],
       "preplacedFoods": [
         {
-          "shipId": "rice",
+          "shipId": "burger",
           "slotIndex": 2
         },
         {
-          "shipId": "chocolatemuffin",
+          "shipId": "cookie",
           "slotIndex": 5
         }
       ],
