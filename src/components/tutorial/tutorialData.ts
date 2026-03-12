@@ -1002,7 +1002,7 @@ const L_STRESS_D2: TutorialStep[] = [
   },
   {
     id: 'LS-D2-2',
-    bubble: { type: 'warning', text: 'These two red zones run from 11 AM to 1 PM. Try to place food before or after them.', expression: 'concerned' },
+    bubble: { type: 'warning', text: 'Three red zones from noon to 3 PM. Try to place food before or after them.', expression: 'concerned' },
     highlight: 'stress-slots',
     highlightType: 'spotlight',
     advanceOn: 'tap',

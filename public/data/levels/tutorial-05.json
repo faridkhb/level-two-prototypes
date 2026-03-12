@@ -30,13 +30,14 @@
     {
       "day": 2,
       "kcalBudget": 1800,
-      "wpBudget": 9,
+      "wpBudget": 10,
       "availableFoods": [
         { "id": "banana", "count": 1 },
         { "id": "chickpeas", "count": 1 },
         { "id": "cookie", "count": 1 }
       ],
       "availableInterventions": [
+        { "id": "heavyrun", "count": 1 },
         { "id": "lightwalk", "count": 1 },
         { "id": "takearest", "count": 1 }
       ],
@@ -45,7 +46,7 @@
         { "shipId": "chocolatemuffin", "slotIndex": 0 }
       ],
       "lockedSlots": [0, 7, 11],
-      "stressSlots": [3, 4],
+      "stressSlots": [4, 5, 6],
       "insulinProfile": {
         "mode": "cumulative",
         "segments": [{ "from": 0, "to": 47, "rate": 2 }]
