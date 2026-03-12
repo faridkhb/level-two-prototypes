@@ -951,10 +951,11 @@ const TUTORIAL_STEPS: Record<string, Record<number, TutorialStep[]>> = {
   'tutorial-02': { 1: L2D1, 2: L2D2, 3: L2D3 },
   'tutorial-03': { 1: L3D1, 2: L3D2, 3: L3D3 },
   'tutorial-04': { 1: L4D1, 2: L4D2, 3: L4D3 },
-  'tutorial-05': { 1: L5D1, 2: L5D2 },
-  'tutorial-06': { 1: L6D1, 2: L6D2 },
-  'tutorial-07': { 1: L7D1, 2: L7D2 },
-  'tutorial-08': { 1: L8D1, 2: L8D2, 3: L8D3 },
+  'tutorial-05': { 1: [], 2: [], 3: [] },
+  'tutorial-06': { 1: L5D1, 2: L5D2 },
+  'tutorial-07': { 1: L6D1, 2: L6D2 },
+  'tutorial-08': { 1: L7D1, 2: L7D2 },
+  'tutorial-09': { 1: L8D1, 2: L8D2, 3: L8D3 },
 };
 
 export function getTutorialSteps(levelId: string | null, day: number): TutorialStep[] | null {

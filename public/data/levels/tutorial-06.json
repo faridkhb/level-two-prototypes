@@ -1,7 +1,7 @@
 {
   "id": "tutorial-06",
-  "name": "Threshold Drain",
-  "description": "SGLT2 drains glucose above 200 mg/dL, and stress weakens insulin.",
+  "name": "First Medication",
+  "description": "Metformin — passive glucose reduction for all foods.",
   "days": 2,
   "dayConfigs": [
     {
@@ -18,18 +18,13 @@
           "count": 1
         }
       ],
-      "availableInterventions": [
-        {
-          "id": "lightwalk",
-          "count": 1
-        }
-      ],
+      "availableInterventions": [],
       "availableMedications": [
-        "sglt2"
+        "metformin"
       ],
       "preplacedFoods": [
         {
-          "shipId": "pizza",
+          "shipId": "chocolatemuffin",
           "slotIndex": 3
         }
       ],
@@ -62,7 +57,7 @@
     },
     {
       "day": 2,
-      "kcalBudget": 1600,
+      "kcalBudget": 1400,
       "wpBudget": 10,
       "availableFoods": [
         {
@@ -77,31 +72,29 @@
       "availableInterventions": [
         {
           "id": "lightwalk",
-          "count": 1
+          "count": 2
         }
       ],
       "availableMedications": [
-        "metformin",
-        "sglt2"
+        "metformin"
       ],
       "preplacedFoods": [
         {
-          "shipId": "oatmeal",
-          "slotIndex": 2
+          "shipId": "burger",
+          "slotIndex": 0
+        },
+        {
+          "shipId": "chocolatemuffin",
+          "slotIndex": 5
         }
       ],
       "lockedSlots": [
         0,
         1,
-        2,
         5,
         8,
         10,
         11
-      ],
-      "stressSlots": [
-        6,
-        7
       ],
       "insulinProfile": {
         "mode": "cumulative",
