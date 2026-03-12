@@ -110,7 +110,7 @@
     {
       "day": 3,
       "kcalBudget": 1600,
-      "wpBudget": 8,
+      "wpBudget": 9,
       "availableFoods": [
         {
           "id": "oatmeal",
