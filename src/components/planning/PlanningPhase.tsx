@@ -17,7 +17,7 @@ import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../
 import { useConfigStore } from '../../store/configStore';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
 import type { InsulinParams } from '../../core/cubeEngine';
-import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, getSatietyPenalty, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
+import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
 import { BgGraph } from '../graph';
 import { KcalBar } from './PlanningHeader';
 import { TabbedInventory } from './TabbedInventory';
@@ -190,7 +190,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const satietyPenalty = selectSatietyPenalty(currentDay, satietyPenaltyPerDay);
   const rawWpBudget = wpBudget + medicationModifiers.wpBonus;
   const wpFloor = Math.ceil(wpBudget * 0.5);
-  const effectiveWpBudget = Math.max(rawWpBudget - wpPenalty + satietyPenalty.wpDelta, wpFloor);
+  const effectiveWpBudget = Math.max(rawWpBudget - wpPenalty, wpFloor);
   const wpRemaining = effectiveWpBudget - wpUsed;
 
   // Stress slots
@@ -233,7 +233,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     : undefined;
 
   // Submit button enabled when kcal >= 50% (Optimal zone) and in planning phase
-  const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier) + satietyPenalty.kcalDelta;
+  const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier);
   const kcalPct = effectiveKcalBudget > 0 ? (kcalUsed / effectiveKcalBudget) * 100 : 0;
   const submitEnabled = gamePhase === 'planning' && kcalPct >= 50 && placedFoods.length > 0;
 
@@ -427,10 +427,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     // Save WP state for carry-over penalty
     submitDayWp(currentDay, wpUsed, effectiveWpBudget);
 
-    // Calculate and store satiety penalty for next day
-    const penalty = getSatietyPenalty(kcalUsed, effectiveKcalBudget);
-    setSatietyPenalty(currentDay, penalty);
-    setSatietyResult(penalty);
+    setSatietyPenalty(currentDay, DEFAULT_SATIETY_PENALTY);
+    setSatietyResult(DEFAULT_SATIETY_PENALTY);
 
     // Build reveal sequence — only phases that have content
     const hasInsulin = typeof insulinParams !== 'number' || insulinParams > 0;
@@ -447,7 +445,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setGamePhase('replaying');
     setRevealPhase(0);
     setPenaltyResult(null);
-  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, kcalUsed, effectiveKcalBudget, setSatietyPenalty, insulinParams, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
+  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, setSatietyPenalty, insulinParams, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
 
   // === Reveal animation effect — progressive layer reveal (skips empty phases) ===
   useEffect(() => {
@@ -623,7 +621,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             kcalBudget={kcalBudget}
             dayLabel={`Day ${currentDay}/${currentLevel.days}`}
             wpRemaining={wpRemaining}
-            satietyPenalty={satietyPenalty}
             medicationModifiers={medicationModifiers}
             submitEnabled={submitEnabled}
             onSubmit={handleSubmit}

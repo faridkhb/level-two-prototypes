@@ -1,6 +1,5 @@
-import type { MedicationModifiers, SatietyPenalty } from '../../core/types';
-import { getKcalAssessment, getSatietyPenalty, DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY } from '../../core/types';
-import { Tooltip } from '../ui/Tooltip';
+import type { MedicationModifiers } from '../../core/types';
+import { getKcalAssessment, DEFAULT_MEDICATION_MODIFIERS } from '../../core/types';
 import './PlanningHeader.css';
 
 const KCAL_TICKS = [
@@ -11,17 +10,13 @@ const KCAL_TICKS = [
 interface PlanningHeaderProps {
   dayLabel: string;
   wpRemaining: number;
-  satietyPenalty?: SatietyPenalty;
 }
 
 export function PlanningHeader({
   dayLabel,
   wpRemaining,
-  satietyPenalty = DEFAULT_SATIETY_PENALTY,
 }: PlanningHeaderProps) {
   const wpOver = wpRemaining < 0;
-  const hasPastBonus = satietyPenalty.wpDelta > 0;
-  const hasPastPenalty = satietyPenalty.wpDelta < 0;
 
   const wpSection = (
     <div className="planning-header__wp">
@@ -29,16 +24,6 @@ export function PlanningHeader({
       <span className={`planning-header__wp-value ${wpOver ? 'planning-header__wp-value--over' : ''}`}>
         {wpRemaining}
       </span>
-      {hasPastBonus && (
-        <span className="planning-header__penalty-badge planning-header__penalty-badge--bonus">
-          +1
-        </span>
-      )}
-      {hasPastPenalty && (
-        <span className="planning-header__penalty-badge planning-header__penalty-badge--wp">
-          −1
-        </span>
-      )}
     </div>
   );
 
@@ -65,7 +50,6 @@ interface KcalBarProps {
   kcalBudget: number;
   dayLabel: string;
   wpRemaining: number;
-  satietyPenalty?: SatietyPenalty;
   medicationModifiers?: MedicationModifiers;
   submitEnabled: boolean;
   onSubmit: () => void;
@@ -78,7 +62,6 @@ export function KcalBar({
   kcalBudget,
   dayLabel,
   wpRemaining,
-  satietyPenalty = DEFAULT_SATIETY_PENALTY,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   submitEnabled,
   onSubmit,
@@ -86,8 +69,6 @@ export function KcalBar({
   tutorialActive,
 }: KcalBarProps) {
   const wpOver = wpRemaining < 0;
-  const hasWpBonus = satietyPenalty.wpDelta > 0;
-  const hasWpPenalty = satietyPenalty.wpDelta < 0;
   // When hidden, show only the Submit button (no kcal info)
   if (hidden) {
     return (
@@ -106,43 +87,17 @@ export function KcalBar({
     );
   }
 
-  const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier)
-    + satietyPenalty.kcalDelta;
+  const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier);
   const assessment = getKcalAssessment(kcalUsed, effectiveKcalBudget);
   const hasKcalMod = medicationModifiers.kcalMultiplier !== 1;
-  const livePenalty = getSatietyPenalty(kcalUsed, effectiveKcalBudget);
 
   const pct = effectiveKcalBudget > 0 ? (kcalUsed / effectiveKcalBudget) * 100 : 0;
   const barMaxPct = 150;
   const fillPct = Math.min(pct / barMaxPct * 100, 100);
 
-  let forecastBadge = '';
-  let forecastTooltip = '';
-  if (livePenalty.zone === 'optimal') {
-    forecastBadge = '+1 ☀️';
-    forecastTooltip = 'Optimal — next day ☀️ bonus';
-  } else if (livePenalty.zone === 'overeating') {
-    forecastBadge = `−1 ☀️, +${livePenalty.kcalDelta} kcal`;
-    forecastTooltip = 'Overeating — next day penalty';
-  } else if (livePenalty.zone === 'malnourished' && kcalUsed > 0) {
-    forecastBadge = '−1 ☀️';
-    forecastTooltip = 'Malnourished — next day penalty';
-  }
-
   const satietyLabel = kcalUsed > 0 ? assessment.label : '';
-  const satietyText = satietyLabel + (forecastBadge ? ` ${forecastBadge}` : '');
 
-  const hasPastPenalty = satietyPenalty.wpDelta < 0;
-  const hasPastBonus = satietyPenalty.wpDelta > 0;
-  const kcalTooltip = hasPastPenalty && satietyPenalty.kcalDelta > 0
-    ? `Overeating penalty: +${satietyPenalty.kcalDelta} kcal budget (you must eat more)`
-    : hasPastPenalty
-    ? `Malnourished penalty: −1 ☀️, +1 🍦`
-    : hasPastBonus
-    ? `Optimal bonus: +1 ☀️`
-    : '';
-
-  const content = (
+  return (
     <div className="planning-header__kcal-bar-wrap">
       <div className="planning-header__info-row">
         <div className="planning-header__wp">
@@ -150,22 +105,14 @@ export function KcalBar({
           <span className={`planning-header__wp-value ${wpOver ? 'planning-header__wp-value--over' : ''}`}>
             {wpRemaining}
           </span>
-          {hasWpBonus && (
-            <span className="planning-header__penalty-badge planning-header__penalty-badge--bonus">+1</span>
-          )}
-          {hasWpPenalty && (
-            <span className="planning-header__penalty-badge planning-header__penalty-badge--wp">−1</span>
-          )}
         </div>
-        {satietyText ? (
-          <Tooltip text={forecastTooltip || assessment.label} position="bottom">
-            <span
-              className="planning-header__satiety-badge"
-              style={{ color: assessment.color }}
-            >
-              {satietyText}
-            </span>
-          </Tooltip>
+        {satietyLabel ? (
+          <span
+            className="planning-header__satiety-badge"
+            style={{ color: assessment.color }}
+          >
+            {satietyLabel}
+          </span>
         ) : <span />}
         <div className="planning-header__day">{dayLabel}</div>
       </div>
@@ -192,11 +139,6 @@ export function KcalBar({
               /{effectiveKcalBudget} kcal
               {hasKcalMod && <span className="planning-header__kcal-mod"> ({Math.round(medicationModifiers.kcalMultiplier * 100)}%)</span>}
             </span>
-            {satietyPenalty.kcalDelta > 0 && (
-              <span className="planning-header__penalty-badge planning-header__penalty-badge--kcal">
-                +{satietyPenalty.kcalDelta}
-              </span>
-            )}
           </div>
         </div>
         <button
@@ -210,8 +152,4 @@ export function KcalBar({
       </div>
     </div>
   );
-
-  return kcalTooltip ? (
-    <Tooltip text={kcalTooltip} position="bottom">{content}</Tooltip>
-  ) : content;
 }

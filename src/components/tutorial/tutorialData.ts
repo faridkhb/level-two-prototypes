@@ -80,8 +80,6 @@ const L1D1: TutorialStep[] = [
   {
     id: 'L1D1-5',
     bubble: { type: 'success', text: 'Great! See the glucose curve? The banana\'s carbs raised your blood glucose. It rises during absorption, then insulin brings it back down.', expression: 'happy', position: 'inventory' },
-    highlight: 'graph',
-    highlightType: 'glow',
     advanceOn: 'tap',
   },
   {
