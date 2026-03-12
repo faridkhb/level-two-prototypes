@@ -1,5 +1,5 @@
 import type { MedicationModifiers } from '../../core/types';
-import { getKcalAssessment, DEFAULT_MEDICATION_MODIFIERS } from '../../core/types';
+import { getKcalAssessment, getSatietyPenalty, DEFAULT_MEDICATION_MODIFIERS } from '../../core/types';
 import './PlanningHeader.css';
 
 const KCAL_TICKS = [
@@ -95,7 +95,18 @@ export function KcalBar({
   const barMaxPct = 150;
   const fillPct = Math.min(pct / barMaxPct * 100, 100);
 
+  const livePenalty = getSatietyPenalty(kcalUsed, effectiveKcalBudget);
+  let forecastBadge = '';
+  if (livePenalty.zone === 'optimal') {
+    forecastBadge = '+1 ☀️';
+  } else if (livePenalty.zone === 'overeating') {
+    forecastBadge = `−1 ☀️`;
+  } else if (livePenalty.zone === 'malnourished' && kcalUsed > 0) {
+    forecastBadge = '−1 ☀️';
+  }
+
   const satietyLabel = kcalUsed > 0 ? assessment.label : '';
+  const satietyText = satietyLabel + (forecastBadge ? ` ${forecastBadge}` : '');
 
   return (
     <div className="planning-header__kcal-bar-wrap">
@@ -106,12 +117,12 @@ export function KcalBar({
             {wpRemaining}
           </span>
         </div>
-        {satietyLabel ? (
+        {satietyText ? (
           <span
             className="planning-header__satiety-badge"
             style={{ color: assessment.color }}
           >
-            {satietyLabel}
+            {satietyText}
           </span>
         ) : <span />}
         <div className="planning-header__day">{dayLabel}</div>
