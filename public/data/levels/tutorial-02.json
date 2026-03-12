@@ -6,7 +6,7 @@
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 1600,
+      "kcalBudget": 1000,
       "wpBudget": 9,
       "availableFoods": [
         {
@@ -23,12 +23,8 @@
       "availableMedications": [],
       "preplacedFoods": [
         {
-          "shipId": "burger",
+          "shipId": "pizza",
           "slotIndex": 2
-        },
-        {
-          "shipId": "cookie",
-          "slotIndex": 5
         }
       ],
       "lockedSlots": [
@@ -36,7 +32,6 @@
         1,
         2,
         4,
-        5,
         7,
         8,
         10,
