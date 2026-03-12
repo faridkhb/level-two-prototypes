@@ -12,12 +12,15 @@
         { "id": "banana", "count": 1 },
         { "id": "cookie", "count": 1 }
       ],
-      "availableInterventions": [],
+      "availableInterventions": [
+        { "id": "takeabreak", "count": 1 },
+        { "id": "heavyrun", "count": 1 }
+      ],
       "availableMedications": [],
       "preplacedFoods": [
         { "shipId": "chocolatemuffin", "slotIndex": 1 }
       ],
-      "lockedSlots": [],
+      "lockedSlots": [5, 6, 7, 8, 9],
       "insulinProfile": {
         "mode": "cumulative",
         "segments": [{ "from": 0, "to": 47, "rate": 1 }]
