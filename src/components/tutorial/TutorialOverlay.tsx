@@ -91,6 +91,13 @@ function resolveHighlightRects(highlight: string | string[] | undefined): DOMRec
       });
       continue;
     }
+    // Special: 'stress-slots' → highlight all stressed slot containers
+    if (target === 'stress-slots') {
+      document.querySelectorAll('.slot-container--stressed').forEach(el => {
+        rects.push(el.getBoundingClientRect());
+      });
+      continue;
+    }
     const selector = getHighlightSelector(target);
     if (!selector) continue;
     const el = document.querySelector(selector);

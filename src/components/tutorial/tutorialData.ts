@@ -944,6 +944,90 @@ const L8D3: TutorialStep[] = [
   },
 ];
 
+// ======= LEVEL 5 — Under Stress =======
+
+const L_STRESS_D1: TutorialStep[] = [
+  {
+    id: 'LS-D1-1',
+    bubble: { type: 'dialogue', text: 'Some time slots are under stress, weakening your insulin!', expression: 'concerned' },
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LS-D1-2',
+    bubble: { type: 'warning', text: 'See the red column? That\'s a stress slot. Insulin rate drops by 1 there — food placed here will spike higher and decay slower!', expression: 'concerned' },
+    highlight: 'stress-slots',
+    highlightType: 'spotlight',
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LS-D1-3',
+    bubble: { type: 'dialogue', text: 'Normally insulin absorbs 2 cubes per column. In the stress zone it only absorbs 1 — glucose stays higher for longer.', expression: 'thinking' },
+    highlight: 'insulin-bars',
+    highlightType: 'glow',
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LS-D1-4',
+    bubble: { type: 'dialogue', text: 'The muffin is already placed. Your job: put banana and cookie OUTSIDE the red zone.', expression: 'neutral' },
+    highlight: 'stress-slots',
+    highlightType: 'pulse',
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LS-D1-5',
+    bubble: { type: 'dialogue', text: 'Drag your foods to safe slots — any slot without a red tint works.', expression: 'happy' },
+    highlight: 'ship-inventory',
+    highlightType: 'glow',
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LS-D1-6',
+    advanceOn: 'action',
+    expectedAction: { type: 'place-food' },
+  },
+  {
+    id: 'LS-D1-7',
+    bubble: { type: 'dialogue', text: 'Nice! Submit when you\'re ready to see how it went.', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
+    advanceOn: 'tap',
+  },
+];
+
+const L_STRESS_D2: TutorialStep[] = [
+  {
+    id: 'LS-D2-1',
+    bubble: { type: 'dialogue', text: 'Now there are TWO stress zones. Plan food placement carefully!', expression: 'concerned' },
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LS-D2-2',
+    bubble: { type: 'warning', text: 'These two red zones run from 11 AM to 1 PM. Try to place food before or after them.', expression: 'concerned' },
+    highlight: 'stress-slots',
+    highlightType: 'spotlight',
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LS-D2-3',
+    bubble: { type: 'dialogue', text: 'You have a rest and a walk today. Rest recovers WP — walk fights any stray glucose spikes.', expression: 'neutral' },
+    highlight: 'intervention-inventory',
+    highlightType: 'glow',
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LS-D2-4',
+    bubble: { type: 'dialogue', text: 'If you must place something in a stress zone, use the walk to compensate!', expression: 'thinking' },
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LS-D2-5',
+    bubble: { type: 'dialogue', text: 'Good luck — 2\u2605 is achievable if you avoid the red zones.', expression: 'happy' },
+    highlight: 'submit-btn',
+    highlightType: 'pulse',
+    advanceOn: 'tap',
+  },
+];
+
 // ======= STEP LOOKUP =======
 
 const TUTORIAL_STEPS: Record<string, Record<number, TutorialStep[]>> = {
@@ -951,7 +1035,7 @@ const TUTORIAL_STEPS: Record<string, Record<number, TutorialStep[]>> = {
   'tutorial-02': { 1: L2D1, 2: L2D2, 3: L2D3 },
   'tutorial-03': { 1: L3D1, 2: L3D2, 3: L3D3 },
   'tutorial-04': { 1: L4D1, 2: L4D2, 3: L4D3 },
-  'tutorial-05': { 1: [], 2: [], 3: [] },
+  'tutorial-05': { 1: L_STRESS_D1, 2: L_STRESS_D2, 3: [] },
   'tutorial-06': { 1: L5D1, 2: L5D2 },
   'tutorial-07': { 1: L6D1, 2: L6D2 },
   'tutorial-08': { 1: L7D1, 2: L7D2 },

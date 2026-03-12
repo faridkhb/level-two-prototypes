@@ -43,7 +43,7 @@
       "preplacedFoods": [
         { "shipId": "chocolatemuffin", "slotIndex": 0 }
       ],
-      "lockedSlots": [0, 1, 7, 8, 9, 10, 11],
+      "lockedSlots": [0, 7, 11],
       "stressSlots": [3, 4],
       "insulinProfile": {
         "mode": "cumulative",
@@ -68,7 +68,7 @@
         { "shipId": "chocolatemuffin", "slotIndex": 0 },
         { "shipId": "pizza", "slotIndex": 5 }
       ],
-      "lockedSlots": [0, 1, 5, 6, 9, 10, 11],
+      "lockedSlots": [0, 5, 6, 11],
       "stressSlots": [2, 3, 7],
       "insulinProfile": {
         "mode": "cumulative",
