@@ -13,6 +13,7 @@
         { "id": "cookie", "count": 1 }
       ],
       "availableInterventions": [
+        { "id": "heavyrun", "count": 1 },
         { "id": "takeabreak", "count": 1 }
       ],
       "availableMedications": [],
