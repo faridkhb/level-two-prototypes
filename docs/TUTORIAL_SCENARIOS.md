@@ -158,6 +158,117 @@ interface TutorialStep {
 
 ---
 
+### 0.7. Level Design Guidelines
+
+Guidelines for authoring and verifying new tutorial days. Apply when creating or updating `public/data/levels/tutorial-*.json` and step data in `tutorialData.ts`.
+
+---
+
+#### Kcal Balance
+
+The kcal budget controls two things: whether Submit is available (gate at 50%) and whether the player lands in the "green zone" after following tutorial instructions (Well Fed = 75–100%).
+
+| Rule | Constraint | Purpose |
+|------|-----------|---------|
+| **Submit gate** | Pre-placed food(s) alone **< 50%** of `kcalBudget` | Player cannot skip — must add food |
+| **Well Fed target** | Pre-placed + all player foods **∈ [75%, 100%]** of `kcalBudget` | Landing in the intended green zone |
+| **Budget ceiling** | `kcalBudget` ≤ 2000, multiple of 100 | Realistic daily budget |
+
+**Derivation shortcut:** If pre-placed kcal = X and player food total = Y:
+- Submit gate → `budget > 2X`
+- Well Fed target → `budget ≤ (X + Y) / 0.75`
+- Combined → `Y > 0.5 × X` (player food must provide more than half of pre-placed kcal)
+
+**GLP-1 days (e.g., tutorial-07 D1):** The tutorial requires toggling GLP-1 ON *before* food placement. Apply all kcal checks against the *effective* budget (`base × 0.7`), since that is the state when the player actually places food.
+
+**Intentional overeating days** (e.g., tutorial-03 D2): kcal deliberately overshoots budget to demonstrate the penalty mechanic. The kcal guideline is suspended; the lesson takes priority.
+
+**Multi-pre-placed days** (tutorial-05 D2, tutorial-07 D2, tutorial-08 D2–D3): Two or more high-kcal foods pre-placed make the submit-gate rule impractical. These days focus on glucose/medication mechanics — apply only the budget ceiling rule.
+
+---
+
+#### WP Balance
+
+| Rule | Constraint |
+|------|-----------|
+| **Sufficiency** | `wpBudget` ≥ sum of WP costs of all tutorial-planned actions |
+| **GLP-1 bonus** | Count effective WP = `wpBudget + 4` on days where GLP-1 is required |
+| **Break/Rest refunds** | Subtract their negative cost (they restore WP) |
+
+Tutorial-planned actions = all interventions + all player foods the tutorial instructs to place.
+
+---
+
+#### Slot Layout
+
+**Core rules:**
+- Pre-placed foods must be listed in `lockedSlots` (prevents removal)
+- Free slot count = 12 − `len(lockedSlots)`
+- Free slots must accommodate all tutorial items (accounting for `slotSize`)
+- Maximum 2 consecutive locked slots — avoid blocking long time segments
+- No two pre-placed foods in adjacent slots
+
+**Size-2 interventions (`heavyrun`, `takearest`):**
+
+These occupy 2 *consecutive* free slots. Before finalising `lockedSlots`, verify:
+
+1. At least one consecutive free pair `(n, n+1)` exists where both `n` and `n+1` are free
+2. That pair is **not exclusively on `stressSlots`** — forcing a 2-slot intervention into stress slots conflicts with the tutorial message "avoid stress slots for food". Fix: unlock one additional slot to open a non-stress pair.
+3. For `heavyrun` specifically: the pair should be within 1–2 slots of the food being covered, so the run visually addresses the spike described in the tutorial dialogue.
+
+**Verification checklist:**
+```
+☐ free_slots  = 12 - len(lockedSlots)
+☐ items_total = Σ slotSize for all tutorial-planned placements
+☐ free_slots ≥ items_total
+☐ if heavyrun or takearest in tutorial:
+    ☐ exists consecutive pair (n, n+1) in free_slots
+    ☐ that pair is not exclusively inside stressSlots
+```
+
+---
+
+#### Per-Day Design Pattern
+
+Each tutorial day follows a three-act structure:
+
+| Act | State | Kcal |
+|-----|-------|------|
+| **Setup** | Pre-placed food(s) create glucose problem. Submit disabled. | < 50% |
+| **Tutorial actions** | Player follows 1–2 guided steps (place exercise, toggle med, etc.) | — |
+| **Payoff** | Player adds their food and reaches Well Fed. Submit enabled. | 75–100% |
+
+Days with **no pre-placed foods** (free-choice days) should have available foods that collectively reach Well Fed (≥ 75%) when the player places everything the tutorial suggests.
+
+---
+
+#### Verified Configuration Table (v0.47.35)
+
+| Level | Day | Pre-placed kcal | Budget | % alone | Player foods | % total | WP spent / budget | Notes |
+|-------|-----|----------------|--------|---------|-------------|---------|-------------------|-------|
+| T01 | D1 | — | 200 | — | banana 160 | 80% | 1/5 | Only 1 free slot |
+| T01 | D2 | — | 1500 | — | ban+burger+sand+cookie 1480 | 99% | 8/10 | 4 foods, 2 WP unspent |
+| T01 | D3 | popcorn 140 | 1000 | 14% | +any 3 of ban+apple+cook+milk | 62–71% | 7/8 | 4 foods, 1 WP unspent |
+| T02 | D1 | rice 360 | 800 | 45% | +chicken → 730 | 91% | 5/9 | ✓ |
+| T02 | D2 | muffin 550 | 1200 | 46% | +ban+cookie → 940 | 78% | 5/8 | ✓ |
+| T02 | D3 | muffin 550 | 1200 | 46% | +ban+nuts → 1020 | 85% | 9/10 | ✓ |
+| T03 | D1 | — | 600 | — | ban+apple+cookie 530 | 88% | 3–4/4 | ✓ |
+| T03 | D2 | — | 500 | — | intentional overshoot | — | 8/8 | Overeating lesson |
+| T03 | D3 | burger 620 | 800 | 78%* | +oat+ban optional | — | 5/8 | Burger = puzzle, not gate |
+| T04 | D1 | — | 400 | — | 2×banana 320 | 80% | 2/6 | Must place both to submit |
+| T04 | D2 | — | 1000 | — | oat+chick+ban 800 | 80% | 10/10 | ✓ |
+| T05 | D1 | muffin 550 | 1200 | 46% | +ban+cookie → 940 | 78% | 3/8 | ✓ |
+| T05 | D2 | burger+muffin 1170 | 1400 | 84%* | +chick+ban | 124%* | 8/10 | Multi-pre-placed; last day |
+| T06 | D1 | pizza 460 | 1100 | 42% | +ban+cookie → 850 | 77% | 5/8 | ✓ |
+| T06 | D2 | oatmeal 230 | 1000 | 23% | +chick+ban → 800 | 80% | 6/10 | ✓ |
+| T07 | D1 | burger 620 | 1800 | 34% / **49% w/GLP-1** | +oat+ban → 1010 | **80% w/GLP-1** | 7/10 eff. | Check with GLP-1 active |
+| T07 | D2 | muffin+rice 910 | 1600 | 57%* | +ban+coo+chick | varies | 7/12 eff. | Multi-pre-placed |
+| T08 | D1 | burger+oat 850 | 1800 | 47% | +sand+ban → 1480 | 82% | 7/10 | ✓ |
+| T08 | D2 | muffin+pizza 1010 | 1600 | 63%* | — | — | 10/10 | Multi-pre-placed; stress slots |
+| T08 | D3 | burger+muffin+rice 1530 | 2000 | 77%* | — | — | — | Multi-pre-placed; GLP-1+BOOST |
+
+*\* Intentional exceptions — see "Intentional overeating days" and "Multi-pre-placed days" above.*
+
 ---
 
 ## 1. Level 1 — "First Steps" (3 Days)
@@ -246,11 +357,12 @@ interface TutorialStep {
 ```json
 {
   "day": 2,
-  "kcalBudget": 500,
-  "wpBudget": 5,
+  "kcalBudget": 1500,
+  "wpBudget": 10,
   "availableFoods": [
     { "id": "banana", "count": 1 },
-    { "id": "apple", "count": 1 },
+    { "id": "burger", "count": 1 },
+    { "id": "sandwich", "count": 1 },
     { "id": "cookie", "count": 1 }
   ],
   "availableInterventions": [],
@@ -261,17 +373,17 @@ interface TutorialStep {
   "stressSlots": [],
   "insulinProfile": {
     "mode": "cumulative",
-    "segments": [{ "from": 0, "to": 47, "rate": 2 }]
+    "segments": [{ "from": 0, "to": 47, "rate": 1 }]
   }
 }
 ```
 
 **Design notes:**
 - 4 open slots: 2 (10 AM), 3 (11 AM), 6 (2 PM), 9 (5 PM) — spread across day
-- WP = 5: banana(1) + apple(1) + cookie(2) = 4 WP → all fit
-- Kcal: 160 + 140 + 230 = 530 / 500 = 106% → slight overeating (educational)
-- Alternative: skip cookie → 300/500 = 60% → Optimal
-- Insulin rate 2: lower than Day 1, peaks linger longer
+- WP = 10: banana(1) + burger(2) + sandwich(3) + cookie(2) = 8 WP → 2 unspent ✓
+- Kcal: 160 + 620 + 470 + 230 = 1480 / 1500 = 99% → Well Fed
+- Any 3 foods: min = banana+burger+cookie = 1010 / 1500 = 67% → Optimal ✓
+- Teaches: WP budget means choosing wisely (can place all 4 or leave 1 out)
 
 #### 1.2.2. Tutorial Scenario
 
@@ -292,15 +404,16 @@ interface TutorialStep {
 
 #### 1.2.3. Balance Notes
 
-**If all 3 placed (spread):** banana@2 + apple@6 + cookie@9
-- Each food peak is independent (no overlap since they're 4+ slots apart)
-- Banana: 9 cubes → 2 orange → 1.0 penalty
-- Apple: 9 cubes → 2 orange → 1.0 penalty
-- Cookie: 6 cubes → 0 orange → 0 penalty
-- Total: **2.0 penalty → 3★**
-- Kcal: 530/500 = 106% → Overeating (teaches consequence for Day 3)
+**If all 4 placed (spread):** banana@2 + burger@3 + sandwich@6 + cookie@9
+- Kcal: 160 + 620 + 470 + 230 = 1480 / 1500 = 99% → Well Fed ✓
+- WP: 1+2+3+2 = 8/10 → 2 unspent ✓
+- Each food is largely independent when spread
 
-**If banana + apple only:** 300/500 = 60% → Optimal, penalty ~2.0 → 3★
+**If any 3 placed:**
+- Min kcal combo: banana+burger+cookie = 1010 / 1500 = 67% → Optimal ✓
+- Max: burger+sandwich+cookie = 1320 / 1500 = 88% → Well Fed ✓
+
+**WP Budget:** burger(2) and cookie(2) both cost 2 — teaches that equal-cost foods differ in kcal impact.
 
 ---
 
@@ -315,10 +428,12 @@ interface TutorialStep {
 ```json
 {
   "day": 3,
-  "kcalBudget": 600,
-  "wpBudget": 6,
+  "kcalBudget": 1000,
+  "wpBudget": 8,
   "availableFoods": [
     { "id": "banana", "count": 1 },
+    { "id": "apple", "count": 1 },
+    { "id": "cookie", "count": 1 },
     { "id": "milk", "count": 1 }
   ],
   "availableInterventions": [],
@@ -327,12 +442,12 @@ interface TutorialStep {
     { "shipId": "popcorn", "slotIndex": 3 }
   ],
   "preplacedInterventions": [],
-  "lockedSlots": [0, 1, 3, 4, 5, 7, 8, 10, 11],
+  "lockedSlots": [0, 1, 3, 4, 7, 10, 11],
   "stressSlots": [],
   "insulinProfile": {
     "mode": "cumulative",
     "segments": [
-      { "from": 0, "to": 23, "rate": 3 },
+      { "from": 0, "to": 23, "rate": 1 },
       { "from": 24, "to": 47, "rate": 1 }
     ]
   }
@@ -340,11 +455,11 @@ interface TutorialStep {
 ```
 
 **Design notes:**
-- Open slots: 2, 6, 9. Pre-placed popcorn at slot 3 (11:00 AM)
-- Morning insulin rate 3 (high) → afternoon rate 1 (low)
-- Popcorn (8 cubes, 3 cols) in slot 3 with rate 3: decays fast
-- If banana placed at slot 2 (adjacent to popcorn): cubes STACK → peak potentially 17 cubes → deep red zone!
-- If banana at slot 6 or 9: no stacking, safe
+- Open slots: 2, 5, 6, 8, 9 (5 free). Pre-placed popcorn at slot 3 (11:00 AM)
+- 4 available foods; placing any 3 + popcorn reaches Optimal (≥50%): min = 480+140 = 62% ✓
+- WP: banana(1)+apple(1)+cookie(2)+milk(3) = 7 WP, budget=8 → 1 unspent ✓
+- Teaches: planning with pre-placed food, choosing which 3 of 4 to place
+- If banana placed at slot 2 (adjacent to popcorn at slot 3): cubes STACK → higher peak!
 - Teaches: adjacent foods are dangerous
 
 #### 1.3.2. Tutorial Scenario
@@ -365,11 +480,13 @@ interface TutorialStep {
 
 #### 1.3.3. Balance Notes
 
-**Optimal solution:** banana@2, milk@6
-- Banana@2 (cols 8-10, rate 3): peak 9, decays 6→3→0. Orange: 2 cubes → 1.0
-- Popcorn@3 (cols 12-14, rate 3): peak 8, decays 5→2→0. Orange: 1 cube → 0.5
-- Milk@6 (cols 24-26, rate 1): peak 5, decays 4→3→2→1→0. No orange.
-- Total: **1.5 penalty → 3★** ✓
+**Recommended solution (3 of 4):** e.g. banana@5 + cookie@6 + milk@8
+- Popcorn@3 (pre-placed, 140 kcal) + 3 foods
+- Kcal range: 480–710 + 140 = 620–850 / 1000 = 62–85% → Optimal/Well Fed ✓
+- WP: any 3 of {banana(1), apple(1), cookie(2), milk(3)} = 4–6 / 8 ✓
+
+**Stacking trap:** banana@2 (adjacent to popcorn@3) — cubes overlap → higher spike → more penalty.
+- Teaches: avoid placing food adjacent to pre-placed items.
 
 **Bad solution:** banana@2 (adjacent to popcorn@3)
 - Banana cols 8-10 + popcorn cols 12-14: minimal overlap (different cols)

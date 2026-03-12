@@ -57,6 +57,10 @@
         {
           "id": "sandwich",
           "count": 1
+        },
+        {
+          "id": "cookie",
+          "count": 1
         }
       ],
       "availableInterventions": [],

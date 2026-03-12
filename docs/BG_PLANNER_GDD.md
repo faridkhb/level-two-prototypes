@@ -467,6 +467,88 @@ Full tutorial scenarios documented in **`docs/TUTORIAL_SCENARIOS.md`**.
 | L8D2 | Stress + carry-over + restrictions |
 | L8D3 | BOOST (🧑‍⚕️ adaptive insulin) |
 
+### 12.4 Level Design Guidelines
+
+#### Kcal Balance
+
+**Goal**: player must place ALL tutorial-prescribed foods to reach the Well Fed zone (75–100% of effective kcalBudget) and cannot accidentally submit before placing required foods.
+
+**Submit gate**: enabled when placed kcal ≥ 50% of effectiveKcalBudget.
+
+**Rules**:
+1. `kcalBudget ≤ 2000`, in multiples of 100.
+2. Pre-placed food alone must be **< 50%** of budget (submit disabled until player acts).
+3. Pre-placed + all required player foods must reach **≥ 75%** (Well Fed zone).
+4. Formula: if pre-placed = X kcal, required player food = Y kcal:
+   - Constraint 1: `X / budget < 0.50` → `budget > 2X`
+   - Constraint 2: `(X + Y) / budget ≥ 0.75` → `budget ≤ (X + Y) / 0.75`
+   - Therefore: `Y > 0.5 × X` (player food must exceed half of pre-placed kcal)
+5. GLP-1 days: check balance using **effective budget = kcalBudget × 0.70** (GLP-1 kcalMult = 0.70 = −30%).
+6. Intentional exceptions: overeating lesson days (deliberate over-budget), days where combined pre-placed already exceeds 50% (submit always enabled — puzzle constraint, not kcal lesson).
+
+#### WP Balance
+
+**Rules**:
+1. All tutorial-required actions (food placements + interventions) must fit within `wpBudget`.
+2. GLP-1 days gain `+4` effective WP when GLP-1 is toggled on.
+3. Break/Rest interventions refund WP (−1 and −2 respectively).
+4. Pre-placed foods do **not** charge WP to the player.
+5. Default tutorial WP budget: 6–10. Avoid budgets below 5 or above 12.
+
+#### Slot Layout
+
+**Rules**:
+1. Pre-placed foods must be in `lockedSlots`.
+2. Enough free (non-locked) slots for all required player placements.
+3. For size-2 interventions (heavyrun, takearest): at least one **consecutive free slot pair** that is not exclusively stressSlots.
+4. Max 2 consecutive locked slots (no long blocked segments).
+5. No pre-placed foods in adjacent slots (each pre-placed needs breathing room).
+
+**Verification checklist**:
+- [ ] Pre-placed food kcal / budget < 50%
+- [ ] (Pre-placed + required player foods) / effectiveBudget ≥ 75%
+- [ ] Y > 0.5 × X (player food > half of pre-placed)
+- [ ] WP covers all required placements
+- [ ] Size-2 intervention has a non-stress consecutive pair
+- [ ] No isolated food cutoff by excessive locking
+
+#### Per-Day Design Pattern
+
+| Pattern | When to Use |
+|---------|-------------|
+| Single pre-placed + 1 player food | Intro/concept days — clear cause-effect |
+| Single pre-placed + 2 player foods | Intermediate — adds choice |
+| Multiple pre-placed (2+) | Advanced puzzle days — stacking challenge |
+| No pre-placed | Pure player choice days (budget sets difficulty) |
+| Overeating day | Deliberately over-budget to trigger penalty lesson |
+
+#### Verified Configuration (all tutorial days)
+
+| Level | Day | kcalBudget | WP | Pre-placed | Player foods | Pre-placed% | Total% |
+|-------|-----|------------|-----|-----------|-------------|------------|--------|
+| T01 | 1 | 200 | 5 | — | banana | — | 80% |
+| T01 | 2 | 1500 | 10 | — | banana+burger+sandwich+cookie | — | 99% |
+| T01 | 3 | 1000 | 8 | popcorn | banana+apple+cookie+milk (any 3) | 14% | 62–71% |
+| T02 | 1 | 800 | 9 | rice | chicken | 45% | 91% |
+| T02 | 2 | 1200 | 9 | chocolatemuffin | banana+cookie | 46% | 78% |
+| T02 | 3 | 1200 | 11 | chocolatemuffin | nutsmixed+chickpeas | 46% | 85% |
+| T03 | 1 | 1200 | 6 | burger | banana | 52% | 65% |
+| T03 | 2 | 800 | 6 | — | deliberate overeat | — | >100% |
+| T03 | 3 | 1200 | 8 | burger | cookie | 52% | 97% |
+| T04 | 1 | 400 | 5 | — | banana×2 | — | 80% |
+| T04 | 2 | 1000 | 8 | oatmeal | chickpeas+banana | 62% | 115%* |
+| T05 | 1 | 1200 | 8 | rice+cookie | — | 98%* | 98% |
+| T05 | 2 | 1600 | 8 | rice+oatmeal | banana+apple | 84%* | 96% |
+| T06 | 1 | 1100 | 6 | pizza | sandwich | 42% | 77% |
+| T06 | 2 | 1000 | 9 | oatmeal | pizza+chicken | 23% | 80% |
+| T07 | 1 | 1800 (eff.1260 w/GLP1) | 6+4 | burger | oatmeal+banana | 49% | 89% |
+| T07 | 2 | 1600 | 8 | chocolatemuffin+rice | banana+cookie+chicken | 70%* | submit OK |
+| T08 | 1 | 1800 | 8 | sandwich+rice | chicken+banana | 85%* | submit OK |
+| T08 | 2 | 2000 | 10 | chocolatemuffin | banana+cookie+oatmeal | 28% | 75% |
+| T08 | 3 | 2000 | 12 | rice+chocolatemuffin | banana+sandwich | 57%* | submit OK |
+
+*Exceeds 50% pre-placed or 100% total — intentional puzzle constraint (advanced days). Submit always enabled; challenge is graph score, not kcal.
+
 ---
 
 ## 13. Анимации
