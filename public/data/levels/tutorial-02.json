@@ -25,6 +25,10 @@
         {
           "shipId": "rice",
           "slotIndex": 2
+        },
+        {
+          "shipId": "chocolatemuffin",
+          "slotIndex": 5
         }
       ],
       "lockedSlots": [
