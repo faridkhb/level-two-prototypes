@@ -389,7 +389,7 @@ const L3D2: TutorialStep[] = [
   },
   {
     id: 'L3D2-2',
-    bubble: { type: 'warning', text: 'Overeating (>120% kcal) penalizes the next day: \u22121 WP, +100 kcal budget, and a free \ud83c\udf66 Ice Cream appears!', expression: 'concerned' },
+    bubble: { type: 'warning', text: 'Overeating (>120% kcal) penalizes the next day: \u22121 WP and +100 kcal budget.', expression: 'concerned' },
     highlight: 'kcal-bar',
     highlightType: 'glow',
     advanceOn: 'tap',
