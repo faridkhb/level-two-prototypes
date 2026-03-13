@@ -528,7 +528,7 @@ const L4D3: TutorialStep[] = [
   },
   {
     id: 'L4D3-3',
-    bubble: { type: 'hint', text: 'Even without BOOST, smart walk placement + good food timing can earn 2 stars. With BOOST: 3 stars are possible!', expression: 'thinking' },
+    bubble: { type: 'hint', text: 'Even without BOOST, smart walk placement + good food timing goes a long way. With BOOST: you can flatten the spike significantly!', expression: 'thinking' },
     advanceOn: 'tap',
   },
   {
