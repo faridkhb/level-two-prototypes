@@ -1119,7 +1119,10 @@ export function BgGraph({
                 if (cube.status === 'normal') return revealPhase >= 1;
                 if (cube.status === 'burned') {
                   const isExercise = cube.burnColor === '#86efac' || cube.burnColor === '#22c55e';
-                  return isExercise ? revealPhase >= 3 : revealPhase >= 4; // exercise in phase 3, SGLT2 in phase 4
+                  const isBoost = cube.burnColor === '#f59e0b';
+                  if (isExercise) return revealPhase >= 3; // exercise in phase 3
+                  if (isBoost) return revealPhase >= 2;    // boost with insulin in phase 2
+                  return revealPhase >= 4;                  // SGLT2 in phase 4
                 }
                 return false;
               })
