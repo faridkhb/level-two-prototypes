@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.48.1 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels |
+| `main` | BG Planner | v0.48.6 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -109,7 +109,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.48.1)
+- `src/version.ts` — version number (v0.48.6)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -159,7 +159,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.48.1) — 8 Tutorials, Zone Hatching, Food Speed Labels, Insulin Viz
+### Current State (v0.48.6) — 8 Tutorials, Zone Hatching, Food Speed Labels, Insulin Viz
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -391,7 +391,7 @@ CONFIG:
   - `bonusBoostBars` field in day config grants additional BOOST uses
   - Passed through loader.ts dayConfigs transform
 
-- **Tutorial System** ✅ (v0.47.20-v0.48.1)
+- **Tutorial System** ✅ (v0.47.20-v0.48.6)
   - 8 tutorial levels across 3 days each (tutorials 01-08 + tutorial-05 "Under Stress")
   - `tutorialData.ts` — step definitions per level/day with bubble, highlight, CTA, advanceOn
   - CTA types: `drag-arrow` (animated arrow), `tap-pulse` (pulsing target), `glow-border`, `bounce`
@@ -671,7 +671,7 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 - `alpha-4-stable` (v0.42.19) — Pre-placed foods, locked slots, balance solver, level-01 3-day puzzle design
 - `alpha-5-stable` (v0.43.0) — Insulin profile system, BOOST, visual insulin bars, post-peak drain, re-balanced level-01
 - `alpha-8-vertical` (v0.47.12) — startingBg, 50 mg/dL grid cells, Y-axis labels, vertical layout redesign (KcalBar extracted, transparent slot cards, no graph border, red 200 line, dead CSS cleanup)
-- `alpha-9-stable` (v0.48.1) — 8 tutorial levels (incl. "Under Stress"), bonusBoostBars, insulin profile visualization, zone-colored hatching, food speed labels, tutorial CTA system (drag-arrow, tap-pulse, lockedTab, noBackdrop, auto-relocate), satiety bonus disabled, result panel reorder, slot grid pull-up on submit
+- `alpha-9-stable` (v0.48.6) — 8 tutorial levels (incl. "Under Stress"), bonusBoostBars, insulin profile visualization, zone-colored hatching, food speed labels, tutorial CTA system (drag-arrow, tap-pulse, lockedTab, noBackdrop, auto-relocate), satiety bonus disabled, result panel reorder, slot grid pull-up on submit, BOOST merged into insulin reveal phase
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
