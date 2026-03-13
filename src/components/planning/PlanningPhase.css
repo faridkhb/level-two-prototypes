@@ -75,6 +75,15 @@
   z-index: 10;
 }
 
+/* Results mode: adjust spacing between graph→slots and slots→result panel */
+.planning-phase__content--results .slot-grid {
+  margin-top: 18px;
+}
+
+.planning-phase__content--results .result-panel {
+  margin-top: 18px;
+}
+
 /* Inventory drop zone (accepts cards dragged back from slots) */
 .planning-phase__inventory-zone {
   border: 1.5px dashed transparent;

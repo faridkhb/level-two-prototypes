@@ -93,7 +93,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-7',
-    bubble: { type: 'success', text: 'The reveal shows how your food, insulin, and exercise interact. Check your star rating!', expression: 'celebrating' },
+    bubble: { type: 'success', text: 'The reveal shows how your food, insulin, and exercise interact. Check your star rating!', expression: 'celebrating', position: 'top' },
     highlight: 'result-next-btn',
     highlightType: 'glow',
     noBackdrop: true,
