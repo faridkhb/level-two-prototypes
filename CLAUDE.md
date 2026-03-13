@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.47.12 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign |
+| `main` | BG Planner | v0.48.1 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels |
 | `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
 | `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
 | `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
@@ -109,7 +109,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.47.12)
+- `src/version.ts` — version number (v0.48.1)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -159,7 +159,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.47.12) — Vertical Layout Redesign, startingBg, 50 mg/dL Grid
+### Current State (v0.48.1) — 8 Tutorials, Zone Hatching, Food Speed Labels, Insulin Viz
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -371,6 +371,41 @@ CONFIG:
   - Slot cards: transparent backgrounds (no plates) for all states
   - Forecast badge: shows ☀️ and kcal only (no food emoji by default)
   - Dead CSS removed (assessment-badge, wp-label classes)
+
+- **Zone Hatching** ✅ (v0.47.17-18)
+  - Diagonal hatching on glucose cubes above 200 mg/dL
+  - Orange hatching for 200-300 mg/dL zone, red hatching for 300+ mg/dL zone
+  - Replaces old solid zone fill for better visual clarity
+
+- **Food Speed Labels** ✅ (v0.47.72)
+  - Each food card shows absorption speed: Fast / Medium / Slow
+  - Derived from duration: Fast <45m, Medium 45-90m, Slow >90m
+
+- **Insulin Profile Visualization** ✅ (v0.47.54)
+  - Column tinting shows insulin rate intensity per time slot
+  - Rate bars displayed inside the graph grid
+  - Segment boundaries visible when rate changes throughout the day
+
+- **bonusBoostBars Mechanic** ✅ (v0.47.55)
+  - Tutorial-04 introduces extra BOOST bars as a reward mechanic
+  - `bonusBoostBars` field in day config grants additional BOOST uses
+  - Passed through loader.ts dayConfigs transform
+
+- **Tutorial System** ✅ (v0.47.20-v0.48.1)
+  - 8 tutorial levels across 3 days each (tutorials 01-08 + tutorial-05 "Under Stress")
+  - `tutorialData.ts` — step definitions per level/day with bubble, highlight, CTA, advanceOn
+  - CTA types: `drag-arrow` (animated arrow), `tap-pulse` (pulsing target), `glow-border`, `bounce`
+  - `lockedTab` — prevents switching tabs during step
+  - `noBackdrop` — shows highlight without darkening background
+  - Bubble `position` values: `top` | `bottom` | `center` | `inventory`
+  - Auto-relocate: bubbles shift to bottom when spotlight is in lower half of screen
+  - Passthrough mode: spotlight divs hidden for iOS drag-drop compatibility
+  - Tutorial-05 "Under Stress" — stress slot highlighting, 3-day arc
+  - All tutorials balanced for realistic kcal (1400-2000) and WP (7-11) ranges
+
+- **Satiety Bonus System** — disabled (v0.47.76)
+  - WP/kcal bonuses for Well Fed removed from game balance
+  - Forecast badge simplified (no bonus display)
 
 - **Overeating Penalty System** ✅ (v0.40.6)
   - Each satiety level beyond Well Fed penalizes the next day:
@@ -636,6 +671,7 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 - `alpha-4-stable` (v0.42.19) — Pre-placed foods, locked slots, balance solver, level-01 3-day puzzle design
 - `alpha-5-stable` (v0.43.0) — Insulin profile system, BOOST, visual insulin bars, post-peak drain, re-balanced level-01
 - `alpha-8-vertical` (v0.47.12) — startingBg, 50 mg/dL grid cells, Y-axis labels, vertical layout redesign (KcalBar extracted, transparent slot cards, no graph border, red 200 line, dead CSS cleanup)
+- `alpha-9-stable` (v0.48.1) — 8 tutorial levels (incl. "Under Stress"), bonusBoostBars, insulin profile visualization, zone-colored hatching, food speed labels, tutorial CTA system (drag-arrow, tap-pulse, lockedTab, noBackdrop, auto-relocate), satiety bonus disabled, result panel reorder, slot grid pull-up on submit
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
