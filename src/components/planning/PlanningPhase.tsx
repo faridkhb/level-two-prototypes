@@ -570,12 +570,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       onDragEnd={handleDragEnd}
     >
       <div className="planning-phase">
-        {gamePhase === 'replaying' && (
-          <div className="planning-phase__hint planning-phase__hint--replay">
-            Reviewing your meal plan...
-          </div>
-        )}
-
         <div className={`planning-phase__content${!isPlanning ? ' planning-phase__content--results' : ''}`}>
           <div className="planning-phase__graph-wrapper">
             <button
