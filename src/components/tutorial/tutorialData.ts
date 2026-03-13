@@ -408,7 +408,7 @@ const L3D2: TutorialStep[] = [
 const L3D3: TutorialStep[] = [
   {
     id: 'L3D3-1',
-    bubble: { type: 'dialogue', text: 'Day 3! If you overate yesterday, you\'ll see penalties: less WP, higher kcal budget, and free Ice Cream in your inventory.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Day 3! When you overeat, you lose Willpower Points the next day.', expression: 'neutral' },
     highlight: 'wp-counter',
     highlightType: 'glow',
     advanceOn: 'tap',
