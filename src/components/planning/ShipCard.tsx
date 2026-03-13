@@ -80,9 +80,9 @@ export function ShipCard({
 
       <div className="ship-card__details">
         <span className="ship-card__name">{ship.name}</span>
-        <span className="ship-card__info">
-          {ship.kcal} kcal · {ship.carbs ?? 0}g · {getSpeedLabel(ship.duration)}
-        </span>
+        <span className="ship-card__info">{ship.kcal} kcal</span>
+        <span className="ship-card__info">{ship.carbs ?? 0}g carbs</span>
+        <span className="ship-card__info">{getSpeedLabel(ship.duration)}</span>
       </div>
 
       {remainingCount !== undefined && remainingCount < 99 && (
@@ -106,9 +106,9 @@ export function ShipCardOverlay({ ship }: { ship: Ship }) {
 
       <div className="ship-card__details">
         <span className="ship-card__name">{ship.name}</span>
-        <span className="ship-card__info">
-          {ship.kcal} kcal · {ship.carbs ?? 0}g · {getSpeedLabel(ship.duration)}
-        </span>
+        <span className="ship-card__info">{ship.kcal} kcal</span>
+        <span className="ship-card__info">{ship.carbs ?? 0}g carbs</span>
+        <span className="ship-card__info">{getSpeedLabel(ship.duration)}</span>
       </div>
     </div>
   );

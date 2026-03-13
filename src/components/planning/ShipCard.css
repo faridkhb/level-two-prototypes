@@ -13,7 +13,7 @@
   position: relative;
   touch-action: none;
   width: 140px;
-  height: 50px;
+  height: 72px;
 }
 
 .ship-card:hover {
@@ -66,7 +66,7 @@
 }
 
 .ship-card__info {
-  font-size: 10px;
+  font-size: 12px;
   opacity: 0.8;
 }
 
@@ -191,7 +191,7 @@
   }
 
   .ship-card__info {
-    font-size: 8px;
+    font-size: 10px;
     word-spacing: -1px;
   }
 
