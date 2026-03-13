@@ -247,7 +247,7 @@ const L2D2: TutorialStep[] = [
   },
   {
     id: 'L2D2-2',
-    bubble: { type: 'dialogue', text: 'The \ud83c\udf55 Pizza is pre-placed at slot 4. Use the walk to cover its peak!', expression: 'thinking' },
+    bubble: { type: 'dialogue', text: 'The \ud83c\udf55 Pizza is pre-placed at the 10 AM slot. Use the walk to cover its peak!', expression: 'thinking' },
     highlight: 'slot:4',
     highlightType: 'spotlight',
     noBackdrop: true,
