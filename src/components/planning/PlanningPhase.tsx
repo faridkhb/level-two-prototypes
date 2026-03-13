@@ -616,17 +616,19 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             )}
           </div>
 
-          <KcalBar
-            kcalUsed={kcalUsed}
-            kcalBudget={kcalBudget}
-            dayLabel={`Day ${currentDay}/${currentLevel.days}`}
-            wpRemaining={wpRemaining}
-            medicationModifiers={medicationModifiers}
-            submitEnabled={submitEnabled}
-            onSubmit={handleSubmit}
-            hidden={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
-            tutorialActive={isTutorial}
-          />
+          {!showResults && (
+            <KcalBar
+              kcalUsed={kcalUsed}
+              kcalBudget={kcalBudget}
+              dayLabel={`Day ${currentDay}/${currentLevel.days}`}
+              wpRemaining={wpRemaining}
+              medicationModifiers={medicationModifiers}
+              submitEnabled={submitEnabled}
+              onSubmit={handleSubmit}
+              hidden={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
+              tutorialActive={isTutorial}
+            />
+          )}
 
           <SlotGrid
             allShips={allShips}
