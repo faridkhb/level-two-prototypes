@@ -344,7 +344,7 @@ const L3D1: TutorialStep[] = [
     bubble: { type: 'dialogue', text: 'Drag \u2615 Take a Break to a slot \u2014 you\u2019ll get 1 WP back!', expression: 'happy', position: 'inventory' },
     highlight: 'intervention:takeabreak',
     highlightType: 'pulse',
-    lockedTab: 'actions',
+    lockedTab: 'food',
     cta: { type: 'drag-arrow', source: 'intervention:takeabreak' },
     advanceOn: 'action',
     expectedAction: { type: 'place-intervention', interventionId: 'takeabreak' },
