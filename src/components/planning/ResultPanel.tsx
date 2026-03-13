@@ -55,31 +55,9 @@ export function ResultPanel({
 
   return (
     <div className={`result-panel result-panel--${result.label.toLowerCase()}`}>
-      <StarDisplay count={result.stars} />
-
-      <div className="result-panel__label">{result.label}!</div>
-
       <div className="result-panel__penalty">
         <span className="result-panel__penalty-value">{result.totalPenalty}</span>
         <span className="result-panel__penalty-text"> excess sugar points</span>
-      </div>
-
-      <div className="result-panel__breakdown">
-        {result.orangeCount > 0 && (
-          <span className="result-panel__zone result-panel__zone--orange">
-            {result.orangeCount} cubes 200-300
-          </span>
-        )}
-        {result.redCount > 0 && (
-          <span className="result-panel__zone result-panel__zone--red">
-            {result.redCount} cubes 300+
-          </span>
-        )}
-        {result.orangeCount === 0 && result.redCount === 0 && (
-          <span className="result-panel__zone result-panel__zone--clean">
-            All cubes below 200 mg/dL!
-          </span>
-        )}
       </div>
 
       {satietyMessage && (
@@ -87,6 +65,10 @@ export function ResultPanel({
           {satietyMessage.icon} {satietyMessage.text}
         </div>
       )}
+
+      <StarDisplay count={result.stars} />
+
+      <div className="result-panel__label">{result.label}!</div>
 
       {/* Tutorial mode buttons */}
       {isTutorial ? (
