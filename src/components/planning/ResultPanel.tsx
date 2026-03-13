@@ -1,5 +1,5 @@
 import type { PenaltyResult, SatietyPenalty } from '../../core/types';
-import { WP_PENALTY_WEIGHT, DEFAULT_SATIETY_PENALTY } from '../../core/types';
+import { DEFAULT_SATIETY_PENALTY } from '../../core/types';
 import './ResultPanel.css';
 
 interface ResultPanelProps {
@@ -31,14 +31,13 @@ function StarDisplay({ count }: { count: number }) {
 }
 
 export function ResultPanel({
-  result, currentDay, totalDays, unspentWp = 0,
+  result, currentDay, totalDays, unspentWp: _unspentWp = 0,
   satietyResult = DEFAULT_SATIETY_PENALTY, onRetry, onNextDay,
   isTutorial, onNextLevel, onBackToTutorials,
 }: ResultPanelProps) {
   const isDefeat = result.stars === 0;
   const isPerfect = result.stars === 3;
   const isLastDay = currentDay >= totalDays;
-  const hasUnspentWp = unspentWp > 0;
   const isSuccess = result.stars >= 1;
 
   // Satiety zone result message
@@ -86,26 +85,6 @@ export function ResultPanel({
       {satietyMessage && (
         <div className="result-panel__satiety" style={{ color: satietyMessage.color }}>
           {satietyMessage.icon} {satietyMessage.text}
-        </div>
-      )}
-
-      {hasUnspentWp && (
-        <div className="result-panel__wp-warning">
-          {isLastDay ? (
-            <span className="result-panel__wp-warning-text">
-              {unspentWp} unspent {'\u2600\uFE0F'} {'\u2192'} +{unspentWp * WP_PENALTY_WEIGHT} penalty
-            </span>
-          ) : (
-            <span className="result-panel__wp-warning-text">
-              {unspentWp} unspent {'\u2600\uFE0F'} {'\u2192'} Day {currentDay + 1}: {'\u2212'}{unspentWp} {'\u2600\uFE0F'}
-            </span>
-          )}
-        </div>
-      )}
-
-      {!hasUnspentWp && (
-        <div className="result-panel__wp-perfect">
-          All {'\u2600\uFE0F'} spent {'\u2014'} Discipline!
         </div>
       )}
 
