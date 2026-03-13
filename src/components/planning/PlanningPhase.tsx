@@ -576,7 +576,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           </div>
         )}
 
-        <div className={`planning-phase__content${showResults ? ' planning-phase__content--results' : ''}`}>
+        <div className={`planning-phase__content${!isPlanning ? ' planning-phase__content--results' : ''}`}>
           <div className="planning-phase__graph-wrapper">
             <button
               className="planning-phase__menu-btn"
@@ -616,7 +616,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             )}
           </div>
 
-          {!showResults && (
+          {isPlanning && (
             <KcalBar
               kcalUsed={kcalUsed}
               kcalBudget={kcalBudget}
