@@ -285,7 +285,7 @@ const L2D3: TutorialStep[] = [
   },
   {
     id: 'L2D3-3',
-    bubble: { type: 'dialogue', text: '\ud83e\uddc1 The Muffin is at slot 1. Drag the Heavy Run right after it to crush the peak!', expression: 'thinking', position: 'inventory' },
+    bubble: { type: 'dialogue', text: '\ud83e\uddc1 The Muffin is at the 8:30 AM slot. Drag the Heavy Run right after it to crush the peak!', expression: 'thinking', position: 'inventory' },
     highlight: ['intervention:heavyrun', 'slot:2'],
     highlightType: 'pulse',
     lockedTab: 'actions',
