@@ -238,7 +238,7 @@ const L2D1: TutorialStep[] = [
 const L2D2: TutorialStep[] = [
   {
     id: 'L2D2-1',
-    bubble: { type: 'dialogue', text: 'See the \ud83d\udd12 locked slots? You can only place items in unlocked slots. Plan your placements carefully!', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'See the \ud83d\udd12 locked slots? You can only place items in unlocked slots. Plan your placements carefully!', expression: 'neutral', position: 'top' },
     highlight: 'locked-slots',
     highlightType: 'pulse',
     noBackdrop: true,
