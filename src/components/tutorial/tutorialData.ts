@@ -995,6 +995,11 @@ const L_STRESS_D1: TutorialStep[] = [
     expectedAction: { type: 'place-food' },
   },
   {
+    id: 'LS-D1-6b',
+    advanceOn: 'action',
+    expectedAction: { type: 'place-food' },
+  },
+  {
     id: 'LS-D1-7',
     bubble: { type: 'dialogue', text: 'Nice! Submit when you\'re ready to see how it went.', expression: 'happy' },
     highlight: 'submit-btn',

@@ -903,7 +903,7 @@ export function BgGraph({
               width={CELL_SIZE * 4}
               height={graphH}
               fill="#ef4444"
-              opacity={0.08}
+              opacity={0.15}
               pointerEvents="none"
               className={highlightStressSlots ? 'stress-slot-highlight' : undefined}
             />

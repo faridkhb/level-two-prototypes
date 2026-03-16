@@ -200,9 +200,9 @@
 
 /* Stress slot highlight animation (tutorial) */
 @keyframes stressPulse {
-  0%   { opacity: 0.08; }
-  50%  { opacity: 0.32; }
-  100% { opacity: 0.08; }
+  0%   { opacity: 0.15; }
+  50%  { opacity: 0.45; }
+  100% { opacity: 0.15; }
 }
 
 .stress-slot-highlight {
