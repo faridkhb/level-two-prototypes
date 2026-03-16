@@ -1011,14 +1011,13 @@ const L_STRESS_D1: TutorialStep[] = [
 const L_STRESS_D2: TutorialStep[] = [
   {
     id: 'LS-D2-1',
-    bubble: { type: 'dialogue', text: 'Now there are TWO stress zones. Plan food placement carefully!', expression: 'concerned' },
+    bubble: { type: 'dialogue', text: 'Now there are THREE stress zones. Plan food placement carefully!', expression: 'concerned' },
     advanceOn: 'tap',
   },
   {
     id: 'LS-D2-2',
-    bubble: { type: 'warning', text: 'Three red zones from noon to 3 PM. Try to place food before or after them.', expression: 'concerned' },
+    bubble: { type: 'warning', text: 'These red zones weaken your insulin — try to place food outside them!', expression: 'concerned' },
     highlight: 'stress-slots',
-    highlightType: 'spotlight',
     advanceOn: 'tap',
   },
   {
@@ -1036,8 +1035,6 @@ const L_STRESS_D2: TutorialStep[] = [
   {
     id: 'LS-D2-5',
     bubble: { type: 'dialogue', text: 'Good luck — 2\u2605 is achievable if you avoid the red zones.', expression: 'happy' },
-    highlight: 'submit-btn',
-    highlightType: 'pulse',
     advanceOn: 'tap',
   },
 ];
