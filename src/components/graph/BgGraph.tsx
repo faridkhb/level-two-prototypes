@@ -117,6 +117,7 @@ interface BgGraphProps {
   previewIntervention?: Intervention;   // intervention being dragged
   previewInterventionColumn?: number;   // target column for intervention preview
   stressSlots?: Set<number>;            // slot indices with stress (reduced insulin)
+  highlightStressSlots?: boolean;        // tutorial: pulse animation on stress columns
   isMobile?: boolean;                    // mobile-responsive sizing
   baselineRow?: number;                  // row offset for starting BG (default 0 = 60 mg/dL)
 }
@@ -143,6 +144,7 @@ export function BgGraph({
   previewIntervention,
   previewInterventionColumn,
   stressSlots,
+  highlightStressSlots = false,
   isMobile = false,
   baselineRow = 0,
 }: BgGraphProps) {
@@ -903,6 +905,7 @@ export function BgGraph({
               fill="#ef4444"
               opacity={0.08}
               pointerEvents="none"
+              className={highlightStressSlots ? 'stress-slot-highlight' : undefined}
             />
           );
         })}

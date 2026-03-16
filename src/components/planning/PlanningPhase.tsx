@@ -595,6 +595,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               previewIntervention={activeIntervention && previewSlot !== null ? activeIntervention : undefined}
               previewInterventionColumn={activeIntervention && previewSlot !== null ? slotToColumn(previewSlot) : undefined}
               stressSlots={stressSlotSet}
+              highlightStressSlots={tutorialStep?.highlight === 'stress-slots'}
               isMobile={isMobile}
               baselineRow={baselineRow}
             />

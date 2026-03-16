@@ -198,6 +198,17 @@
   to { opacity: 0.9; }
 }
 
+/* Stress slot highlight animation (tutorial) */
+@keyframes stressPulse {
+  0%   { opacity: 0.08; }
+  50%  { opacity: 0.32; }
+  100% { opacity: 0.08; }
+}
+
+.stress-slot-highlight {
+  animation: stressPulse 1.2s ease-in-out infinite;
+}
+
 /* Reveal phase label — floating badge in graph corner */
 .bg-graph__reveal-label {
   display: flex;
