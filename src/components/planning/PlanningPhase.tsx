@@ -224,6 +224,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       .reduce((sum, dc) => sum + (dc.bonusBoostBars ?? 0), 0);
   }, [currentLevel, currentDay]);
   const barsAvailable = PANCREAS_TOTAL_BARS + bonusBoostBars - totalLockedBars;
+  // Hide BOOST button for tutorials before T4 (introduced in tutorial-04)
+  const showBoostButton = !['tutorial-01', 'tutorial-02', 'tutorial-03'].includes(currentLevel?.id ?? '');
   const boostThresholdRow = boostOverride.thresholdMgDl
     ? Math.round((boostOverride.thresholdMgDl - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl)
     : PENALTY_ORANGE_ROW;
@@ -599,7 +601,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               isMobile={isMobile}
               baselineRow={baselineRow}
             />
-            {isPlanning && (
+            {isPlanning && showBoostButton && (
               <div className="planning-phase__pancreas-overlay">
                 <PancreasButton
                   isBoostActive={isBoostActive}
