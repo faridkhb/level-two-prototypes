@@ -7,6 +7,7 @@ import {
   PENALTY_ORANGE_ROW,
   PENALTY_RED_ROW,
   GRAPH_CONFIG,
+  COLS_PER_SLOT,
 } from '../../core/types';
 import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, calculateSglt2Reduction, calculateBoostReduction } from '../../core/cubeEngine';
 import type { InsulinParams } from '../../core/cubeEngine';
@@ -894,13 +895,13 @@ export function BgGraph({
 
         {/* Stress zone column bands */}
         {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).map(slotIndex => {
-          const startCol = slotIndex * 4;
+          const startCol = slotIndex * COLS_PER_SLOT;
           return (
             <rect
               key={`stress-zone-${slotIndex}`}
               x={colToX(startCol)}
               y={PAD_TOP}
-              width={CELL_SIZE * 4}
+              width={CELL_SIZE * COLS_PER_SLOT}
               height={graphH}
               fill="#ef4444"
               opacity={0.15}
@@ -998,9 +999,9 @@ export function BgGraph({
 
         {/* Stress zone boundary lines and markers */}
         {stressSlots && stressSlots.size > 0 && Array.from(stressSlots).flatMap(slotIndex => {
-          const startCol = slotIndex * 4;
-          const endCol = startCol + 4;
-          const centerX = colToX(startCol) + (CELL_SIZE * 4) / 2;
+          const startCol = slotIndex * COLS_PER_SLOT;
+          const endCol = startCol + COLS_PER_SLOT;
+          const centerX = colToX(startCol) + (CELL_SIZE * COLS_PER_SLOT) / 2;
           return [
             <line
               key={`stress-left-${slotIndex}`}
