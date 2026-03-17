@@ -18,7 +18,12 @@
           "count": 1
         }
       ],
-      "availableInterventions": [],
+      "availableInterventions": [
+        {
+          "id": "heavyrun",
+          "count": 1
+        }
+      ],
       "availableMedications": [
         "metformin"
       ],
