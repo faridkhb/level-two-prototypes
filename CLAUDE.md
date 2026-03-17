@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.48.10 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation |
+| `main` | BG Planner | v0.48.14 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation |
 
 Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
@@ -107,7 +107,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.48.10)
+- `src/version.ts` — version number (v0.48.14)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -157,7 +157,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.48.10) — 8 Tutorials, Zone Hatching, Food Speed Labels, Insulin Viz, Stress Slot Pulse
+### Current State (v0.48.14) — 8 Tutorials, Zone Hatching, Food Speed Labels, Insulin Viz, Stress Slot Pulse, BOOST hidden T1-T3
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -389,7 +389,7 @@ CONFIG:
   - `bonusBoostBars` field in day config grants additional BOOST uses
   - Passed through loader.ts dayConfigs transform
 
-- **Tutorial System** ✅ (v0.47.20-v0.48.10)
+- **Tutorial System** ✅ (v0.47.20-v0.48.14)
   - 8 tutorial levels across 3 days each (tutorials 01-08 + tutorial-05 "Under Stress")
   - `tutorialData.ts` — step definitions per level/day with bubble, highlight, CTA, advanceOn
   - CTA types: `drag-arrow` (animated arrow), `tap-pulse` (pulsing target), `glow-border`, `bounce`
@@ -401,6 +401,8 @@ CONFIG:
   - Tutorial-05 "Under Stress" — stress slot highlighting, 3-day arc
   - **Stress slot pulse** (v0.48.7): when `highlight: 'stress-slots'` in tutorial step, BgGraph pulses stress column (opacity 0.15→0.45 loop) via `highlightStressSlots` prop
   - `spotlight` highlight type must target DOM elements only — SVG-based targets (stress-slots) use `highlightStressSlots` prop instead to avoid beam artifact
+  - **BOOST button hidden for T1/T2/T3** (v0.48.14): PancreasButton not rendered until tutorial-04 where BOOST is introduced
+  - **Stress slot visual fix** (v0.48.11): BgGraph was using `slotIndex * 4` instead of `slotIndex * COLS_PER_SLOT` — stress zones appeared at double the correct column position
   - All tutorials balanced for realistic kcal (1400-2000) and WP (7-12) ranges
 
 - **Satiety Bonus System** — disabled (v0.47.76)
@@ -505,32 +507,32 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 
 | # | Food | Emoji | Carbs | Protein | Fat | Kcal | WP | Duration | Cubes | Cols |
 |---|------|-------|------:|--------:|----:|-----:|---:|---------:|------:|-----:|
-| 1 | Banana | 🍌 | 23g | 1g | 0g | 395 | 1 | 45m | 12 | 3 |
-| 2 | Apple | 🍎 | 21g | 1g | 0g | 355 | 1 | 45m | 11 | 3 |
-| 3 | Ice Cream | 🍦 | 20g | 4g | 11g | 780 | 0 | 60m | 10 | 4 |
-| 4 | Popcorn | 🍿 | 19g | 3g | 2g | 420 | 1 | 45m | 10 | 3 |
-| 5 | Cookie | 🍪 | 14g | 2g | 7g | 545 | 2 | 60m | 7 | 4 |
-| 6 | Caesar Salad | 🥗 | 8g | 9g | 12g | 715 | 3 | 120m | 4 | 8 |
-| 7 | Choco Muffin | 🧁 | 44g | 6g | 18g | 1495 | 0 | 60m | 22 | 4 |
-| 8 | Sandwich | 🥪 | 34g | 22g | 28g | 1885 | 2 | 150m | 17 | 10 |
-| 9 | Chicken Meal | 🍗 | 3g | 35g | 12g | 1055 | 3 | 120m | 2 | 8 |
-| 10 | Bowl of Rice | 🍚 | 38g | 4g | 0g | 775 | 4 | 150m | 19 | 10 |
-| 11 | Hamburger | 🍔 | 20g | 17g | 14g | 1110 | 3 | 180m | 10 | 12 |
-| 12 | Oatmeal | 🥣 | 24g | 6g | 4g | 620 | 4 | 120m | 12 | 8 |
-| 13 | Pizza | 🍕 | 29g | 12g | 12g | 1130 | 3 | 90m | 15 | 6 |
-| 14 | Boiled Eggs | 🥚 | 0g | 13g | 10g | 580 | 4 | 150m | 0 | 10 |
-| 15 | Mixed Berries | 🫐 | 18g | 2g | 1g | 325 | 2 | 45m | 9 | 3 |
-| 16 | Greek Yogurt | 🥛 | 6g | 11g | 11g | 730 | 3 | 90m | 3 | 6 |
-| 17 | Milk 2% | 🥛 | 10g | 8g | 5g | 460 | 3 | 45m | 5 | 3 |
-| 18 | Vegetable Stew | 🥘 | 17g | 5g | 5g | 635 | 4 | 150m | 9 | 10 |
-| 19 | Boiled Carrots | 🥕 | 6g | 1g | 0g | 200 | 4 | 45m | 3 | 3 |
-| 20 | Chickpeas | 🫘 | 23g | 9g | 3g | 620 | 3 | 90m | 12 | 6 |
-| 21 | Cottage Cheese | 🧀 | 3g | 25g | 9g | 775 | 4 | 120m | 2 | 8 |
-| 22 | Hard Cheese | 🧀 | 0g | 7g | 9g | 450 | 3 | 150m | 0 | 10 |
-| 23 | Avocado | 🥑 | 7g | 2g | 15g | 600 | 3 | 150m | 4 | 10 |
-| 24 | Mixed Nuts | 🥜 | 2g | 5g | 16g | 685 | 2 | 150m | 1 | 10 |
+| 1 | Banana | 🍌 | 18g | 1g | 0g | 160 | 1 | 45m | 4 | 2 |
+| 2 | Apple | 🍎 | 17g | 1g | 0g | 140 | 1 | 45m | 3 | 2 |
+| 3 | Ice Cream | 🍦 | 16g | 4g | 11g | 200 | 0 | 60m | 3 | 2 |
+| 4 | Popcorn | 🍿 | 15g | 3g | 2g | 140 | 1 | 45m | 3 | 2 |
+| 5 | Cookie | 🍪 | 15g | 2g | 7g | 230 | 2 | 60m | 3 | 2 |
+| 6 | Caesar Salad | 🥗 | 8g | 9g | 12g | 460 | 3 | 120m | 2 | 4 |
+| 7 | Choco Muffin | 🧁 | 35g | 6g | 18g | 550 | 0 | 60m | 7 | 2 |
+| 8 | Sandwich | 🥪 | 16g | 17g | 14g | 470 | 3 | 180m | 3 | 6 |
+| 9 | Chicken Meal | 🍗 | 10g | 35g | 12g | 370 | 3 | 120m | 2 | 4 |
+| 10 | Bowl of Rice | 🍚 | 30g | 4g | 0g | 360 | 4 | 150m | 6 | 5 |
+| 11 | Hamburger | 🍔 | 27g | 22g | 28g | 620 | 2 | 150m | 5 | 5 |
+| 12 | Oatmeal | 🥣 | 20g | 6g | 4g | 230 | 4 | 120m | 4 | 4 |
+| 13 | Pizza | 🍕 | 23g | 12g | 12g | 460 | 3 | 90m | 5 | 3 |
+| 14 | Boiled Eggs | 🥚 | 0g | 13g | 10g | 230 | 4 | 150m | 0 | 5 |
+| 15 | Mixed Berries | 🫐 | 15g | 2g | 1g | 110 | 2 | 45m | 3 | 2 |
+| 16 | Greek Yogurt | 🥛 | 5g | 11g | 11g | 230 | 3 | 90m | 1 | 3 |
+| 17 | Milk 2% | 🥛 | 10g | 8g | 5g | 180 | 3 | 45m | 2 | 2 |
+| 18 | Vegetable Stew | 🥘 | 15g | 5g | 5g | 230 | 4 | 150m | 3 | 5 |
+| 19 | Boiled Carrots | 🥕 | 5g | 1g | 0g | 80 | 4 | 45m | 1 | 2 |
+| 20 | Chickpeas | 🫘 | 20g | 9g | 3g | 410 | 3 | 90m | 4 | 3 |
+| 21 | Cottage Cheese | 🧀 | 5g | 25g | 9g | 320 | 4 | 120m | 1 | 4 |
+| 22 | Hard Cheese | 🧀 | 0g | 7g | 9g | 170 | 3 | 150m | 0 | 5 |
+| 23 | Avocado | 🥑 | 7g | 2g | 15g | 240 | 3 | 150m | 1 | 5 |
+| 24 | Mixed Nuts | 🥜 | 10g | 5g | 16g | 310 | 2 | 150m | 2 | 5 |
 
-**Derived:** Cubes = glucose / 20 (glucose = carbs × 10), Cols = duration / 15. Sources: USDA FoodData Central, glycemic-index.net
+**Derived:** Cubes = round(glucose / 50) (cellHeightMgDl=50, glucose = carbs × 10), Cols = round(duration / 30) (cellWidthMin=30). Sources: USDA FoodData Central, glycemic-index.net
 
 ### Intervention Parameters
 
@@ -660,7 +662,7 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 - `alpha-5-stable` (v0.43.0) — Insulin profile system, BOOST, visual insulin bars, post-peak drain, re-balanced level-01
 - `alpha-8-vertical` (v0.47.12) — startingBg, 50 mg/dL grid cells, Y-axis labels, vertical layout redesign (KcalBar extracted, transparent slot cards, no graph border, red 200 line, dead CSS cleanup)
 - `alpha-9-stable` (v0.48.6) — 8 tutorial levels (incl. "Under Stress"), bonusBoostBars, insulin profile visualization, zone-colored hatching, food speed labels, tutorial CTA system (drag-arrow, tap-pulse, lockedTab, noBackdrop, auto-relocate), satiety bonus disabled, result panel reorder, slot grid pull-up on submit, BOOST merged into insulin reveal phase
-- `alpha-10-stable` (v0.48.10) — stress slot pulse animation in tutorial (highlightStressSlots prop), brighter stress column (opacity 0.15), T5 tutorial text fixes (TWO→THREE, spotlight bug removed), T5D1 submit dialogue after 2nd food placed, T5D3 wpBudget +3
+- `alpha-10-stable` (v0.48.14) — stress slot pulse animation, T5 tutorial fixes, BOOST hidden for T1-T3, stress slot visual position fix, food balance rebalance (10 items), T2D1 chicken→chickpeas, archived branch docs cleanup
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
