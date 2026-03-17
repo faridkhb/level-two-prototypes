@@ -21,10 +21,8 @@ This repository contains **independent projects** on separate branches:
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
 | `main` | BG Planner | v0.48.10 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation |
-| `port-planner` | Port Planner | v0.27.1 | Archived — metabolic simulation (WP, slots, organs, SVG pipes) |
-| `match3` | Port Planner + Match-3 | v0.28.11 | Match-3 mini-game for food card acquisition |
-| `tower-defense` | Glucose TD | v0.4.1 | Tower defense reimagining (projectiles, organ zones) |
-| `Dariy` | Port Planner | v0.25.1 | Archived — Mood system branch |
+
+Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
 **Production deploy** (Vercel): `main` branch → https://level-two-eight.vercel.app/
 
@@ -654,18 +652,6 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 | High | 200-300 mg/dL | Orange (+ red line at 200) |
 | Danger | 300-450+ mg/dL | Red |
 
-### Removed Systems (archived in `port-planner` branch)
-- Simulation engine (SimulationEngine, RuleEngine)
-- Results system (calculateResults, assessment, degradation)
-- Organ system (liver, pancreas, muscles, kidneys)
-- Pipe system (SVG flow visualization)
-- Slot grid (time slot placement)
-- Old WP budget system (spend/refund per slot — replaced by graph-based WP)
-- BG sparkline (replaced by main graph)
-- Phase transitions (Planning/Simulation/Results)
-- Degradation circles
-- Metformin, fiber system
-
 ### Milestones
 - `alpha-1-stable` (v0.40.0) — Core gameplay: cubes, interventions, medications, markers, decay-based stacking
 - `alpha-2-stable` (v0.40.4) — Main menu, config screen, merged Actions panel, phased reveal animation, dynamic Y-axis
@@ -681,10 +667,3 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 - Food drag preview starts on top of alive stack (pancreasCaps), not on top of visible pancreas/medication cubes — may show a gap in the preview
 - Medication-prevented cubes are approximate — GLP-1 redistributes glucose across more columns, so negative differences (where GLP-1 extended curve) are clamped to 0
 
----
-
-## Project: Glucose TD (branch: `tower-defense`)
-
-**Glucose TD** — tower defense reimagining of the metabolic simulation. Food generates glucose projectiles that fall through organ defense zones. See full documentation in `docs/td-concept/README.md` on the tower-defense branch.
-
-Current version: v0.4.1 — survival mode, circle indicators, explosion VFX.
