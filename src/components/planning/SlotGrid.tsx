@@ -14,6 +14,7 @@ interface SlotGridProps {
   disabled?: boolean;
   lockedSlots?: Set<number>;
   stressSlots?: Set<number>;
+  rejectedSlot?: number | null;
 }
 
 type SlotContent =
@@ -33,6 +34,8 @@ function SlotContainer({
   isParentDragging,
   isGroupHovered,
   isDropTarget,
+  isDragBlocked,
+  isRejected,
   onHoverEnter,
   onHoverLeave,
 }: {
@@ -46,6 +49,8 @@ function SlotContainer({
   isParentDragging?: boolean;
   isGroupHovered?: boolean;
   isDropTarget?: boolean;
+  isDragBlocked?: boolean;
+  isRejected?: boolean;
   onHoverEnter: (slotIndex: number) => void;
   onHoverLeave: () => void;
 }) {
@@ -106,6 +111,8 @@ function SlotContainer({
           (showContent && isMultiStart ? ' slot-container--multi-start' : '') +
           (showContent && isGroupHovered ? ' slot-container--hover' : '') +
           (isDropTarget ? ' slot-container--over' : '') +
+          (isDragBlocked ? ' slot-container--drag-blocked' : '') +
+          (isRejected ? ' slot-container--rejected' : '') +
           (disabled ? ' slot-container--disabled' : '') +
           (isLocked ? ' slot-container--locked' : '') +
           (isStressed ? ' slot-container--stressed' : '') +
@@ -146,6 +153,7 @@ export function SlotGrid({
   disabled,
   lockedSlots,
   stressSlots,
+  rejectedSlot,
 }: SlotGridProps) {
   // Track which slots are being dragged and drop targets (for multi-slot visual)
   const { active, over } = useDndContext();
@@ -165,7 +173,7 @@ export function SlotGrid({
   }, [active, placedInterventions]);
 
   // Compute drop target slots (for multi-slot drag highlight)
-  const dropTargetSlots = useMemo(() => {
+  const dropTargetSlots = useMemo<Set<number>>(() => {
     const slots = new Set<number>();
     if (!active || !over) return slots;
     const overId = String(over.id);
@@ -182,6 +190,15 @@ export function SlotGrid({
     }
     return slots;
   }, [active, over]);
+
+  // Is the current drop target blocked (any of the target slots is locked)?
+  const isDropTargetBlocked = useMemo(() => {
+    if (dropTargetSlots.size === 0) return false;
+    for (const s of dropTargetSlots) {
+      if (lockedSlots?.has(s)) return true;
+    }
+    return false;
+  }, [dropTargetSlots, lockedSlots]);
 
   // Track hover group for multi-slot highlight
   const [hoveredGroup, setHoveredGroup] = useState<Set<number>>(new Set());
@@ -246,7 +263,12 @@ export function SlotGrid({
           isStressed={stressSlots?.has(slotIndex)}
           isParentDragging={draggingSlots.has(slotIndex)}
           isGroupHovered={!lockedSlots?.has(slotIndex) && hoveredGroup.has(slotIndex)}
-          isDropTarget={dropTargetSlots.has(slotIndex)}
+          isDropTarget={dropTargetSlots.has(slotIndex) && !isDropTargetBlocked}
+          isDragBlocked={
+            (!!active && !!lockedSlots?.has(slotIndex) && !getSlotContent(slotIndex)) ||
+            (dropTargetSlots.has(slotIndex) && isDropTargetBlocked)
+          }
+          isRejected={rejectedSlot === slotIndex}
           onHoverEnter={handleSlotHover}
           onHoverLeave={handleSlotLeave}
         />

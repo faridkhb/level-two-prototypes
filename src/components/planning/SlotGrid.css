@@ -162,6 +162,30 @@
   background: transparent;
 }
 
+/* Drag-blocked slot — shown red when dragging over a locked slot */
+.slot-container--drag-blocked {
+  border-color: #ef4444;
+  border-style: dashed;
+  background: rgba(239, 68, 68, 0.12);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Rejected slot — shake animation on failed drop */
+.slot-container--rejected {
+  animation: slotReject 0.45s ease-out;
+  border-color: #ef4444;
+}
+
+@keyframes slotReject {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-5px); }
+  40%  { transform: translateX(5px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+
 /* Tooltip -- CSS-based via data-tooltip attribute */
 .slot-container[data-tooltip]::after {
   content: attr(data-tooltip);

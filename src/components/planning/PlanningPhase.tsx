@@ -108,6 +108,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [activeShip, setActiveShip] = useState<Ship | null>(null);
   const [activeIntervention, setActiveIntervention] = useState<Intervention | null>(null);
   const [previewSlot, setPreviewSlot] = useState<number | null>(null);
+  const [rejectedSlot, setRejectedSlot] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Submit / reveal state
@@ -272,6 +273,11 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     })
   );
 
+  const rejectDrop = useCallback((slot: number) => {
+    setRejectedSlot(slot);
+    setTimeout(() => setRejectedSlot(null), 450);
+  }, []);
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
     if (gamePhase !== 'planning') return;
     const ship = event.active.data.current?.ship as Ship | undefined;
@@ -329,7 +335,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
         // Block drag from locked slot
         if (effectiveLockedSlots.has(fromSlotIndex)) return;
         // Block drag to locked slot
-        if (effectiveLockedSlots.has(targetSlot)) return;
+        if (effectiveLockedSlots.has(targetSlot)) { rejectDrop(targetSlot); return; }
         // Slot → Slot: move or swap
         if (fromSlotIndex === targetSlot) return;
         moveSlotToSlot(fromSlotIndex, targetSlot);
@@ -354,12 +360,12 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           const slotSize = intervention.slotSize ?? 1;
 
           if (slotSize > 1) {
-            if (targetSlot + slotSize > TOTAL_SLOTS) return;
+            if (targetSlot + slotSize > TOTAL_SLOTS) { rejectDrop(targetSlot); return; }
             for (let s = targetSlot; s < targetSlot + slotSize; s++) {
-              if (effectiveLockedSlots.has(s)) return;
-              if (isSlotCovered(s)) return;
+              if (effectiveLockedSlots.has(s)) { rejectDrop(targetSlot); return; }
+              if (isSlotCovered(s)) { rejectDrop(targetSlot); return; }
             }
-            if (intervention.wpCost > wpRemaining) return;
+            if (intervention.wpCost > wpRemaining) { rejectDrop(targetSlot); return; }
             placeInterventionInSlot(intervention.id, targetSlot, slotSize);
             notifyTutorialAction({ type: 'place-intervention', interventionId: intervention.id, slotIndex: targetSlot });
             return;
@@ -367,7 +373,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
         }
 
         // Block placement on locked slots
-        if (effectiveLockedSlots.has(targetSlot)) return;
+        if (effectiveLockedSlots.has(targetSlot)) { rejectDrop(targetSlot); return; }
 
         // Single-slot placement (food or single-slot intervention)
         const targetOccupied = isSlotCovered(targetSlot);
@@ -396,21 +402,21 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
         if (isIntervention) {
           const intervention = activeData?.intervention as Intervention | undefined;
           if (!intervention) return;
-          if (intervention.wpCost > effectiveWp) return;
+          if (intervention.wpCost > effectiveWp) { rejectDrop(targetSlot); return; }
           if (targetOccupied) removeFromSlot(targetSlot);
           placeInterventionInSlot(intervention.id, targetSlot);
           notifyTutorialAction({ type: 'place-intervention', interventionId: intervention.id, slotIndex: targetSlot });
         } else {
           const ship = activeData?.ship as Ship | undefined;
           if (!ship) return;
-          if ((ship.wpCost ?? 0) > effectiveWp) return;
+          if ((ship.wpCost ?? 0) > effectiveWp) { rejectDrop(targetSlot); return; }
           if (targetOccupied) removeFromSlot(targetSlot);
           placeFoodInSlot(ship.id, targetSlot);
           notifyTutorialAction({ type: 'place-food', foodId: ship.id, slotIndex: targetSlot });
         }
       }
     },
-    [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions, effectiveLockedSlots, notifyTutorialAction]
+    [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions, effectiveLockedSlots, notifyTutorialAction, rejectDrop]
   );
 
   const handleToggleBoost = useCallback(() => {
@@ -638,6 +644,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             disabled={!isPlanning}
             lockedSlots={effectiveLockedSlots}
             stressSlots={stressSlotSet}
+            rejectedSlot={rejectedSlot}
           />
 
           {isPlanning && (
