@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.48.14 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation |
+| `main` | BG Planner | v0.48.18 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
 
 Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
@@ -107,7 +107,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.48.14)
+- `src/version.ts` — version number (v0.48.18)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -157,7 +157,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.48.14) — 8 Tutorials, Zone Hatching, Food Speed Labels, Insulin Viz, Stress Slot Pulse, BOOST hidden T1-T3
+### Current State (v0.48.18) — 8 Tutorials, T6 Metformin Redesign, Drag Rejection UX, BOOST hidden T1-T3
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -389,7 +389,7 @@ CONFIG:
   - `bonusBoostBars` field in day config grants additional BOOST uses
   - Passed through loader.ts dayConfigs transform
 
-- **Tutorial System** ✅ (v0.47.20-v0.48.14)
+- **Tutorial System** ✅ (v0.47.20-v0.48.18)
   - 8 tutorial levels across 3 days each (tutorials 01-08 + tutorial-05 "Under Stress")
   - `tutorialData.ts` — step definitions per level/day with bubble, highlight, CTA, advanceOn
   - CTA types: `drag-arrow` (animated arrow), `tap-pulse` (pulsing target), `glow-border`, `bounce`
@@ -403,6 +403,8 @@ CONFIG:
   - `spotlight` highlight type must target DOM elements only — SVG-based targets (stress-slots) use `highlightStressSlots` prop instead to avoid beam artifact
   - **BOOST button hidden for T1/T2/T3** (v0.48.14): PancreasButton not rendered until tutorial-04 where BOOST is introduced
   - **Stress slot visual fix** (v0.48.11): BgGraph was using `slotIndex * 4` instead of `slotIndex * COLS_PER_SLOT` — stress zones appeared at double the correct column position
+  - **T6 Metformin tutorial redesign** (v0.48.15-18): 9-step narrative — peak spotlight → WP/run hint → BOOST warning → Actions tab → Metformin spotlight → no-WP hint → toggle → med-effect pulse → place+submit; `highlightMedEffect` prop pulses fuchsia prevented-cubes; T6D1 wpBudget=4 (Heavy Run costs all WP)
+  - **Drag rejection UX** (v0.48.17): locked slots highlight red (`--drag-blocked`) while dragging; failed drop triggers shake animation (`--rejected`), `rejectedSlot` state in PlanningPhase
   - All tutorials balanced for realistic kcal (1400-2000) and WP (7-12) ranges
 
 - **Satiety Bonus System** — disabled (v0.47.76)
@@ -663,6 +665,7 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 - `alpha-8-vertical` (v0.47.12) — startingBg, 50 mg/dL grid cells, Y-axis labels, vertical layout redesign (KcalBar extracted, transparent slot cards, no graph border, red 200 line, dead CSS cleanup)
 - `alpha-9-stable` (v0.48.6) — 8 tutorial levels (incl. "Under Stress"), bonusBoostBars, insulin profile visualization, zone-colored hatching, food speed labels, tutorial CTA system (drag-arrow, tap-pulse, lockedTab, noBackdrop, auto-relocate), satiety bonus disabled, result panel reorder, slot grid pull-up on submit, BOOST merged into insulin reveal phase
 - `alpha-10-stable` (v0.48.14) — stress slot pulse animation, T5 tutorial fixes, BOOST hidden for T1-T3, stress slot visual position fix, food balance rebalance (10 items), T2D1 chicken→chickpeas, archived branch docs cleanup
+- `alpha-11-stable` (v0.48.18) — T6 Metformin tutorial redesign (9 steps, highlightMedEffect prop, wpBudget=4), Heavy Run added to T6D1, locked slot drag rejection UX (red highlight + shake animation), T6D1 unlocked slots 9AM/1PM/5PM/6PM
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
