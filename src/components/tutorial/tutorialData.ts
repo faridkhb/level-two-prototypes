@@ -555,6 +555,15 @@ const L5D1: TutorialStep[] = [
   },
   {
     id: 'L5D1-2',
+    bubble: { type: 'hint', text: 'Heavy Run costs all 4 WP \u2014 nothing left for food. Not a great trade today.', expression: 'thinking' },
+    highlight: 'wp-counter',
+    highlightType: 'glow',
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'L5D1-3',
     bubble: { type: 'hint', text: 'You could use BOOST to flatten it... but BOOST has only 1 charge this level. Spending it on Day 1 is a risk.', expression: 'thinking' },
     highlight: 'boost-btn',
     highlightType: 'glow',
@@ -563,7 +572,7 @@ const L5D1: TutorialStep[] = [
     blockInteraction: true,
   },
   {
-    id: 'L5D1-3',
+    id: 'L5D1-4',
     bubble: { type: 'dialogue', text: 'There\'s a new tool waiting in the Actions panel. Let\'s check it out!', expression: 'neutral' },
     highlight: 'tab-actions',
     highlightType: 'pulse',
@@ -573,7 +582,7 @@ const L5D1: TutorialStep[] = [
     expectedAction: { type: 'switch-tab', tabName: 'actions' },
   },
   {
-    id: 'L5D1-4',
+    id: 'L5D1-5',
     bubble: { type: 'dialogue', text: '\ud83d\udc8a Metformin! It reduces ALL food glucose by 20% \u2014 for the entire day.', expression: 'neutral' },
     highlight: 'medication:metformin',
     highlightType: 'spotlight',
@@ -581,12 +590,12 @@ const L5D1: TutorialStep[] = [
     blockInteraction: true,
   },
   {
-    id: 'L5D1-5',
+    id: 'L5D1-6',
     bubble: { type: 'hint', text: 'No WP cost. Just tap once \u2014 it stays active all day.', expression: 'thinking' },
     advanceOn: 'tap',
   },
   {
-    id: 'L5D1-6',
+    id: 'L5D1-7',
     bubble: { type: 'dialogue', text: 'Tap Metformin ON and watch the peak change!', expression: 'neutral' },
     highlight: 'medication:metformin',
     highlightType: 'pulse',
@@ -595,7 +604,7 @@ const L5D1: TutorialStep[] = [
     expectedAction: { type: 'toggle-medication', medicationId: 'metformin' },
   },
   {
-    id: 'L5D1-7',
+    id: 'L5D1-8',
     bubble: { type: 'success', text: 'The peak dropped! Those fuchsia cells show the glucose Metformin prevented. The more food \u2014 the bigger the effect!', expression: 'happy', position: 'bottom' },
     highlight: 'graph',
     highlightType: 'glow',
@@ -604,7 +613,7 @@ const L5D1: TutorialStep[] = [
     advanceOn: 'tap',
   },
   {
-    id: 'L5D1-8',
+    id: 'L5D1-9',
     bubble: { type: 'dialogue', text: 'Place your remaining foods and submit!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
