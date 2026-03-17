@@ -41,6 +41,7 @@ export interface TutorialStep {
   advanceOn: AdvanceOn;
   blockInteraction?: boolean;
   expectedAction?: ExpectedAction;
+  highlightMedEffect?: boolean;  // tutorial: pulse animation on med-prevented cubes
 }
 
 // ======= LEVEL 1 — First Steps =======
@@ -546,17 +547,16 @@ const L4D3: TutorialStep[] = [
 const L5D1: TutorialStep[] = [
   {
     id: 'L5D1-1',
-    bubble: { type: 'dialogue', text: 'See the purple panel below the graph? That\'s the medication area.', expression: 'neutral' },
-    highlight: 'med-toggles',
+    bubble: { type: 'dialogue', text: 'Look at that muffin peak! 35g carbs \u2014 straight into the danger zone.', expression: 'concerned' },
+    highlight: 'graph',
     highlightType: 'spotlight',
-    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L5D1-2',
-    bubble: { type: 'dialogue', text: '\ud83d\udc8a Metformin reduces ALL food glucose by 20%. It costs no WP \u2014 it\'s a free toggle.', expression: 'neutral' },
-    highlight: 'medication:metformin',
+    bubble: { type: 'hint', text: 'You could use BOOST to flatten it... but BOOST has only 1 charge this level. Spending it on Day 1 is a risk.', expression: 'thinking' },
+    highlight: 'boost-btn',
     highlightType: 'glow',
     noBackdrop: true,
     advanceOn: 'tap',
@@ -564,7 +564,30 @@ const L5D1: TutorialStep[] = [
   },
   {
     id: 'L5D1-3',
-    bubble: { type: 'dialogue', text: 'The muffin has 44g of carbs \u2014 a massive glucose spike! Toggle Metformin ON and watch what happens!', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'There\'s a new tool waiting in the Actions panel. Let\'s check it out!', expression: 'neutral' },
+    highlight: 'tab-actions',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'tab-actions' },
+    lockedTab: 'food',
+    advanceOn: 'action',
+    expectedAction: { type: 'switch-tab', tabName: 'actions' },
+  },
+  {
+    id: 'L5D1-4',
+    bubble: { type: 'dialogue', text: '\ud83d\udc8a Metformin! It reduces ALL food glucose by 20% \u2014 for the entire day.', expression: 'neutral' },
+    highlight: 'medication:metformin',
+    highlightType: 'spotlight',
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'L5D1-5',
+    bubble: { type: 'hint', text: 'No WP cost. Just tap once \u2014 it stays active all day.', expression: 'thinking' },
+    advanceOn: 'tap',
+  },
+  {
+    id: 'L5D1-6',
+    bubble: { type: 'dialogue', text: 'Tap Metformin ON and watch the peak change!', expression: 'neutral' },
     highlight: 'medication:metformin',
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'medication:metformin' },
@@ -572,15 +595,17 @@ const L5D1: TutorialStep[] = [
     expectedAction: { type: 'toggle-medication', medicationId: 'metformin' },
   },
   {
-    id: 'L5D1-4',
-    bubble: { type: 'success', text: 'The glucose peak dropped by 20%! That\'s a big reduction in the danger zone. Metformin reduces glucose from ALL foods.', expression: 'happy', position: 'inventory' },
+    id: 'L5D1-7',
+    bubble: { type: 'success', text: 'The peak dropped! Those fuchsia cells show the glucose Metformin prevented. The more food \u2014 the bigger the effect!', expression: 'happy', position: 'bottom' },
     highlight: 'graph',
     highlightType: 'glow',
+    noBackdrop: true,
+    highlightMedEffect: true,
     advanceOn: 'tap',
   },
   {
-    id: 'L5D1-5',
-    bubble: { type: 'dialogue', text: 'Place your foods and submit.', expression: 'neutral', position: 'inventory' },
+    id: 'L5D1-8',
+    bubble: { type: 'dialogue', text: 'Place your remaining foods and submit!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',

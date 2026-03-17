@@ -209,6 +209,15 @@
   animation: stressPulse 1.2s ease-in-out infinite;
 }
 
+.med-effect-pulse {
+  animation: medEffectPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes medEffectPulse {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 0.9; }
+}
+
 /* Reveal phase label — floating badge in graph corner */
 .bg-graph__reveal-label {
   display: flex;
