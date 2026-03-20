@@ -75,16 +75,22 @@ function InventoryRow({
     };
   }, []);
 
+  const scroll = (dir: 1 | -1) => {
+    trackRef.current?.scrollBy({ left: dir * 160, behavior: 'smooth' });
+  };
+
   return (
     <div
       className={`inv-row${fadeLeft ? ' inv-row--fade-left' : ''}${fadeRight ? ' inv-row--fade-right' : ''}`}
     >
+      <button className="inv-row__btn inv-row__btn--left" onClick={() => scroll(-1)} tabIndex={-1}>‹</button>
       <div
         ref={trackRef}
         className={`inv-row__track${trackClassName ? ' ' + trackClassName : ''}`}
       >
         {children}
       </div>
+      <button className="inv-row__btn inv-row__btn--right" onClick={() => scroll(1)} tabIndex={-1}>›</button>
     </div>
   );
 }

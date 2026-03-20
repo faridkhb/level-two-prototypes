@@ -2,7 +2,6 @@
 
 .inv-row {
   position: relative;
-  overflow: hidden;
 }
 
 .inv-row__track {
@@ -26,7 +25,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 24px;
+  width: 28px;
   pointer-events: none;
   z-index: 3;
   opacity: 0;
@@ -46,6 +45,43 @@
 .inv-row--fade-left::before  { opacity: 1; }
 .inv-row--fade-right::after  { opacity: 1; }
 
+/* Scroll arrow buttons */
+.inv-row__btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 18px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, background 0.1s ease;
+}
+
+.inv-row__btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.inv-row__btn--left  { left: 3px; }
+.inv-row__btn--right { right: 3px; }
+
+.inv-row--fade-left  .inv-row__btn--left,
+.inv-row--fade-right .inv-row__btn--right {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .inv-row__empty {
   padding: 12px 16px;
   color: #718096;
@@ -53,7 +89,7 @@
   white-space: nowrap;
 }
 
-/* Mobile: cards keep column layout (72px wide) — min-width prevents collapse in flex-nowrap */
+/* Mobile */
 @media (max-width: 480px) {
   .inv-row__track {
     gap: 5px;
