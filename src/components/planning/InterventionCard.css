@@ -13,7 +13,7 @@
   position: relative;
   touch-action: none;
   width: 140px;
-  height: 50px;
+  height: 72px;
 }
 
 .intervention-card:hover {
@@ -151,29 +151,50 @@
   opacity: 1;
 }
 
-/* Mobile portrait */
+/* Mobile portrait — vertical compact card (matches food card) */
 @media (max-width: 480px) {
   .intervention-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
     width: auto;
-    min-width: 0;
-    height: 48px;
-    padding: 6px 8px;
-    gap: 6px;
+    height: auto;
+    min-height: 92px;
+    padding: 6px 4px 5px;
+    gap: 2px;
   }
 
   .intervention-card__emoji {
-    font-size: 20px;
+    font-size: 24px;
+  }
+
+  .intervention-card__details {
+    align-items: center;
+    gap: 1px;
   }
 
   .intervention-card__name {
-    font-size: 10px;
+    font-size: 9px;
+    max-width: 72px;
   }
 
   .intervention-card__info {
-    font-size: 9px;
+    font-size: 10px;
+    word-spacing: -1px;
   }
 
   .intervention-card__badge {
-    font-size: 11px;
+    font-size: 10px;
+    top: 1px;
+    right: 1px;
+    padding: 1px 3px;
+  }
+
+  .intervention-card__count {
+    top: -4px;
+    right: -4px;
+    font-size: 9px;
+    padding: 1px 4px;
+    min-width: 16px;
   }
 }
