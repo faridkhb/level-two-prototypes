@@ -22,12 +22,11 @@ export interface TutorialCTA {
 }
 
 export interface ExpectedAction {
-  type: 'place-food' | 'place-intervention' | 'toggle-medication' | 'toggle-boost' | 'click-submit' | 'switch-tab';
+  type: 'place-food' | 'place-intervention' | 'toggle-medication' | 'toggle-boost' | 'click-submit';
   foodId?: string;
   slotIndex?: number;
   interventionId?: string;
   medicationId?: string;
-  tabName?: string;
 }
 
 export interface TutorialStep {
@@ -36,7 +35,6 @@ export interface TutorialStep {
   highlight?: string | string[];
   highlightType?: HighlightType;
   noBackdrop?: boolean;
-  lockedTab?: string;
   cta?: TutorialCTA;
   advanceOn: AdvanceOn;
   blockInteraction?: boolean;
@@ -181,20 +179,10 @@ const L2D1: TutorialStep[] = [
     blockInteraction: true,
   },
   {
-    id: 'L2D1-3',
-    bubble: { type: 'dialogue', text: 'Open the Actions tab to see your exercise options!', expression: 'neutral' },
-    highlight: 'tab-actions',
-    highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'tab-actions' },
-    advanceOn: 'action',
-    expectedAction: { type: 'switch-tab', tabName: 'actions' },
-  },
-  {
     id: 'L2D1-4',
     bubble: { type: 'dialogue', text: 'The \ud83d\udeb6 Light Walk burns glucose from the top. Drag it next to the pizza peak!', expression: 'thinking', position: 'inventory' },
     highlight: ['intervention:lightwalk', 'slot:3'],
     highlightType: 'pulse',
-    lockedTab: 'actions',
     cta: { type: 'drag-arrow', source: 'intervention:lightwalk', dest: 'slot:3' },
     advanceOn: 'action',
     expectedAction: { type: 'place-intervention', interventionId: 'lightwalk' },
@@ -205,17 +193,7 @@ const L2D1: TutorialStep[] = [
     highlight: 'graph',
     highlightType: 'glow',
     noBackdrop: true,
-    lockedTab: 'food',
     advanceOn: 'tap',
-  },
-  {
-    id: 'L2D1-6',
-    bubble: { type: 'dialogue', text: 'Great! Now switch to the Food tab to place your Chicken Meal!', expression: 'neutral', position: 'inventory' },
-    highlight: 'tab-food',
-    highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'tab-food' },
-    advanceOn: 'action',
-    expectedAction: { type: 'switch-tab', tabName: 'food' },
   },
   {
     id: 'L2D1-7',
@@ -266,21 +244,11 @@ const L2D2: TutorialStep[] = [
 
 const L2D3: TutorialStep[] = [
   {
-    id: 'L2D3-1',
-    bubble: { type: 'dialogue', text: 'Open the Actions tab to find your Heavy Run!', expression: 'neutral' },
-    highlight: 'tab-actions',
-    highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'tab-actions' },
-    advanceOn: 'action',
-    expectedAction: { type: 'switch-tab', tabName: 'actions' },
-  },
-  {
     id: 'L2D3-2',
     bubble: { type: 'dialogue', text: 'New: \ud83c\udfc3 Heavy Run! It reduces glucose much more than a walk \u2014 deeper and over a longer period (3 hours). But it costs 4 WP and takes 2 slots!', expression: 'neutral' },
     highlight: 'intervention:heavyrun',
     highlightType: 'spotlight',
     noBackdrop: true,
-    lockedTab: 'actions',
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -289,7 +257,6 @@ const L2D3: TutorialStep[] = [
     bubble: { type: 'dialogue', text: '\ud83e\uddc1 The Muffin is at the 8:30 AM slot. Drag the Heavy Run right after it to crush the peak!', expression: 'thinking', position: 'inventory' },
     highlight: ['intervention:heavyrun', 'slot:2'],
     highlightType: 'pulse',
-    lockedTab: 'actions',
     cta: { type: 'drag-arrow', source: 'intervention:heavyrun', dest: 'slot:2' },
     advanceOn: 'action',
     expectedAction: { type: 'place-intervention', interventionId: 'heavyrun' },
@@ -297,7 +264,7 @@ const L2D3: TutorialStep[] = [
   {
     id: 'L2D3-4',
     bubble: { type: 'dialogue', text: 'Place everything and submit!', expression: 'happy', position: 'inventory' },
-    highlight: 'tab-food',
+    highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
     expectedAction: { type: 'click-submit' },
@@ -318,7 +285,7 @@ const L3D1: TutorialStep[] = [
   {
     id: 'L3D1-2',
     bubble: { type: 'dialogue', text: 'Place your first food on the graph.', expression: 'neutral', position: 'inventory' },
-    highlight: 'tab-food',
+    highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
     expectedAction: { type: 'place-food' },
@@ -333,38 +300,26 @@ const L3D1: TutorialStep[] = [
   },
   {
     id: 'L3D1-4',
-    bubble: { type: 'warning', text: '1 WP left, but the last food costs 2! Open the Actions tab \u2014 Take a Break refunds 1 WP.', expression: 'concerned' },
-    highlight: 'tab-actions',
+    bubble: { type: 'warning', text: '1 WP left, but the last food costs 2! \u2615 Take a Break refunds 1 WP.', expression: 'concerned' },
+    highlight: 'intervention:takeabreak',
     highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'tab-actions' },
-    advanceOn: 'action',
-    expectedAction: { type: 'switch-tab', tabName: 'actions' },
+    advanceOn: 'tap',
+    blockInteraction: true,
   },
   {
     id: 'L3D1-5',
     bubble: { type: 'dialogue', text: 'Drag \u2615 Take a Break to a slot \u2014 you\u2019ll get 1 WP back!', expression: 'happy', position: 'inventory' },
     highlight: 'intervention:takeabreak',
     highlightType: 'pulse',
-    lockedTab: 'food',
     cta: { type: 'drag-arrow', source: 'intervention:takeabreak' },
     advanceOn: 'action',
     expectedAction: { type: 'place-intervention', interventionId: 'takeabreak' },
-  },
-  {
-    id: 'L3D1-6',
-    bubble: { type: 'success', text: 'You now have 2 WP! Switch back to Food tab.', expression: 'happy' },
-    highlight: 'tab-food',
-    highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'tab-food' },
-    advanceOn: 'action',
-    expectedAction: { type: 'switch-tab', tabName: 'food' },
   },
   {
     id: 'L3D1-7',
     bubble: { type: 'dialogue', text: 'Place the last food!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
-    lockedTab: 'food',
     advanceOn: 'action',
     expectedAction: { type: 'place-food' },
   },
@@ -570,16 +525,6 @@ const L5D1: TutorialStep[] = [
     noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
-  },
-  {
-    id: 'L5D1-4',
-    bubble: { type: 'dialogue', text: 'There\'s a new tool waiting in the Actions panel. Let\'s check it out!', expression: 'neutral' },
-    highlight: 'tab-actions',
-    highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'tab-actions' },
-    lockedTab: 'food',
-    advanceOn: 'action',
-    expectedAction: { type: 'switch-tab', tabName: 'actions' },
   },
   {
     id: 'L5D1-5',

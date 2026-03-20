@@ -1,4 +1,3 @@
-import { useState, useMemo } from 'react';
 import type {
   Ship,
   PlacedFood,
@@ -9,9 +8,6 @@ import type {
 } from '../../core/types';
 import { ShipInventory } from './ShipInventory';
 import { InterventionInventory } from './InterventionInventory';
-import './TabbedInventory.css';
-
-type InventoryTab = 'food' | 'actions';
 
 interface TabbedInventoryProps {
   allShips: Ship[];
@@ -25,8 +21,6 @@ interface TabbedInventoryProps {
   availableMedicationIds?: string[];
   activeMedications?: string[];
   onMedicationToggle?: (medicationId: string) => void;
-  onTabChange?: (tab: InventoryTab) => void;
-  disabledTab?: InventoryTab;
 }
 
 export function TabbedInventory({
@@ -41,81 +35,25 @@ export function TabbedInventory({
   availableMedicationIds = [],
   activeMedications = [],
   onMedicationToggle,
-  onTabChange,
-  disabledTab,
 }: TabbedInventoryProps) {
-  const [tab, setTab] = useState<InventoryTab>('food');
-
-  const handleTabSwitch = (newTab: InventoryTab) => {
-    setTab(newTab);
-    onTabChange?.(newTab);
-  };
-
-  const foodCount = useMemo(() => {
-    const placed = new Map<string, number>();
-    for (const pf of placedFoods) {
-      placed.set(pf.shipId, (placed.get(pf.shipId) || 0) + 1);
-    }
-    let count = 0;
-    for (const af of availableFoods) {
-      count += af.count - (placed.get(af.id) || 0);
-    }
-    return count;
-  }, [availableFoods, placedFoods]);
-
-  const actionsCount = useMemo(() => {
-    const placed = new Map<string, number>();
-    for (const pi of placedInterventions) {
-      placed.set(pi.interventionId, (placed.get(pi.interventionId) || 0) + 1);
-    }
-    let count = 0;
-    for (const ai of availableInterventions) {
-      count += ai.count - (placed.get(ai.id) || 0);
-    }
-    count += availableMedicationIds.length;
-    return count;
-  }, [availableInterventions, placedInterventions, availableMedicationIds]);
-
   return (
     <div className="ship-inventory">
-      <div className="tabbed-inventory__tabs">
-        <button
-          data-tab="food"
-          className={`tabbed-inventory__tab${tab === 'food' ? ' tabbed-inventory__tab--active' : ''}${disabledTab === 'food' ? ' tabbed-inventory__tab--locked' : ''}`}
-          onClick={() => handleTabSwitch('food')}
-          disabled={disabledTab === 'food'}
-        >
-          Food ({foodCount})
-        </button>
-        <button
-          data-tab="actions"
-          className={`tabbed-inventory__tab${tab === 'actions' ? ' tabbed-inventory__tab--active' : ''}${disabledTab === 'actions' ? ' tabbed-inventory__tab--locked' : ''}`}
-          onClick={() => handleTabSwitch('actions')}
-          disabled={disabledTab === 'actions'}
-        >
-          Actions ({actionsCount})
-        </button>
-      </div>
-
-      {tab === 'food' ? (
-        <ShipInventory
-          allShips={allShips}
-          availableFoods={availableFoods}
-          placedFoods={placedFoods}
-          wpRemaining={wpRemaining}
-        />
-      ) : (
-        <InterventionInventory
-          allInterventions={allInterventions}
-          availableInterventions={availableInterventions}
-          placedInterventions={placedInterventions}
-          wpRemaining={wpRemaining}
-          allMedications={allMedications}
-          availableMedicationIds={availableMedicationIds}
-          activeMedications={activeMedications}
-          onMedicationToggle={onMedicationToggle}
-        />
-      )}
+      <ShipInventory
+        allShips={allShips}
+        availableFoods={availableFoods}
+        placedFoods={placedFoods}
+        wpRemaining={wpRemaining}
+      />
+      <InterventionInventory
+        allInterventions={allInterventions}
+        availableInterventions={availableInterventions}
+        placedInterventions={placedInterventions}
+        wpRemaining={wpRemaining}
+        allMedications={allMedications}
+        availableMedicationIds={availableMedicationIds}
+        activeMedications={activeMedications}
+        onMedicationToggle={onMedicationToggle}
+      />
     </div>
   );
 }

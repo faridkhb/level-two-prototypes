@@ -22,8 +22,6 @@ const HIGHLIGHT_SELECTORS: Record<string, string> = {
   'med-toggles': '.medication-section',
   'slot-grid': '.slot-grid',
   'boost-btn': '.pancreas-btn',
-  'tab-actions': '.tabbed-inventory__tab[data-tab="actions"]',
-  'tab-food': '.tabbed-inventory__tab[data-tab="food"]',
   'result-next-btn': '.result-panel__btn--next',
 };
 

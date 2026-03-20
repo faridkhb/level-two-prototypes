@@ -17,7 +17,6 @@ function matchesExpectedAction(expected: ExpectedAction, actual: { type: string;
   if (expected.slotIndex !== undefined && expected.slotIndex !== actual.slotIndex) return false;
   if (expected.interventionId !== undefined && expected.interventionId !== actual.interventionId) return false;
   if (expected.medicationId !== undefined && expected.medicationId !== actual.medicationId) return false;
-  if (expected.tabName !== undefined && expected.tabName !== actual.tabName) return false;
   return true;
 }
 
