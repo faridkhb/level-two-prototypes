@@ -67,9 +67,6 @@ export function InterventionCard({
       <div className="intervention-card__details">
         <span className="intervention-card__name">{intervention.name}</span>
         <span className="intervention-card__info">{intervention.duration}m</span>
-        <span className="intervention-card__info">
-          {intervention.isBreak ? `+${Math.abs(intervention.wpCost)}☀️ refund` : `-${intervention.depth} cubes`}
-        </span>
       </div>
 
       {remainingCount !== undefined && remainingCount < 99 && (
@@ -92,9 +89,6 @@ export function InterventionCardOverlay({ intervention }: { intervention: Interv
       <div className="intervention-card__details">
         <span className="intervention-card__name">{intervention.name}</span>
         <span className="intervention-card__info">{intervention.duration}m</span>
-        <span className="intervention-card__info">
-          {intervention.isBreak ? `+${Math.abs(intervention.wpCost)}☀️ refund` : `-${intervention.depth} cubes`}
-        </span>
       </div>
     </div>
   );
