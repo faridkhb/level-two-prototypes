@@ -31,26 +31,4 @@
   .ship-inventory__title {
     font-size: 11px;
   }
-
-  /* Food cards: auto-fill compact vertical grid */
-  .ship-inventory__grid--food {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 6px;
-  }
-
-  /* Actions: same grid as food cards */
-  .ship-inventory__grid--actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 6px;
-  }
-
-  /* Medication section spans all columns, then lays out cards in same grid */
-  .medication-section {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 6px;
-  }
 }

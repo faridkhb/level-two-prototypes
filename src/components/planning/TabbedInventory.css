@@ -1,1 +1,62 @@
-/* Tabs removed — inventory is now unified (food + actions in one scroll area) */
+/* Unified inventory — 3 horizontal scroll rows */
+
+.inv-row {
+  position: relative;
+  overflow: hidden;
+}
+
+.inv-row__track {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.inv-row__track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Edge fade overlays */
+.inv-row::before,
+.inv-row::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.inv-row::before {
+  left: 0;
+  background: linear-gradient(to right, #1a202c, transparent);
+}
+
+.inv-row::after {
+  right: 0;
+  background: linear-gradient(to left, #1a202c, transparent);
+}
+
+.inv-row--fade-left::before  { opacity: 1; }
+.inv-row--fade-right::after  { opacity: 1; }
+
+.inv-row__empty {
+  padding: 12px 16px;
+  color: #718096;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Mobile: cards keep column layout (72px wide) — min-width prevents collapse in flex-nowrap */
+@media (max-width: 480px) {
+  .inv-row__track {
+    gap: 5px;
+    padding: 3px 5px;
+  }
+}
