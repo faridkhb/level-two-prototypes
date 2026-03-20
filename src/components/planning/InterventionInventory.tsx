@@ -107,7 +107,6 @@ export function InterventionInventory({
                 <span className="medication-toggle__emoji">{med.emoji}</span>
                 <div className="medication-toggle__details">
                   <span className="medication-toggle__name">{med.name}</span>
-                  <span className="medication-toggle__desc">{tooltip}</span>
                 </div>
                 <span className="medication-toggle__status">
                   {isActive ? 'ON' : 'OFF'}
