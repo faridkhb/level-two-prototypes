@@ -3,16 +3,16 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Ship } from '../../core/types';
 import './ShipCard.css';
 
-function getSpeedLabel(duration: number): string {
-  if (duration <= 45) return 'Fast';
-  if (duration <= 120) return 'Medium';
-  return 'Slow';
+function getSpeedLabel(duration: number): { label: string; color: string } {
+  if (duration <= 45) return { label: 'High GI', color: '#fc8181' };
+  if (duration <= 120) return { label: 'Medium GI', color: '#f6c90e' };
+  return { label: 'Low GI', color: '#68d391' };
 }
 
 function getCardTooltip(ship: Ship): string {
   const cost = ship.wpCost ?? 0;
   const costText = cost > 0 ? `${cost} ☀️` : 'Free';
-  return `${ship.name} · ${ship.kcal} kcal · ${ship.carbs ?? 0}g carbs · ${getSpeedLabel(ship.duration)} absorption · ${costText}`;
+  return `${ship.name} · ${ship.kcal} kcal · ${ship.carbs ?? 0}g carbs · ${getSpeedLabel(ship.duration).label} · ${costText}`;
 }
 
 interface ShipCardProps {
@@ -82,7 +82,7 @@ export function ShipCard({
         <span className="ship-card__name">{ship.name}</span>
         <span className="ship-card__info">{ship.kcal} kcal</span>
         <span className="ship-card__info">{ship.carbs ?? 0}g carbs</span>
-        <span className="ship-card__info">{getSpeedLabel(ship.duration)}</span>
+        <span className="ship-card__info" style={{ color: getSpeedLabel(ship.duration).color }}>{getSpeedLabel(ship.duration).label}</span>
       </div>
 
       {remainingCount !== undefined && remainingCount < 99 && (
@@ -108,7 +108,7 @@ export function ShipCardOverlay({ ship }: { ship: Ship }) {
         <span className="ship-card__name">{ship.name}</span>
         <span className="ship-card__info">{ship.kcal} kcal</span>
         <span className="ship-card__info">{ship.carbs ?? 0}g carbs</span>
-        <span className="ship-card__info">{getSpeedLabel(ship.duration)}</span>
+        <span className="ship-card__info" style={{ color: getSpeedLabel(ship.duration).color }}>{getSpeedLabel(ship.duration).label}</span>
       </div>
     </div>
   );
