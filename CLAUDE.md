@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.48.18 | Graph-based food planning with cubes, interventions, medications, insulin profiles, BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
+| `main` | BG Planner | v0.50.0 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
 
 Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
@@ -157,7 +157,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.48.18) — 8 Tutorials, T6 Metformin Redesign, Drag Rejection UX, BOOST hidden T1-T3
+### Current State (v0.50.0) — Row-Pattern Burn System, 8 Tutorials, BOOST, T6 Metformin Redesign
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -180,10 +180,10 @@ CONFIG:
 - **Phased Layer Reveal Animation** ✅
   - Submit triggers progressive layer-by-layer reveal (replaces old per-food replay)
   - Phase 1: Food cubes appear with wave animation + food emoji markers + label "🍽️ Food Cubes"
-  - Phase 2: Pancreas drain cubes appear + label "🟠 Pancreas"
-  - Phase 3: Exercise burns (walk/run) + intervention markers + label "🏃 Exercise"
-  - Phase 4: Medication effects (SGLT2 burns + Metformin/GLP-1 prevented cubes) + label "💊 Medications"
-  - Empty phases auto-skipped (no pancreas/exercise/meds if not used)
+  - Phase 2: Pancreas burns appear (orange/amber burned cubes) + label "🟠 Pancreas"
+  - Phase 3: Exercise burns (walk/run, green burned cubes) + label "🏃 Exercise"
+  - Phase 4: Medication burns (fuchsia/purple/violet burned cubes) + label "💊 Medications"
+  - Exercise and meds phases auto-skipped if not used; Pancreas always shown
   - Floating label badge in graph upper-right corner during each phase
   - After all phases → penalty overlay + ResultPanel
 
@@ -247,22 +247,17 @@ CONFIG:
     - Draggable — drag to move intervention, drag off graph to remove
     - Markers use `columnCaps` height (responsive to other interventions)
 
-- **Medication System** ✅
+- **Medication System** ✅ (v0.50.0 — row-pattern burns)
   - Three medications as day-wide toggles (ON/OFF), no WP cost
-  - **Metformin** (💊 `peakReduction`): reduces all food glucose by 20% (×0.80) → lower peaks
-  - **SGLT2 Inhibitor** (🧪 `thresholdDrain`): removes up to 3 cubes per column, but not below 200 mg/dL
+  - **Metformin** (💊 `peakReduction`): burn pattern `[0,3,1]` — 3 rows, every 3rd column skipped
+  - **SGLT2 Inhibitor** (🧪 `thresholdDrain`): burn pattern `[0,2]` — 2 rows, floor at 200 mg/dL
     - Purple dashed drain line at 200 mg/dL threshold
-    - Reduction depends on actual food height: `min(depth, max(0, height - floorRow))`
-  - **GLP-1 Agonist** (💉 `slowAbsorption`): duration ×1.5 (wider curves), glucose ×0.90 (−10%, decoupled from duration), kcal budget −30%, WP +4
+    - `sglt2D = min(rawSglt2D, max(0, heightBeforeSglt2 - floorRow))` — floor preserved
+  - **GLP-1 Agonist** (💉 `slowAbsorption`): burn pattern `[0,3]` + duration ×1.5, kcal −30%, WP +4
   - Purple toggle panel between graph and food inventory
-  - All medications stack multiplicatively (glucose) and additively (drain, WP)
   - Available per day via `availableMedications` in level config
   - Day 1: none, Day 2: Metformin, Day 3: Metformin + GLP-1
-  - **Medication-prevented cubes** (v0.39.1): visual layer above pancreas zone showing cubes that medications prevented
-    - Metformin: `#f0abfc` fuchsia-300 (opacity 0.45)
-    - GLP-1: `#a78bfa` violet-400 (opacity 0.45)
-    - Per-medication attribution via intermediate Metformin-only curve computation
-    - `glp1GlucoseMultiplier` field in MedicationModifiers for accurate decomposition
+  - Burned cubes from medications colored: Metformin `#f0abfc` fuchsia, SGLT2 `#c084fc` purple, GLP-1 `#a78bfa` violet
 
 - **Wave Animations** ✅
   - `cubeAppear`: food cubes pop in with scale (0.3→1.08→1) + opacity wave, left-to-right
@@ -340,19 +335,16 @@ CONFIG:
   - Star rating: 3★ Perfect (≤12.5), 2★ Good (≤50), 1★ Pass (≤100), 0★ Defeat (>100)
   - Penalty highlight overlays (pulsing orange/red) on cubes above threshold
 
-- **Insulin Profile System** ✅ (v0.43.0, replaces old Pancreas tiers)
-  - **Visible insulin bars** on graph: amber background bars showing insulin rate per column
-  - **Variable rates** throughout the day: high morning (insulin sensitive) → low evening (insulin resistant)
-  - **Post-peak insulin**: food rises to full peak without drain, insulin absorbs only after peak
-  - **Cumulative mode** (default): `height = round(peak − cumInsulin)` where `cumInsulin += rate[col]` after peak
-  - **Per-column mode** (config option): `height = round(peak − rate[col])` flat subtraction
-  - **Integer rates** 1-5: 1 insulin cell absorbs 1 glucose cell per column
-  - **Segment-based profiles** per day in level config: `[{from, to, rate}]`
-  - **BOOST** — adaptive insulin: ON/OFF toggle, 1 use per level
-    - Only enhances columns above 200 mg/dL threshold
-    - Extra rate = 4 cubes per column above threshold (configurable)
+- **Row-Pattern Burn System** ✅ (v0.50.0, replaces insulin profile)
+  - Each burn mechanism described by `number[]` array — per-row skip pattern
+  - `patternDepth(pattern, col)` — counts active burn rows for a given time column
+  - Skip logic: `skip=0` → row always burns; `skip=N` → alternates N-skip/N-burn
+  - **Pancreas**: `[0, 0]` — 2 solid rows, every column
+  - **BOOST**: `[0, 3]` — 2 rows, every 3rd column group
+  - **BOOST** button ON/OFF toggle, 1 use per level, hidden T1-T3
     - Button overlaid on graph top-left corner
-  - Config screen: BOOST threshold and extra rate editable
+  - 7-layer burn zone (bottom→top per column): walk → run → pancreas → boost → metformin → sglt2 → glp1
+  - Burn colors: walk `#86efac`, run `#22c55e`, pancreas `#f97316`, boost `#f59e0b`, metformin `#f0abfc`, sglt2 `#c084fc`, glp1 `#a78bfa`
 
 - **Starting BG Level** ✅ (v0.47.0)
   - Configurable `startingBg` per day in level config (default: 50 mg/dL = row 0)
@@ -379,10 +371,8 @@ CONFIG:
   - Each food card shows absorption speed: Fast / Medium / Slow
   - Derived from duration: Fast <45m, Medium 45-90m, Slow >90m
 
-- **Insulin Profile Visualization** ✅ (v0.47.54)
-  - Column tinting shows insulin rate intensity per time slot
-  - Rate bars displayed inside the graph grid
-  - Segment boundaries visible when rate changes throughout the day
+- **Insulin Profile Visualization** — removed (v0.50.0)
+  - Replaced by row-pattern burn system; insulin rate bars no longer rendered
 
 - **bonusBoostBars Mechanic** ✅ (v0.47.55)
   - Tutorial-04 introduces extra BOOST bars as a reward mechanic
@@ -497,11 +487,11 @@ CONFIG:
 
 ### Medication Parameters
 
-| Medication | Emoji | Type | Effect | Parameters |
-|-----------|-------|------|--------|------------|
-| Metformin | 💊 | peakReduction | Glucose ×0.80 (−20%) | multiplier: 0.80 |
-| SGLT2 Inhibitor | 🧪 | thresholdDrain | -3 cubes, floor 200 | depth: 3, floorMgDl: 200 |
-| GLP-1 Agonist | 💉 | slowAbsorption | Duration ×1.5, glucose ×0.90 (−10%), kcal −30%, WP +4 | durationMult: 1.5, glucoseMult: 0.90, kcalMult: 0.7, wpBonus: 4 |
+| Medication | Emoji | Type | Burn Pattern | Extra Effects |
+|-----------|-------|------|-------------|---------------|
+| Metformin | 💊 | peakReduction | `[0,3,1]` — 3 rows, skip-3 | — |
+| SGLT2 Inhibitor | 🧪 | thresholdDrain | `[0,2]` — 2 rows, skip-2 | floorMgDl: 200 |
+| GLP-1 Agonist | 💉 | slowAbsorption | `[0,3]` — 2 rows, skip-3 | durationMult: 1.5, kcalMult: 0.7, wpBonus: +4 |
 
 ### Food Parameters Table
 
@@ -613,15 +603,18 @@ Key puzzle solutions:
 
 ### Cube Engine Details
 
-#### Ramp + Insulin Drain Algorithm (v0.43.0)
+#### Ramp + Decay Algorithm (v0.50.0)
 1. `peakCubes = Math.round(glucose / cellHeightMgDl)` (glucose in mg/dL units, cellHeightMgDl=50)
 2. `riseCols = Math.round(duration / cellWidthMin)` (cellWidthMin=30)
-3. Rise phase (cols 0..riseCols-1): `height = round(peakCubes × (i+1)/riseCols)` — NO insulin drain during ramp
-4. Post-peak (cumulative mode): `height = round(peakCubes − cumInsulin)` where cumInsulin accumulates insulin rate per column
-5. Post-peak (per-column mode): `height = round(peakCubes − rate[col])` flat subtraction
-6. Drop column = left edge (start of food absorption)
-7. Guarantee: at least 1 cube at peak for any food with glucose > 0
-8. Legacy fallback: if no insulin profile, uses old decayRate formula (drain from col 0)
+3. Rise phase (cols 0..riseCols-1): `height = round(peakCubes × (i+1)/riseCols)` — linear ramp
+4. Post-peak: decay via `decayRate = 0.5` (legacy formula — ~1 cube per 30 min)
+5. Drop column = left edge (start of food absorption)
+6. GLP-1: `duration × 1.5` before curve calculation (wider/shallower curve)
+
+#### Row-Pattern Burn Algorithm (v0.50.0)
+`patternDepth(pattern, col)` — for each element: `skip=0` → always +1; `skip=N` → group=floor(col/N), burn if group%2===1
+- `columnCaps[col] = max(baselineRow, pancreasCaps[col] − interventionRed − pancreasD − boostD − metforminD − sglt2D − glp1D)`
+- SGLT2 floor: `sglt2D = min(rawSglt2D, max(0, heightBeforeSglt2 − floorRow))`
 
 #### Intervention Algorithm (v0.40.0)
 1. `depth` = cubes to remove during main phase
@@ -634,19 +627,14 @@ Key puzzle solutions:
 #### Food Colors
 Progressive blue palette by placement order: 7-color Tailwind sky shades from `#7dd3fc` (lightest) to `#0c4a6e` (darkest). First food placed = lightest, each subsequent food = darker shade.
 
-#### Cube Stacking Model (Decay-Based, v0.39.4)
-Cubes are stacked using ACTUAL decay curves (not plateau curves):
-1. Each food's alive cubes are positioned by cumulative decay heights (contiguous stacking)
-2. Pancreas-eaten cubes — thin visual layer (1-3 cubes matching tier) stacked above ALL alive cubes
-3. Medication-prevented cubes stacked above pancreas zone (Metformin pink, GLP-1 violet)
+#### Cube Stacking Model (v0.50.0)
+1. Each food's alive cubes positioned by cumulative decay heights (contiguous stacking)
+2. `pancreasCaps[col]` = sum of all alive food heights (stacked food top)
+3. `columnCaps[col]` = pancreasCaps minus all pattern burns (interventions + ПЖ + BOOST + meds)
 4. Global boundaries determine cube status:
    - `row < columnCaps[col]` → **normal** (full food color)
-   - `row >= columnCaps[col]` → **burned** — color by source:
-     - offset < walkReduction → light green `#86efac`
-     - offset < walkReduction + runReduction → dark green `#22c55e`
-     - else → purple `#c084fc` (SGLT2)
-   - `row >= pancreasCaps[col]` → **pancreas** (orange `#f97316`)
-5. When `decayRate=0`: decay=plateau, all cubes alive, no pancreas zone
+   - `row >= columnCaps[col]` → **burned** — color by offset within burn zone (bottom→top):
+     - walk `#86efac` → run `#22c55e` → pancreas `#f97316` → boost `#f59e0b` → metformin `#f0abfc` → sglt2 `#c084fc` → glp1 `#a78bfa`
 
 #### BG Zones
 | Zone | Range | Color |
@@ -666,9 +654,9 @@ Cubes are stacked using ACTUAL decay curves (not plateau curves):
 - `alpha-9-stable` (v0.48.6) — 8 tutorial levels (incl. "Under Stress"), bonusBoostBars, insulin profile visualization, zone-colored hatching, food speed labels, tutorial CTA system (drag-arrow, tap-pulse, lockedTab, noBackdrop, auto-relocate), satiety bonus disabled, result panel reorder, slot grid pull-up on submit, BOOST merged into insulin reveal phase
 - `alpha-10-stable` (v0.48.14) — stress slot pulse animation, T5 tutorial fixes, BOOST hidden for T1-T3, stress slot visual position fix, food balance rebalance (10 items), T2D1 chicken→chickpeas, archived branch docs cleanup
 - `alpha-11-stable` (v0.48.18) — T6 Metformin tutorial redesign (9 steps, highlightMedEffect prop, wpBudget=4), Heavy Run added to T6D1, locked slot drag rejection UX (red highlight + shake animation), T6D1 unlocked slots 9AM/1PM/5PM/6PM
+- `alpha-12-stable` (v0.50.0) — Row-pattern burn system replaces insulin profiles: ПЖ=[0,0], BOOST=[0,3], Metformin=[0,3,1], SGLT2=[0,2], GLP-1=[0,3]; removed glucose multipliers; 7-layer burn zone coloring; GLP-1 keeps duration/kcal/WP effects
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
-- Food drag preview starts on top of alive stack (pancreasCaps), not on top of visible pancreas/medication cubes — may show a gap in the preview
-- Medication-prevented cubes are approximate — GLP-1 redistributes glucose across more columns, so negative differences (where GLP-1 extended curve) are clamped to 0
+- Food drag preview starts on top of alive stack (pancreasCaps), not on top of visible pattern-burn cubes — may show a slight gap in the preview
 
