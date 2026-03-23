@@ -10,13 +10,11 @@ import {
   useSensors,
   closestCenter,
 } from '@dnd-kit/core';
-import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BoostConfig } from '../../core/types';
-import { TOTAL_SLOTS, expandInsulinProfile, applyStressToRates, PENALTY_ORANGE_ROW, slotToColumn, getBaselineRow, GRAPH_CONFIG } from '../../core/types';
+import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty } from '../../core/types';
+import { TOTAL_SLOTS, slotToColumn, getBaselineRow } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
-import { useConfigStore } from '../../store/configStore';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
-import type { InsulinParams } from '../../core/cubeEngine';
 import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
 import { BgGraph } from '../graph';
 import { KcalBar } from './PlanningHeader';
@@ -93,8 +91,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setSatietyPenalty,
     tutorialLevelId,
   } = useGameStore();
-
-  const { boostOverride } = useConfigStore();
 
   // Tutorial overlay system
   const { currentStep: tutorialStep, advance: advanceTutorial, notifyAction: notifyTutorialAction, isActive: isTutorialActive } = useTutorial(
@@ -199,21 +195,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     return new Set<number>(dayConfig?.stressSlots ?? []);
   }, [dayConfig]);
 
-  // Insulin profile system (with stress slot reduction applied)
-  const insulinParams: InsulinParams | number = useMemo(() => {
-    if (dayConfig?.insulinProfile) {
-      let rates = expandInsulinProfile(dayConfig.insulinProfile);
-      if (dayConfig.stressSlots && dayConfig.stressSlots.length > 0) {
-        rates = applyStressToRates(rates, dayConfig.stressSlots);
-      }
-      return {
-        rates,
-        mode: dayConfig.insulinProfile.mode,
-      };
-    }
-    return 0.5; // legacy fallback
-  }, [dayConfig]);
-
   // BOOST system
   const isBoostActive = boostActivePerDay[currentDay] ?? false;
   const totalLockedBars = Object.values(lockedBarsPerDay).reduce((a, b) => a + b, 0);
@@ -227,13 +208,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const barsAvailable = PANCREAS_TOTAL_BARS + bonusBoostBars - totalLockedBars;
   // Hide BOOST button for tutorials before T4 (introduced in tutorial-04)
   const showBoostButton = !['tutorial-01', 'tutorial-02', 'tutorial-03'].includes(currentLevel?.id ?? '');
-  const boostThresholdRow = boostOverride.thresholdMgDl
-    ? Math.round((boostOverride.thresholdMgDl - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl)
-    : PENALTY_ORANGE_ROW;
-  const boostExtraRate = boostOverride.extraRate ?? 4;
-  const boostConfig: BoostConfig | undefined = isBoostActive
-    ? { active: true, thresholdRow: boostThresholdRow, extraRate: boostExtraRate }
-    : undefined;
 
   // Submit button enabled when kcal >= 50% (Optimal zone) and in planning phase
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier);
@@ -439,9 +413,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setSatietyResult(DEFAULT_SATIETY_PENALTY);
 
     // Build reveal sequence — only phases that have content
-    const hasInsulin = typeof insulinParams !== 'number' || insulinParams > 0;
     const phases: number[] = [1]; // food cubes always present
-    if (hasInsulin) phases.push(2); // insulin/pancreas
+    phases.push(2); // pancreas burn always shown
     if (placedInterventions.length > 0) phases.push(3); // exercise
     if (activeMedications.length > 0) phases.push(4); // medications
     revealSequenceRef.current = phases;
@@ -453,7 +426,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setGamePhase('replaying');
     setRevealPhase(0);
     setPenaltyResult(null);
-  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, setSatietyPenalty, insulinParams, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
+  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, setSatietyPenalty, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
 
   // === Reveal animation effect — progressive layer reveal (skips empty phases) ===
   useEffect(() => {
@@ -477,8 +450,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           placedInterventions,
           allInterventions,
           medicationModifiers,
-          insulinParams,
-          boostConfig,
+          0.5,
+          isBoostActive,
           baselineRow,
         );
 
@@ -593,8 +566,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               placedInterventions={placedInterventions}
               allInterventions={allInterventions}
               settings={settings}
-              decayOrInsulin={insulinParams}
-              boostConfig={boostConfig}
+              decayRate={0.5}
+              boostActive={isBoostActive}
               medicationModifiers={medicationModifiers}
               showPenaltyHighlight={showResults}
               revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}

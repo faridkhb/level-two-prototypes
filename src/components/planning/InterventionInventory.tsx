@@ -6,24 +6,19 @@ import './MedicationPanel.css';
 
 function getMedicationTooltip(med: Medication): string {
   switch (med.type) {
-    case 'peakReduction': {
-      const pct = Math.round((1 - (med.multiplier ?? 1)) * 100);
-      return `Glucose -${pct}% (×${med.multiplier ?? 1})`;
-    }
+    case 'peakReduction':
+      return `Burns glucose in row pattern [${(med.burnPattern ?? []).join(',')}]`;
     case 'thresholdDrain':
-      return `Drain ${med.depth ?? 0} cubes, floor ${med.floorMgDl ?? 200} mg/dL`;
+      return `Burns glucose in row pattern [${(med.burnPattern ?? []).join(',')}], floor ${med.floorMgDl ?? 200} mg/dL`;
     case 'slowAbsorption': {
       const parts: string[] = [];
       if (med.durationMultiplier) parts.push(`Duration ×${med.durationMultiplier}`);
-      if (med.glucoseMultiplier) {
-        const pct = Math.round((1 - med.glucoseMultiplier) * 100);
-        parts.push(`Glucose -${pct}%`);
-      }
       if (med.kcalMultiplier) {
         const pct = Math.round((1 - med.kcalMultiplier) * 100);
         parts.push(`Kcal -${pct}%`);
       }
       if (med.wpBonus) parts.push(`+${med.wpBonus} ☀️`);
+      if (med.burnPattern) parts.push(`Pattern [${med.burnPattern.join(',')}]`);
       return parts.join(', ');
     }
     default:

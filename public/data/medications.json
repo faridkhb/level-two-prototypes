@@ -3,30 +3,30 @@
     {
       "id": "metformin",
       "name": "Metformin",
-      "emoji": "\ud83d\udc8a",
+      "emoji": "💊",
       "type": "peakReduction",
-      "multiplier": 0.80,
-      "description": "Reduces peak glucose by 20%"
+      "burnPattern": [0, 3, 1],
+      "description": "Burns glucose in a 3-row skip pattern"
     },
     {
       "id": "sglt2",
       "name": "SGLT2 Inhibitor",
-      "emoji": "\ud83e\uddea",
+      "emoji": "🧪",
       "type": "thresholdDrain",
-      "depth": 2,
+      "burnPattern": [0, 2],
       "floorMgDl": 200,
-      "description": "Removes up to 2 cubes, floor at 200 mg/dL"
+      "description": "Burns glucose in a 2-row skip pattern, floor at 200 mg/dL"
     },
     {
       "id": "glp1",
       "name": "GLP-1 Agonist",
-      "emoji": "\ud83d\udc89",
+      "emoji": "💉",
       "type": "slowAbsorption",
+      "burnPattern": [0, 3],
       "durationMultiplier": 1.5,
-      "glucoseMultiplier": 0.90,
-      "kcalMultiplier": 0.85,
+      "kcalMultiplier": 0.7,
       "wpBonus": 4,
-      "description": "Slower absorption (-10% glucose), reduced appetite, +4 WP"
+      "description": "Slower absorption, +4 WP, burns glucose in a 2-row skip pattern"
     }
   ]
 }

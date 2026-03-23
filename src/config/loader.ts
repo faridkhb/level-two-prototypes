@@ -1,4 +1,4 @@
-import type { Ship, LevelConfig, LoadType, AvailableFood, Intervention, Medication, MedicationType, PancreasTier, InsulinProfileConfig } from '../core/types';
+import type { Ship, LevelConfig, LoadType, AvailableFood, Intervention, Medication, MedicationType, PancreasTier } from '../core/types';
 import { PANCREAS_TIERS } from '../core/types';
 import { useConfigStore } from '../store/configStore';
 
@@ -37,7 +37,6 @@ interface RawLevelConfig {
     preplacedInterventions?: Array<{ interventionId: string; slotIndex: number; slotSize?: number }>;
     lockedSlots?: number[];
     stressSlots?: number[];
-    insulinProfile?: InsulinProfileConfig;
     startingBg?: number;
     bonusBoostBars?: number;
   }>;
@@ -103,7 +102,6 @@ function transformLevel(raw: RawLevelConfig): LevelConfig {
       preplacedInterventions: dc.preplacedInterventions,
       lockedSlots: dc.lockedSlots,
       stressSlots: dc.stressSlots,
-      insulinProfile: dc.insulinProfile,
       startingBg: dc.startingBg,
       bonusBoostBars: dc.bonusBoostBars,
     }));
@@ -146,8 +144,7 @@ interface RawMedicationConfig {
   emoji: string;
   type: string;
   description?: string;
-  multiplier?: number;
-  depth?: number;
+  burnPattern?: number[];
   floorMgDl?: number;
   durationMultiplier?: number;
   kcalMultiplier?: number;
@@ -161,8 +158,7 @@ function transformMedication(raw: RawMedicationConfig): Medication {
     emoji: raw.emoji,
     type: raw.type as MedicationType,
     description: raw.description ?? '',
-    multiplier: raw.multiplier,
-    depth: raw.depth,
+    burnPattern: raw.burnPattern,
     floorMgDl: raw.floorMgDl,
     durationMultiplier: raw.durationMultiplier,
     kcalMultiplier: raw.kcalMultiplier,
@@ -243,11 +239,8 @@ function applyMedicationOverrides(medications: Medication[]): Medication[] {
     if (!ov) return med;
     return {
       ...med,
-      multiplier: ov.multiplier ?? med.multiplier,
-      depth: ov.depth ?? med.depth,
       floorMgDl: ov.floorMgDl ?? med.floorMgDl,
       durationMultiplier: ov.durationMultiplier ?? med.durationMultiplier,
-      glucoseMultiplier: ov.glucoseMultiplier ?? med.glucoseMultiplier,
       kcalMultiplier: ov.kcalMultiplier ?? med.kcalMultiplier,
       wpBonus: ov.wpBonus ?? med.wpBonus,
     };

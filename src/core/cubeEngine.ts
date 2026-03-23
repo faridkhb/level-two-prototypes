@@ -1,12 +1,5 @@
-import type { PlacedFood, Ship, PlacedIntervention, Intervention, Medication, MedicationModifiers, PenaltyResult, InsulinMode, BoostConfig } from './types';
+import type { PlacedFood, Ship, PlacedIntervention, Intervention, Medication, MedicationModifiers, PenaltyResult } from './types';
 import { GRAPH_CONFIG, TOTAL_COLUMNS, DEFAULT_MEDICATION_MODIFIERS, PENALTY_ORANGE_ROW, PENALTY_RED_ROW, PENALTY_ORANGE_WEIGHT, PENALTY_RED_WEIGHT, calculateStars } from './types';
-
-// === Insulin Parameters ===
-
-export interface InsulinParams {
-  rates: number[];    // 48-element array of insulin rates per column
-  mode: InsulinMode;  // 'cumulative' | 'per-column'
-}
 
 export interface CubeColumn {
   columnOffset: number; // offset from drop column (0, 1, 2, ...)
@@ -23,35 +16,23 @@ export interface FoodPyramid {
 /**
  * Calculate glucose curve for a food item.
  *
- * Accepts either a legacy decayRate (number) or new InsulinParams:
- *
- * **Legacy mode** (decayRate number):
+ * Legacy mode (decayRate number):
  *   Continuous drain from column 0 during ramp-up and after peak.
  *   decayRate > 0: drain accumulates from first column
  *   decayRate === 0: flat plateau to the right edge
- *
- * **Insulin mode** (InsulinParams):
- *   Post-peak insulin — food rises to full peak without drain,
- *   then insulin absorbs cubes after peak.
- *   - cumulative: cumInsulin accumulates over columns → realistic decay
- *   - per-column: each column independently subtracts insulin rate → shifted plateau
  */
 export function calculateCurve(
   glucose: number,
   durationMinutes: number,
   dropColumn: number,
-  decayOrInsulin: number | InsulinParams = 0.25
+  decayRate: number = 0.5
 ): CubeColumn[] {
   const peakCubes = Math.round(glucose / GRAPH_CONFIG.cellHeightMgDl);
   const riseCols = Math.max(1, Math.round(durationMinutes / GRAPH_CONFIG.cellWidthMin));
 
   if (peakCubes <= 0) return [];
 
-  // Dispatch: legacy number mode vs new InsulinParams
-  if (typeof decayOrInsulin === 'number') {
-    return _calculateCurveLegacy(peakCubes, riseCols, dropColumn, decayOrInsulin);
-  }
-  return _calculateCurveInsulin(peakCubes, riseCols, dropColumn, decayOrInsulin);
+  return _calculateCurveLegacy(peakCubes, riseCols, dropColumn, decayRate);
 }
 
 /** Legacy curve: continuous drain from column 0 (backward compat) */
@@ -90,76 +71,12 @@ function _calculateCurveLegacy(
 }
 
 /**
- * New insulin curve: post-peak absorption.
- * Ramp-up phase has NO insulin drain — food reaches full peak.
- * After peak, insulin absorbs cubes (cumulative or per-column).
- */
-function _calculateCurveInsulin(
-  peakCubes: number,
-  riseCols: number,
-  dropColumn: number,
-  insulin: InsulinParams,
-): CubeColumn[] {
-  const result: CubeColumn[] = [];
-  const totalCols = TOTAL_COLUMNS - dropColumn;
-  let cumInsulin = 0;
-
-  for (let i = 0; i < totalCols; i++) {
-    const col = dropColumn + i;
-    let height: number;
-
-    if (i < riseCols) {
-      // RAMP: no insulin drain — food rises to full peak
-      height = Math.round(peakCubes * (i + 1) / riseCols);
-    } else {
-      // POST-PEAK: insulin absorbs cubes
-      const rate = col < insulin.rates.length ? insulin.rates[col] : 0;
-
-      if (insulin.mode === 'cumulative') {
-        cumInsulin += rate;
-        height = Math.round(peakCubes - cumInsulin);
-      } else {
-        // per-column: flat subtraction (no accumulation)
-        height = Math.round(peakCubes - rate);
-      }
-    }
-
-    height = Math.max(0, height);
-    if (height <= 0 && i >= riseCols) break;
-    if (height > 0) {
-      result.push({ columnOffset: i, cubeCount: height });
-    }
-  }
-
-  // Guarantee at least 1 cube at peak
-  if (result.length === 0 && peakCubes > 0) {
-    result.push({ columnOffset: riseCols - 1, cubeCount: 1 });
-  }
-
-  return result;
-}
-
-/**
- * Calculate BOOST reduction: additional insulin drain at columns above threshold.
- * Applied as post-processing AFTER base insulin calculation.
- */
-export function calculateBoostReduction(
-  totalHeights: number[],
-  boostConfig: BoostConfig,
-): number[] {
-  if (!boostConfig.active) return new Array(TOTAL_COLUMNS).fill(0);
-  return totalHeights.map(h =>
-    Math.min(boostConfig.extraRate, Math.max(0, h - boostConfig.thresholdRow))
-  );
-}
-
-/**
  * Calculate the full graph state: BG value at each column.
  */
 export function calculateGraphState(
   placedFoods: PlacedFood[],
   allShips: Ship[],
-  decayOrInsulin: number | InsulinParams = 0.25
+  decayRate: number = 0.5
 ): number[] {
   const bgValues = new Array(TOTAL_COLUMNS).fill(0);
 
@@ -167,7 +84,7 @@ export function calculateGraphState(
     const ship = allShips.find(s => s.id === placed.shipId);
     if (!ship) continue;
 
-    const curve = calculateCurve(ship.load, ship.duration, placed.dropColumn, decayOrInsulin);
+    const curve = calculateCurve(ship.load, ship.duration, placed.dropColumn, decayRate);
     for (const col of curve) {
       const graphColumn = placed.dropColumn + col.columnOffset;
       if (graphColumn >= 0 && graphColumn < TOTAL_COLUMNS) {
@@ -185,11 +102,11 @@ export function calculateGraphState(
 export function buildFoodPyramids(
   placedFoods: PlacedFood[],
   allShips: Ship[],
-  decayOrInsulin: number | InsulinParams = 0.25
+  decayRate: number = 0.5
 ): FoodPyramid[] {
   return placedFoods.map(placed => {
     const ship = allShips.find(s => s.id === placed.shipId);
-    const columns = ship ? calculateCurve(ship.load, ship.duration, placed.dropColumn, decayOrInsulin) : [];
+    const columns = ship ? calculateCurve(ship.load, ship.duration, placed.dropColumn, decayRate) : [];
     return {
       placementId: placed.id,
       shipId: placed.shipId,
@@ -257,6 +174,34 @@ export function calculateInterventionReduction(
 }
 
 // ============================================
+// Pattern Burn System
+// ============================================
+
+/**
+ * Calculate the number of burning rows at column `col` for a given skip pattern.
+ * Each element in pattern is the skip value for that row:
+ *   0 = solid row (all columns burn)
+ *   N = alternating N-skip / N-burn starting with skip
+ */
+export function patternDepth(pattern: number[], col: number): number {
+  let count = 0;
+  for (const skip of pattern) {
+    if (skip === 0) {
+      count++;
+    } else {
+      const group = Math.floor(col / skip);
+      if (group % 2 === 1) count++;
+    }
+  }
+  return count;
+}
+
+/** Fixed pancreas burn pattern — always active, 2 solid rows */
+export const PANCREAS_PATTERN = [0, 0];
+/** BOOST burn pattern — added on top of pancreas when active */
+export const BOOST_PATTERN = [0, 3];
+
+// ============================================
 // Medication System
 // ============================================
 
@@ -275,24 +220,20 @@ export function computeMedicationModifiers(
 
     switch (med.type) {
       case 'peakReduction':
-        modifiers.glucoseMultiplier *= (med.multiplier ?? 1);
+        if (med.burnPattern) modifiers.metforminPattern = med.burnPattern;
         break;
       case 'thresholdDrain': {
-        const floorRow = ((med.floorMgDl ?? 200) - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl;
-        modifiers.sglt2 = {
-          depth: med.depth ?? 3,
-          floorRow,
-        };
+        if (med.burnPattern) {
+          const floorRow = ((med.floorMgDl ?? 200) - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl;
+          modifiers.sglt2 = { pattern: med.burnPattern, floorRow };
+        }
         break;
       }
       case 'slowAbsorption': {
-        const durMult = med.durationMultiplier ?? 1;
-        modifiers.durationMultiplier *= durMult;
-        const glcMult = med.glucoseMultiplier ?? (1 / durMult);
-        modifiers.glucoseMultiplier *= glcMult;
-        modifiers.glp1GlucoseMultiplier *= glcMult;
+        modifiers.durationMultiplier *= (med.durationMultiplier ?? 1);
         modifiers.kcalMultiplier *= (med.kcalMultiplier ?? 1);
         modifiers.wpBonus += (med.wpBonus ?? 0);
+        if (med.burnPattern) modifiers.glp1Pattern = med.burnPattern;
         break;
       }
     }
@@ -302,7 +243,7 @@ export function computeMedicationModifiers(
 }
 
 /**
- * Apply medication modifiers to food parameters before curve calculation.
+ * Apply duration multiplier to food before curve calculation (GLP-1 effect).
  */
 export function applyMedicationToFood(
   glucose: number,
@@ -310,21 +251,9 @@ export function applyMedicationToFood(
   modifiers: MedicationModifiers,
 ): { glucose: number; duration: number } {
   return {
-    glucose: glucose * modifiers.glucoseMultiplier,
+    glucose,
     duration: duration * modifiers.durationMultiplier,
   };
-}
-
-/**
- * Calculate SGLT2 threshold drain per column.
- * Removes up to `depth` cubes, but won't drain below `floorRow`.
- */
-export function calculateSglt2Reduction(
-  totalFoodHeights: number[],
-  depth: number,
-  floorRow: number,
-): number[] {
-  return totalFoodHeights.map(h => Math.min(depth, Math.max(0, h - floorRow)));
 }
 
 // ============================================
@@ -368,8 +297,8 @@ export function calculatePenaltyFromState(
   placedInterventions: PlacedIntervention[],
   allInterventions: Intervention[],
   medicationModifiers: MedicationModifiers,
-  decayOrInsulin: number | InsulinParams,
-  boostConfig?: BoostConfig,
+  decayRate: number = 0.5,
+  boostActive: boolean = false,
   baselineRow: number = 0,
 ): PenaltyResult {
   // Build food heights per column (starting from baseline BG level)
@@ -377,8 +306,8 @@ export function calculatePenaltyFromState(
   for (const placed of placedFoods) {
     const ship = allShips.find(s => s.id === placed.shipId);
     if (!ship) continue;
-    const { glucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
-    const curve = calculateCurve(glucose, duration, placed.dropColumn, decayOrInsulin);
+    const { duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
+    const curve = calculateCurve(ship.load, duration, placed.dropColumn, decayRate);
     for (const col of curve) {
       const graphCol = placed.dropColumn + col.columnOffset;
       if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
@@ -387,24 +316,30 @@ export function calculatePenaltyFromState(
     }
   }
 
-  // BOOST reduction (applied before interventions)
-  const boostRed = boostConfig
-    ? calculateBoostReduction(totalHeights, boostConfig)
-    : new Array(TOTAL_COLUMNS).fill(0);
-
   // Intervention reduction
   const interventionRed = calculateInterventionReduction(placedInterventions, allInterventions);
 
-  // SGLT2 reduction
-  const sglt2 = medicationModifiers.sglt2;
-  const sglt2Red = sglt2
-    ? calculateSglt2Reduction(totalHeights.map((h, i) => Math.max(0, h - boostRed[i])), sglt2.depth, sglt2.floorRow)
-    : new Array(TOTAL_COLUMNS).fill(0);
+  // Column caps using pattern burns
+  const columnCaps = totalHeights.map((h, col) => {
+    const pancreasD = patternDepth(PANCREAS_PATTERN, col);
+    const boostD = boostActive ? patternDepth(BOOST_PATTERN, col) : 0;
+    const metforminD = medicationModifiers.metforminPattern
+      ? patternDepth(medicationModifiers.metforminPattern, col) : 0;
+    const glp1D = medicationModifiers.glp1Pattern
+      ? patternDepth(medicationModifiers.glp1Pattern, col) : 0;
 
-  // Column caps (effective visible height, cannot go below baseline)
-  const columnCaps = totalHeights.map((h, i) =>
-    Math.max(baselineRow, h - boostRed[i] - interventionRed[i] - sglt2Red[i])
-  );
+    let sglt2D = 0;
+    const sglt2 = medicationModifiers.sglt2;
+    if (sglt2) {
+      const rawSglt2D = patternDepth(sglt2.pattern, col);
+      const heightBeforeSglt2 = h - interventionRed[col] - pancreasD - boostD - metforminD - glp1D;
+      sglt2D = Math.min(rawSglt2D, Math.max(0, heightBeforeSglt2 - sglt2.floorRow));
+    }
+
+    return Math.max(baselineRow,
+      h - interventionRed[col] - pancreasD - boostD - metforminD - sglt2D - glp1D
+    );
+  });
 
   return calculatePenalty(columnCaps);
 }

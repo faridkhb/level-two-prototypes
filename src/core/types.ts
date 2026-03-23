@@ -53,65 +53,6 @@ export const PANCREAS_TIERS: Record<PancreasTier, { decayRate: number; cost: num
 
 export const PANCREAS_TOTAL_BARS = 1;
 
-/** Stress slot: insulin rate reduction per column within stressed slot */
-export const STRESS_INSULIN_REDUCTION = 1;
-
-// === Insulin Profile System ===
-
-export type InsulinMode = 'cumulative' | 'per-column';
-
-export interface InsulinSegment {
-  from: number;  // column index (0-47)
-  to: number;    // column index inclusive
-  rate: number;  // integer 1-5: cubes absorbed per column (post-peak)
-}
-
-export interface InsulinProfileConfig {
-  mode: InsulinMode;
-  segments: InsulinSegment[];
-}
-
-export interface BoostConfig {
-  active: boolean;
-  thresholdRow: number;  // row for 200 mg/dL = 7
-  extraRate: number;     // +N cubes per column above threshold (e.g., 2)
-}
-
-/** Expand segment-based insulin profile to per-column rate array (48 elements) */
-export function expandInsulinProfile(config: InsulinProfileConfig): number[] {
-  const rates = new Array(TOTAL_COLUMNS).fill(0);
-  for (const seg of config.segments) {
-    for (let col = seg.from; col <= Math.min(seg.to, TOTAL_COLUMNS - 1); col++) {
-      rates[col] = seg.rate;
-    }
-  }
-  return rates;
-}
-
-/** Apply stress slot reduction to insulin rates.
- *  Reduces rate by STRESS_INSULIN_REDUCTION in columns covered by stress slots.
- *  Rate cannot go below 0.
- */
-export function applyStressToRates(rates: number[], stressSlots: number[]): number[] {
-  const result = [...rates];
-  for (const slotIndex of stressSlots) {
-    const startCol = slotIndex * COLS_PER_SLOT;
-    const endCol = startCol + COLS_PER_SLOT;
-    for (let col = startCol; col < endCol && col < result.length; col++) {
-      result[col] = Math.max(0, result[col] - STRESS_INSULIN_REDUCTION);
-    }
-  }
-  return result;
-}
-
-/** Create a uniform insulin profile from a legacy decayRate value */
-export function legacyDecayToProfile(decayRate: number): InsulinProfileConfig {
-  return {
-    mode: 'cumulative',
-    segments: [{ from: 0, to: TOTAL_COLUMNS - 1, rate: decayRate }],
-  };
-}
-
 // === WP Carry-Over Penalty ===
 
 /** Each unspent WP on the last day adds this many penalty points */
@@ -182,34 +123,31 @@ export interface Medication {
   emoji: string;
   type: MedicationType;
   description: string;
-  // peakReduction (Metformin)
-  multiplier?: number;         // 0.75 = -25% glucose
+  burnPattern?: number[];      // row-based burn pattern [skip0, skip1, ...]
   // thresholdDrain (SGLT2)
-  depth?: number;              // max cubes to remove per column
-  floorMgDl?: number;          // don't remove below this level
+  floorMgDl?: number;          // don't burn below this level
   // slowAbsorption (GLP-1)
   durationMultiplier?: number; // 1.5 = 50% longer duration
-  glucoseMultiplier?: number;  // 0.90 = -10% glucose (overrides 1/durationMult)
   kcalMultiplier?: number;     // 0.7 = -30% kcal budget
   wpBonus?: number;            // +4 WP
 }
 
 export interface MedicationModifiers {
-  glucoseMultiplier: number;     // Combined: Metformin × GLP-1 glucose effects
   durationMultiplier: number;    // GLP-1: 1.5
-  glp1GlucoseMultiplier: number; // GLP-1's individual glucose contribution (for visual decomposition)
-  sglt2: { depth: number; floorRow: number } | null;
   kcalMultiplier: number;        // GLP-1: 0.7
   wpBonus: number;               // GLP-1: +4
+  metforminPattern: number[] | null;
+  sglt2: { pattern: number[]; floorRow: number } | null;
+  glp1Pattern: number[] | null;
 }
 
 export const DEFAULT_MEDICATION_MODIFIERS: MedicationModifiers = {
-  glucoseMultiplier: 1,
   durationMultiplier: 1,
-  glp1GlucoseMultiplier: 1,
-  sglt2: null,
   kcalMultiplier: 1,
   wpBonus: 0,
+  metforminPattern: null,
+  sglt2: null,
+  glp1Pattern: null,
 };
 
 // === Level Config ===
@@ -241,7 +179,6 @@ export interface DayConfig {
   preplacedInterventions?: PreplacedIntervention[];
   lockedSlots?: number[];
   stressSlots?: number[];
-  insulinProfile?: InsulinProfileConfig;
   startingBg?: number;          // Starting BG in mg/dL (default 60 = graph bottom)
   bonusBoostBars?: number;      // Extra BOOST charges granted at the start of this day
 }
