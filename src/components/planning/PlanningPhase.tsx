@@ -10,7 +10,7 @@ import {
   useSensors,
   closestCenter,
 } from '@dnd-kit/core';
-import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty } from '../../core/types';
+import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BurnAnimMode } from '../../core/types';
 import { TOTAL_SLOTS, slotToColumn, getBaselineRow } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
@@ -114,6 +114,17 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [revealPhase, setRevealPhase] = useState<number | undefined>(undefined);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealSequenceRef = useRef<number[]>([]);
+
+  // Burn animation mode + PancreasButton blink state
+  const [burnAnimMode, setBurnAnimMode] = useState<BurnAnimMode>('incremental');
+  const [isPJBlinking, setIsPJBlinking] = useState(false);
+  const pjBlinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePancreasBurnStart = useCallback(() => {
+    setIsPJBlinking(true);
+    if (pjBlinkTimerRef.current) clearTimeout(pjBlinkTimerRef.current);
+    pjBlinkTimerRef.current = setTimeout(() => setIsPJBlinking(false), 1200);
+  }, []);
 
   // Load configs on mount
   useEffect(() => {
@@ -580,6 +591,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               highlightMedEffect={tutorialStep?.highlightMedEffect ?? false}
               isMobile={isMobile}
               baselineRow={baselineRow}
+              hideBurnedInPlanning={isPlanning}
+              burnAnimMode={burnAnimMode}
+              onPancreasBurnStart={handlePancreasBurnStart}
             />
             {isPlanning && showBoostButton && (
               <div className="planning-phase__pancreas-overlay">
@@ -588,8 +602,19 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                   usesRemaining={barsAvailable}
                   onToggle={handleToggleBoost}
                   disabled={gamePhase !== 'planning'}
+                  isBlinking={isPJBlinking}
                 />
               </div>
+            )}
+            {/* Burn animation mode toggle (cheat button) */}
+            {isPlanning && !isTutorial && (
+              <button
+                className="planning-phase__burn-mode-btn"
+                onClick={() => setBurnAnimMode(m => m === 'incremental' ? 'full' : 'incremental')}
+                title={burnAnimMode === 'incremental' ? 'Mode: only new burns animated' : 'Mode: all burns animated on each placement'}
+              >
+                {burnAnimMode === 'incremental' ? '∂' : '∑'}
+              </button>
             )}
           </div>
 

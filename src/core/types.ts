@@ -252,6 +252,9 @@ export interface LevelConfig {
 
 export type GamePhase = 'planning' | 'replaying' | 'results';
 
+/** Controls how burn animations trigger on food placement */
+export type BurnAnimMode = 'incremental' | 'full';
+
 export interface PenaltyResult {
   totalPenalty: number;
   orangeCount: number;  // cubes in 200-300 zone

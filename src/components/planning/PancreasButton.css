@@ -50,6 +50,18 @@
   pointer-events: none;
 }
 
+/* Blink animation triggered when ПЖ burns food (bomb animation) */
+@keyframes pancreasBlink {
+  0%, 100% { opacity: 1; box-shadow: none; }
+  25%       { opacity: 0.3; filter: brightness(2); box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); }
+  50%       { opacity: 1; filter: brightness(1); box-shadow: 0 0 6px rgba(249, 115, 22, 0.4); }
+  75%       { opacity: 0.4; filter: brightness(1.8); box-shadow: 0 0 12px rgba(249, 115, 22, 0.9); }
+}
+
+.pancreas-btn--blinking {
+  animation: pancreasBlink 0.5s ease-in-out 2;
+}
+
 .pancreas-btn__emoji {
   font-size: 18px;
   line-height: 1;

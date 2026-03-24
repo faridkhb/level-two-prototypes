@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useLayoutEffect, useEffect } from 'react';
-import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, MedicationModifiers } from '../../core/types';
+import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, MedicationModifiers, BurnAnimMode } from '../../core/types';
 import {
   TOTAL_COLUMNS,
   TOTAL_ROWS,
@@ -76,6 +76,21 @@ interface GraphRenderData {
   columnCaps: number[];
   pancreasCaps: number[];
   effectiveRows: number;
+  // Per-column burn depths (exposed for bomb animation trigger)
+  pancreasDepths: number[];
+  boostDepths: number[];
+  metforminDepths: number[];
+  sglt2Depths: number[];
+  glp1Depths: number[];
+}
+
+// Bomb animation: one SVG capsule per column that falls from the top
+interface BombCol {
+  col: number;
+  fallDistPx: number; // CSS translateY distance in px (SVG units)
+  burnColor: string;  // orange or amber
+  bombH: number;      // height of bomb capsule (matches burn zone height)
+  waveDelay: number;  // ms delay for left-to-right wave
 }
 
 interface ExitingCube {
@@ -105,6 +120,9 @@ interface BgGraphProps {
   highlightMedEffect?: boolean;          // reserved: tutorial pulse (med-prevented cubes removed)
   isMobile?: boolean;                    // mobile-responsive sizing
   baselineRow?: number;                  // row offset for starting BG (default 0 = 60 mg/dL)
+  hideBurnedInPlanning?: boolean;        // hide burned cells; show animated bomb/sweep instead
+  burnAnimMode?: BurnAnimMode;           // 'incremental' = only new burns; 'full' = all burns
+  onPancreasBurnStart?: () => void;      // called when ПЖ bomb animation begins (for blink trigger)
 }
 
 // Convert column to SVG x
@@ -133,6 +151,9 @@ export function BgGraph({
   highlightMedEffect: _highlightMedEffect = false,
   isMobile = false,
   baselineRow = 0,
+  hideBurnedInPlanning = false,
+  burnAnimMode = 'incremental',
+  onPancreasBurnStart,
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
   const graphH = isMobile ? TOTAL_ROWS * 20 : GRAPH_H;  // 320 vs 192 — taller cells on mobile
@@ -158,6 +179,12 @@ export function BgGraph({
   const [burningInterventions, setBurningInterventions] = useState<Map<string, BurningIntervention>>(new Map());
   const burningIntTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const prevInterventionIdsRef = useRef<Set<string>>(new Set());
+
+  // Bomb animation state (ПЖ/BOOST burns on food placement)
+  const [animatingBurnIds, setAnimatingBurnIds] = useState<Set<string>>(new Set());
+  const [bombCols, setBombCols] = useState<BombCol[]>([]);
+  const animateBurnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevMedModifiersRef = useRef(DEFAULT_MEDICATION_MODIFIERS);
 
   // Calculate intervention reduction per column, split by type (walk/run)
   const interventionReductions = useMemo(() => {
@@ -420,7 +447,7 @@ export function BgGraph({
     if (inSegment && lastSegCol < TOTAL_COLUMNS - 1) mainParts.push(`V ${bottomY}`);
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
-    return { layers, mainSkylinePath, columnCaps, pancreasCaps, effectiveRows };
+    return { layers, mainSkylinePath, columnCaps, pancreasCaps, effectiveRows, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, glp1Depths };
   }, [placedFoods, allShips, medicationModifiers, decayRate, boostActive, interventionReduction, interventionReductions, baselineRow, graphH]);
 
   // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
@@ -575,7 +602,66 @@ export function BgGraph({
       }
     }
 
+    // Bomb animation trigger: when new food added and hideBurnedInPlanning
+    if (added.length > 0 && hideBurnedInPlanning) {
+      const newFoodCols = new Set(added.flatMap(a => a.cubes.map(c => c.col)));
+      const localCellH = graphH / graphRenderData.effectiveRows;
+      const localRowToY = (row: number) => PAD_TOP + graphH - (row + 1) * localCellH;
+      const firstDropCol = added[0]?.dropColumn ?? 0;
+
+      // Mark pancreas/boost burned cubes for digestAppearBurn animation
+      const newBurnIds = new Set<string>();
+      for (const layer of graphRenderData.layers) {
+        for (const cube of layer.cubes) {
+          if (cube.status !== 'burned') continue;
+          if (cube.burnColor !== '#f97316' && cube.burnColor !== '#f59e0b') continue;
+          if (burnAnimMode === 'incremental' && !newFoodCols.has(cube.col)) continue;
+          newBurnIds.add(`${layer.placementId}-${cube.col}-${cube.row}`);
+        }
+      }
+
+      // Build bomb column data
+      const bombs: BombCol[] = [];
+      const colsToProcess = burnAnimMode === 'full'
+        ? Array.from({ length: TOTAL_COLUMNS }, (_, i) => i)
+        : Array.from(newFoodCols);
+
+      for (const col of colsToProcess) {
+        const pancreasR = graphRenderData.pancreasDepths[col];
+        const boostR = graphRenderData.boostDepths[col];
+        if (pancreasR + boostR <= 0) continue;
+        if (graphRenderData.pancreasCaps[col] <= baselineRow) continue;
+
+        const cap = graphRenderData.columnCaps[col];
+        const bombH = (pancreasR + boostR) * localCellH;
+        const targetY = localRowToY(cap);
+        const fallDistPx = targetY - PAD_TOP;
+        if (fallDistPx < 0) continue;
+
+        const burnColor = boostR > 0 ? '#f59e0b' : '#f97316';
+        // 400ms base delay (food appear takes ~350ms) + left-to-right wave
+        const waveDelay = 400 + Math.abs(col - firstDropCol) * 12;
+        bombs.push({ col, fallDistPx, burnColor, bombH: Math.max(4, bombH), waveDelay });
+      }
+
+      if (newBurnIds.size > 0 || bombs.length > 0) {
+        setAnimatingBurnIds(prev => {
+          const next = new Set(prev);
+          newBurnIds.forEach(id => next.add(id));
+          return next;
+        });
+        setBombCols(bombs);
+        onPancreasBurnStart?.();
+        if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
+        animateBurnTimerRef.current = setTimeout(() => {
+          setAnimatingBurnIds(new Set());
+          setBombCols([]);
+        }, 2200);
+      }
+    }
+
     prevLayersRef.current = graphRenderData.layers;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphRenderData.layers, placedInterventions, allInterventions]);
 
   // Detect added interventions → fall animation
@@ -627,10 +713,51 @@ export function BgGraph({
     prevInterventionIdsRef.current = currIds;
   }, [placedInterventions, allInterventions]);
 
+  // Medication toggle bomb: when meds change while food is on graph, animate newly burned med cells
+  useLayoutEffect(() => {
+    const prev = prevMedModifiersRef.current;
+    const curr = medicationModifiers;
+    const metChanged = !!prev.metforminPattern !== !!curr.metforminPattern;
+    const sglt2Changed = !!prev.sglt2 !== !!curr.sglt2;
+    const glp1Changed = !!prev.glp1Pattern !== !!curr.glp1Pattern;
+    prevMedModifiersRef.current = curr;
+
+    if (!hideBurnedInPlanning) return;
+    if (!metChanged && !sglt2Changed && !glp1Changed) return;
+    if (graphRenderData.layers.length === 0) return;
+
+    // Find newly burned med cubes
+    const newBurnIds = new Set<string>();
+    for (const layer of graphRenderData.layers) {
+      for (const cube of layer.cubes) {
+        if (cube.status !== 'burned') continue;
+        const c = cube.burnColor;
+        if (c === '#f0abfc' || c === '#c084fc' || c === '#a78bfa') {
+          newBurnIds.add(`${layer.placementId}-${cube.col}-${cube.row}`);
+        }
+      }
+    }
+
+    if (newBurnIds.size > 0) {
+      setAnimatingBurnIds(prev => {
+        const next = new Set(prev);
+        newBurnIds.forEach(id => next.add(id));
+        return next;
+      });
+      if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
+      animateBurnTimerRef.current = setTimeout(() => {
+        setAnimatingBurnIds(new Set());
+        setBombCols([]);
+      }, 2200);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [medicationModifiers]);
+
   // Cleanup timers on unmount
   useEffect(() => () => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     for (const timer of burningIntTimersRef.current.values()) clearTimeout(timer);
+    if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
   }, []);
 
   // Dynamic zone clip bands (Y-positions from mg/dL thresholds)
@@ -859,7 +986,9 @@ export function BgGraph({
                 className="bg-graph__cube--preview"
               />
             ))}
-            {/* Exercise-burned preview cubes — green, intervention would remove these */}
+            {/* Exercise-burned preview cubes:
+                hideBurnedInPlanning → show as food-blue (full glucose curve)
+                normal mode → show as green (would be burned) */}
             {previewData.burnedByIntCubes.map(cube => (
               <rect
                 key={`preview-intburn-${cube.col}-${cube.row}`}
@@ -867,12 +996,12 @@ export function BgGraph({
                 y={rowToY(cube.row) + 0.5}
                 width={CELL_SIZE - 1}
                 height={cellHeight - 1}
-                fill="#86efac"
-                opacity={0.5}
+                fill={hideBurnedInPlanning ? '#38bdf8' : '#86efac'}
+                opacity={hideBurnedInPlanning ? 0.35 : 0.5}
                 rx={2}
                 className="bg-graph__cube--preview"
-                stroke="#4ade80"
-                strokeWidth={0.5}
+                stroke={hideBurnedInPlanning ? undefined : '#4ade80'}
+                strokeWidth={hideBurnedInPlanning ? undefined : 0.5}
               />
             ))}
           </g>
@@ -883,25 +1012,38 @@ export function BgGraph({
           <g key={`food-layer-${layer.placementId}`} className="bg-graph__food-group">
             {layer.cubes
               .filter(cube => {
+                if (revealPhase === undefined) {
+                  if (cube.status === 'normal') return true;
+                  if (cube.status === 'burned') {
+                    if (!hideBurnedInPlanning) return true; // old behavior
+                    // In new mode: only show if in active burn animation
+                    const cubeKey = `${layer.placementId}-${cube.col}-${cube.row}`;
+                    return animatingBurnIds.has(cubeKey);
+                  }
+                  return true;
+                }
                 // During reveal, progressively show cube layers
-                if (revealPhase === undefined) return true;
                 if (cube.status === 'normal') return revealPhase >= 1;
                 if (cube.status === 'burned') {
                   const bc = cube.burnColor;
                   const isExercise = bc === '#86efac' || bc === '#22c55e';
                   const isPancreas = bc === '#f97316';
                   const isBoost = bc === '#f59e0b';
-                  if (isExercise) return revealPhase >= 3;  // exercise phase 3
-                  if (isPancreas || isBoost) return revealPhase >= 2; // pancreas/boost phase 2
-                  return revealPhase >= 4;                   // meds (metformin/sglt2/glp1) phase 4
+                  if (isExercise) return revealPhase >= 3;
+                  if (isPancreas || isBoost) return revealPhase >= 2;
+                  return revealPhase >= 4;
                 }
                 return false;
               })
               .map(cube => {
+              const cubeKey = `${layer.placementId}-${cube.col}-${cube.row}`;
+              const isAnimatingBurn = hideBurnedInPlanning && cube.status === 'burned' && animatingBurnIds.has(cubeKey);
               const waveDelay = (cube.col - layer.dropColumn) * 20;
-              const cubeClass = cube.status === 'burned'
-                ? 'bg-graph__cube--burned'
-                : 'bg-graph__cube';
+              const cubeClass = isAnimatingBurn
+                ? 'bg-graph__cube--digest-appear-burn'
+                : cube.status === 'burned'
+                  ? 'bg-graph__cube--burned'
+                  : 'bg-graph__cube';
               let cubeFill: string;
               if (cube.status === 'burned' && cube.burnColor) {
                 cubeFill = cube.burnColor;
@@ -972,7 +1114,7 @@ export function BgGraph({
           </g>
         )}
 
-        {/* Intervention fall animation — green cubes falling into food */}
+        {/* Intervention animation — sweep (planning) or fall (results) */}
         {burningInterventions.size > 0 && (
           <g pointerEvents="none">
             {Array.from(burningInterventions.values()).flatMap(bi => {
@@ -982,10 +1124,29 @@ export function BgGraph({
                 const currentTop = columnCaps[col];
                 const effectiveRed = Math.min(red, currentTop + red);
                 if (effectiveRed <= 0) return [];
-
-                const fallDist = effectiveRed * cellHeight;
                 const waveDelay = Math.abs(col - bi.dropColumn) * 20;
 
+                if (hideBurnedInPlanning) {
+                  // Horizontal sweep flash: one tall rect at the burn zone position
+                  const sweepY = rowToY(currentTop + effectiveRed - 1) + 0.5;
+                  const sweepH = effectiveRed * cellHeight - 1;
+                  return [(
+                    <rect
+                      key={`sweep-${bi.id}-${col}`}
+                      x={colToX(col) + 0.5}
+                      y={sweepY}
+                      width={CELL_SIZE - 1}
+                      height={Math.max(3, sweepH)}
+                      fill={bi.color}
+                      rx={2}
+                      className="bg-graph__sweep-col"
+                      style={{ animationDelay: `${waveDelay}ms` }}
+                    />
+                  )];
+                }
+
+                // Original fall animation (non-hideBurnedInPlanning mode)
+                const fallDist = effectiveRed * cellHeight;
                 return Array.from({ length: effectiveRed }, (_, i) => {
                   const startRow = currentTop + effectiveRed + i;
                   return (
@@ -1059,6 +1220,28 @@ export function BgGraph({
           if (fallCubes.length === 0) return null;
           return <g pointerEvents="none">{fallCubes}</g>;
         })()}
+
+        {/* Pancreas/BOOST bomb animation — capsules falling from top onto burn zone */}
+        {bombCols.length > 0 && (
+          <g pointerEvents="none">
+            {bombCols.map(bomb => (
+              <rect
+                key={`bomb-${bomb.col}`}
+                x={colToX(bomb.col) + 2}
+                y={PAD_TOP}
+                width={CELL_SIZE - 4}
+                height={Math.max(4, bomb.bombH)}
+                fill={bomb.burnColor}
+                rx={3}
+                className={bomb.burnColor === '#f59e0b' ? 'bg-graph__bomb--boost' : 'bg-graph__bomb'}
+                style={{
+                  '--bomb-fall': `${bomb.fallDistPx}px`,
+                  animationDelay: `${bomb.waveDelay}ms`,
+                } as React.CSSProperties}
+              />
+            ))}
+          </g>
+        )}
 
         {/* Exiting cubes — burn-out animation for removed food */}
         {exitingCubes.length > 0 && (
