@@ -691,7 +691,7 @@ export function BgGraph({
         const burnColor = boostR > 0 ? '#f59e0b' : '#f97316';
         const SLOW_MO = slowMotionRef.current ? 3.0 : 1.0;
         const fallDuration = (boostR > 0 ? 900 : 1000) * SLOW_MO;
-        const hitPercent = boostR > 0 ? 0.60 : 0.65;
+        const hitPercent = 0.73; // align with visual impact peak in dropFall keyframe (73%)
         // 400ms base delay (food appear takes ~350ms) + left-to-right wave
         const waveDelay = 400 + Math.abs(col - firstDropCol) * 12;
         const targetXCenter = PAD_LEFT + col * CELL_SIZE + CELL_SIZE / 2;
@@ -1122,7 +1122,9 @@ export function BgGraph({
               const isPreBurnCube = hideBurnedInPlanning && cube.status === 'burned' && isPancreasBurnCube && bombHitDelays !== null && bombHitDelays.has(cube.col);
               const isAnimatingBurn = !isPreBurnCube && hideBurnedInPlanning && cube.status === 'burned' && animatingBurnIds.has(cubeKey);
               const waveDelay = (cube.col - layer.dropColumn) * 20;
-              const effectiveAnimDelay = isPreBurnCube ? (bombHitDelays!.get(cube.col) ?? 0) : waveDelay;
+              // Per-row stagger: bomb-0 hits row cap, bomb-1 hits row cap+1 (60ms later), etc.
+              const burnK = isPreBurnCube ? Math.max(0, cube.row - graphRenderData.columnCaps[cube.col]) : 0;
+              const effectiveAnimDelay = isPreBurnCube ? (bombHitDelays!.get(cube.col) ?? 0) + burnK * 60 : waveDelay;
               const cubeClass = isPreBurnCube
                 ? 'bg-graph__cube--pre-burn'
                 : isAnimatingBurn
@@ -1180,7 +1182,10 @@ export function BgGraph({
         {/* Plateau extra cubes per food — food-colored, shown during pre-burn phase only */}
         {bombHitDelays !== null && graphRenderData.layers.map(layer =>
           layer.plateauCubes.map(pc => {
-            const hitDelay = bombHitDelays.get(pc.col) ?? 0;
+            const baseHitDelay = bombHitDelays.get(pc.col) ?? 0;
+            // Plateau cubes above burn zone: stagger by row offset from columnCaps
+            const plateauBurnK = Math.max(0, pc.row - graphRenderData.columnCaps[pc.col]);
+            const hitDelay = baseHitDelay + plateauBurnK * 60;
             return (
               <rect
                 key={`plateau-${layer.placementId}-${pc.col}-${pc.row}`}

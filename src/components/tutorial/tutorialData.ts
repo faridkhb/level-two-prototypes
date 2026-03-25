@@ -86,12 +86,18 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-5',
-    bubble: { type: 'dialogue', text: 'Поджелудочная заметила рост глюкозы и выпустила инсулин! Инсулин помогает клеткам усвоить сахар — вот почему кривая снижается. Это происходит автоматически.', expression: 'happy', position: 'center' },
+    bubble: { type: 'dialogue', text: 'Your pancreas detected the glucose rise and released insulin! This happens automatically.', expression: 'happy', position: 'center' },
     blockInteraction: true,
     advanceOn: 'tap',
   },
   {
     id: 'L1D1-6',
+    bubble: { type: 'dialogue', text: 'Insulin helps your cells absorb sugar — that\'s why the curve comes back down.', expression: 'neutral', position: 'center' },
+    blockInteraction: true,
+    advanceOn: 'tap',
+  },
+  {
+    id: 'L1D1-7',
     bubble: { type: 'dialogue', text: 'Now hit Submit to see your results!', expression: 'neutral' },
     highlight: 'submit-btn',
     highlightType: 'pulse',
@@ -100,7 +106,7 @@ const L1D1: TutorialStep[] = [
     expectedAction: { type: 'click-submit' },
   },
   {
-    id: 'L1D1-7',
+    id: 'L1D1-8',
     bubble: { type: 'success', text: 'The reveal shows how your food, insulin, and exercise interact. Check your star rating!', expression: 'celebrating', position: 'top' },
     highlight: 'result-next-btn',
     highlightType: 'glow',
