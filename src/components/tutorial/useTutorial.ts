@@ -8,6 +8,7 @@ export interface UseTutorialReturn {
   stepsTotal: number;
   advance: () => void;
   notifyAction: (action: { type: string; foodId?: string; slotIndex?: number; interventionId?: string; medicationId?: string; tabName?: string }) => void;
+  notifyBurnAnimComplete: () => void;
   isActive: boolean;
 }
 
@@ -48,5 +49,10 @@ export function useTutorial(levelId: string | null, day: number): UseTutorialRet
     }
   }, [currentStep, advance]);
 
-  return { currentStep, stepIndex, stepsTotal, advance, notifyAction, isActive };
+  const notifyBurnAnimComplete = useCallback(() => {
+    if (!currentStep || currentStep.advanceOn !== 'burn-anim-complete') return;
+    advance();
+  }, [currentStep, advance]);
+
+  return { currentStep, stepIndex, stepsTotal, advance, notifyAction, notifyBurnAnimComplete, isActive };
 }

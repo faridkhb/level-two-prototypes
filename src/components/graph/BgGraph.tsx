@@ -131,6 +131,8 @@ interface BgGraphProps {
   hideBurnedInPlanning?: boolean;        // hide burned cells; show animated bomb/sweep instead
   burnAnimMode?: BurnAnimMode;           // 'incremental' = only new burns; 'full' = all burns
   onPancreasBurnStart?: () => void;      // called when ПЖ bomb animation begins (for blink trigger)
+  slowMotionBurns?: boolean;             // tutorial: slow down meteor drop animation 3x
+  onBurnAnimComplete?: () => void;       // called when all meteor drops finish
 }
 
 // Convert column to SVG x
@@ -162,6 +164,8 @@ export function BgGraph({
   hideBurnedInPlanning = false,
   burnAnimMode = 'incremental',
   onPancreasBurnStart,
+  slowMotionBurns = false,
+  onBurnAnimComplete,
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
   const graphH = isMobile ? TOTAL_ROWS * 20 : GRAPH_H;  // 320 vs 192 — taller cells on mobile
@@ -196,6 +200,8 @@ export function BgGraph({
   const burnedColTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const animateBurnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevMedModifiersRef = useRef(DEFAULT_MEDICATION_MODIFIERS);
+  const slowMotionRef = useRef(slowMotionBurns);
+  useEffect(() => { slowMotionRef.current = slowMotionBurns; }, [slowMotionBurns]);
 
   // Calculate intervention reduction per column, split by type (walk/run)
   const interventionReductions = useMemo(() => {
@@ -683,7 +689,8 @@ export function BgGraph({
 
         const cap = graphRenderData.columnCaps[col];
         const burnColor = boostR > 0 ? '#f59e0b' : '#f97316';
-        const fallDuration = boostR > 0 ? 900 : 1000;
+        const SLOW_MO = slowMotionRef.current ? 3.0 : 1.0;
+        const fallDuration = (boostR > 0 ? 900 : 1000) * SLOW_MO;
         const hitPercent = boostR > 0 ? 0.60 : 0.65;
         // 400ms base delay (food appear takes ~350ms) + left-to-right wave
         const waveDelay = 400 + Math.abs(col - firstDropCol) * 12;
@@ -716,10 +723,12 @@ export function BgGraph({
         burnedColTimersRef.current = [];
 
         if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
+        const maxEnd = Math.max(...drops.map(d => d.delay + (slowMotionRef.current ? 3000 : 1000)));
         animateBurnTimerRef.current = setTimeout(() => {
           setBombDrops([]);
           setBombHitDelays(null);
-        }, 2200);
+          onBurnAnimComplete?.();
+        }, maxEnd + 300);
       }
     }
 
@@ -843,6 +852,11 @@ export function BgGraph({
         viewBox={`0 0 ${SVG_W} ${localSvgH}`}
         className="bg-graph__svg"
         preserveAspectRatio="xMidYMid meet"
+        style={slowMotionBurns ? {
+          '--drop-fall-duration': '3.0s',
+          '--drop-fall-duration-boost': '2.7s',
+          '--pre-burn-flash-duration': '1.35s',
+        } as React.CSSProperties : undefined}
       >
         <defs>
           {/* Zone clip paths for skyline coloring */}

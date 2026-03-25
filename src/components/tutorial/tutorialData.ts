@@ -5,7 +5,7 @@ export type BubbleType = 'dialogue' | 'hint' | 'warning' | 'success';
 export type Expression = 'neutral' | 'happy' | 'concerned' | 'thinking' | 'celebrating';
 export type HighlightType = 'spotlight' | 'pulse' | 'glow' | 'arrow';
 export type CTAType = 'drag-arrow' | 'tap-pulse' | 'glow-border' | 'bounce';
-export type AdvanceOn = 'tap' | 'action' | 'auto';
+export type AdvanceOn = 'tap' | 'action' | 'auto' | 'burn-anim-complete';
 
 export interface TutorialBubble {
   type: BubbleType;
@@ -77,8 +77,17 @@ const L1D1: TutorialStep[] = [
     expectedAction: { type: 'place-food', foodId: 'banana', slotIndex: 2 },
   },
   {
+    id: 'L1D1-4b',
+    highlight: 'graph',
+    highlightType: 'spotlight',
+    noBackdrop: false,
+    blockInteraction: true,
+    advanceOn: 'burn-anim-complete',
+  },
+  {
     id: 'L1D1-5',
-    bubble: { type: 'success', text: 'Great! See the glucose curve? The banana\'s carbs raised your blood glucose. It rises during absorption, then insulin brings it back down.', expression: 'happy', position: 'inventory' },
+    bubble: { type: 'dialogue', text: 'Поджелудочная заметила рост глюкозы и выпустила инсулин! Инсулин помогает клеткам усвоить сахар — вот почему кривая снижается. Это происходит автоматически.', expression: 'happy', position: 'center' },
+    blockInteraction: true,
     advanceOn: 'tap',
   },
   {

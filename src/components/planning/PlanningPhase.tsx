@@ -93,7 +93,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   } = useGameStore();
 
   // Tutorial overlay system
-  const { currentStep: tutorialStep, advance: advanceTutorial, notifyAction: notifyTutorialAction, isActive: isTutorialActive } = useTutorial(
+  const { currentStep: tutorialStep, advance: advanceTutorial, notifyAction: notifyTutorialAction, notifyBurnAnimComplete, isActive: isTutorialActive } = useTutorial(
     isTutorial ? tutorialLevelId : null,
     currentDay,
   );
@@ -595,6 +595,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               hideBurnedInPlanning={isPlanning && !showBurns}
               burnAnimMode={burnAnimMode}
               onPancreasBurnStart={handlePancreasBurnStart}
+              slowMotionBurns={tutorialStep?.advanceOn === 'burn-anim-complete'}
+              onBurnAnimComplete={notifyBurnAnimComplete}
             />
             {isPlanning && showBoostButton && (
               <div className="planning-phase__pancreas-overlay">

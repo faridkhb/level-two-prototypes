@@ -110,7 +110,10 @@
   100% { opacity: 0; filter: brightness(0.5); transform: scale(0.1); }
 }
 .bg-graph__cube--pre-burn {
-  animation: preBurnFlash 0.45s ease-out both;
+  animation-name: preBurnFlash;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+  animation-duration: var(--pre-burn-flash-duration, 0.45s);
   pointer-events: none;
   transform-box: fill-box;
   transform-origin: center;
@@ -317,14 +320,20 @@
 .bg-graph__drop {
   transform-box: fill-box;
   transform-origin: center;
-  animation: dropFall 1.0s ease-in both;
+  animation-name: dropFall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: both;
+  animation-duration: var(--drop-fall-duration, 1.0s);
   pointer-events: none;
 }
 
 .bg-graph__drop--boost {
   transform-box: fill-box;
   transform-origin: center;
-  animation: dropFall 0.9s ease-in both;
+  animation-name: dropFall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: both;
+  animation-duration: var(--drop-fall-duration-boost, 0.9s);
   pointer-events: none;
 }
 
