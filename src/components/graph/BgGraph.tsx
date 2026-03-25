@@ -523,10 +523,12 @@ export function BgGraph({
     for (const dc of decayCurve) {
       const col = previewColumn + dc.columnOffset;
       if (col < 0 || col >= TOTAL_COLUMNS) continue;
-      const baseRow = pancreasCaps[col];
+      // When burned cubes are hidden, visual top of existing food is columnCaps, not pancreasCaps
+      const baseRow = hideBurnedInPlanning ? columnCaps[col] : pancreasCaps[col];
       const aliveCount = dc.cubeCount;
 
-      const interventionBurn = Math.max(0, pancreasCaps[col] - columnCaps[col]);
+      // Intervention burn sim: only relevant in non-hideBurn mode
+      const interventionBurn = hideBurnedInPlanning ? 0 : Math.max(0, pancreasCaps[col] - columnCaps[col]);
       const burnedByInt = Math.min(aliveCount, interventionBurn);
       const trueAlive = aliveCount - burnedByInt;
 
@@ -544,7 +546,7 @@ export function BgGraph({
     }
 
     return { foodCubes, burnedByIntCubes, dropColumn: previewColumn };
-  }, [previewShip, previewColumn, medicationModifiers, decayRate, graphRenderData, effectiveRows]);
+  }, [previewShip, previewColumn, medicationModifiers, decayRate, graphRenderData, effectiveRows, hideBurnedInPlanning]);
 
   // Preview: intervention burn overlay — green cubes on food that would be burned
   const interventionPreviewData = useMemo(() => {
