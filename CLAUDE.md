@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.50.0 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, wave animations, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
+| `main` | BG Planner | v0.51.7 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, per-column skyline sync, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
 
 Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
@@ -107,7 +107,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.48.18)
+- `src/version.ts` — version number (v0.51.7)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -125,7 +125,7 @@ CONFIG:
 
 #### Graph Component (`src/components/graph/`)
 - `BgGraph.tsx` — SVG-based BG graph with grid, cubes, zones, intervention burn rendering, wave animations, drag-and-drop target, reveal phase animation
-- `BgGraph.css` — graph styles, cubeAppear/cubeBurn/medAppear/revealLabel keyframe animations
+- `BgGraph.css` — graph styles, cubeAppear/cubeBurn/preBurnFlash/dropFall/medAppear/revealLabel keyframe animations
 - `index.ts` — exports
 
 #### Planning Phase (`src/components/planning/`)
@@ -157,7 +157,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.50.0) — Row-Pattern Burn System, 8 Tutorials, BOOST, T6 Metformin Redesign
+### Current State (v0.51.7) — Meteor Drop Burn Animations, Plateau Preview, Per-Column Skyline Sync
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -263,6 +263,26 @@ CONFIG:
   - `cubeAppear`: food cubes pop in with scale (0.3→1.08→1) + opacity wave, left-to-right
   - `cubeBurn`: burned cubes fade to 0.55 opacity with wave effect (increased from 0.35 for burn color visibility)
   - Wave delay: 20ms per column offset from drop point
+
+- **Burn Animation System** ✅ (v0.51.0–v0.51.7, `hideBurnedInPlanning=true`)
+  - During planning, ПЖ/BOOST burned cubes are **hidden** — shown only via animated drops
+  - **Pre-burn phase** (v0.51.2): before drops fall, burn zone rendered as food-colored glucose (class `--pre-burn`)
+    - Plateau-extra cubes (above decay top) also rendered food-colored and get bombed away
+    - CSS `preBurnFlash` (0.45s): opacity 1 → flash → 0, triggered at each column's hit time
+  - **Meteor drops** (v0.51.6–7): N small oval drops per column (N = pancreasR + boostR)
+    - Drop shape: `<ellipse rx=2.5 ry=6>`, tilted `rotate(20deg)`, trajectory 70° to horizontal
+    - Direction: upper-left → lower-right; `dx = dy / tan(70°) ≈ 0.364 * dy`
+    - Wave: `waveDelay = 400 + |col - firstDropCol| * 12 ms`; intra-column stagger: 60ms/drop
+    - Animation: `dropFall` 1.0s (ПЖ) / 0.9s (BOOST); brightness flash at impact, disappears
+    - BOOST drops: amber `#f59e0b`, slightly faster
+  - **Per-column skyline sync** (v0.51.4): `burnedCols: Set<number>` updated via `setTimeout` at each column's hit time
+    - Pre-hit: skyline = `columnCaps + pancreasDepths + boostDepths + plateauExtraRows`
+    - Post-hit: skyline = `columnCaps` (final burned state)
+  - **Plateau preview** (v0.51.3): hover preview uses `decayRate=0` — shows flat plateau after peak
+    - Plateau-extra cubes computed per food: columns where plateau height > decay height (post-peak only)
+    - `plateauExtraRows[col]` accumulated globally, used in bomb height and pre-burn skyline
+  - **Preview base fix** (v0.51.5): preview uses `columnCaps[col]` as base row (not `pancreasCaps`) when `hideBurnedInPlanning=true` — eliminates gap between visible food and hover preview
+  - **Stable tag**: `alpha-13-stable` = v0.51.2 (pre-burn glucose phase, reliable rollback point)
 
 - **WP Budget** ✅
   - Per-day wpBudget from level config (Day 1: 10, Day 2-3: 10)
@@ -567,13 +587,13 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 
 ### Level 01 Balance (v0.43.0)
 
-| Day | kcal | WP | Pre-placed | Insulin Profile | Locked | Free | Foods | Interventions | Meds | 3★ % |
-|-----|-----:|---:|-----------|----------------|--------|------|-------|--------------|------|-----:|
-| 1 | 1800 | 10 | burger@0, banana@4 | 2,2,1 | [0,1,3,4,6,7,9,10] | [2,5,8,11] | cookie,milk,chickpeas | walk×1,break×1 | — | 14.8% |
-| 2 | 2000 | 10 | banana@0, muffin@5 | 2,2(→25),1 | [1,3,6,8,11] | [2,4,7,9,10] | chickpeas,cookie,oatmeal | walk×2,break×1 | metformin | 13.4% |
-| 3 | 2000 | 10 | burger@0, muffin@2, oatmeal@5 | 4,3,2 | [0,2,3,5,6,8,9,11] | [1,4,7,10] | sandwich,cookie,banana,milk | walk×1,break×2 | met+glp1 | 0.7%* |
+| Day | kcal | WP | Pre-placed | Locked | Free | Foods | Interventions | Meds | 3★ % |
+|-----|-----:|---:|-----------|--------|------|-------|--------------|------|-----:|
+| 1 | 1800 | 10 | burger@0, banana@4 | [0,1,3,4,6,7,9,10] | [2,5,8,11] | cookie,milk,chickpeas | walk×1,break×1 | — | 14.8% |
+| 2 | 2000 | 10 | banana@0, muffin@5 | [1,3,6,8,11] | [2,4,7,9,10] | chickpeas,cookie,oatmeal | walk×2,break×1 | metformin | 13.4% |
+| 3 | 2000 | 10 | burger@0, muffin@2, oatmeal@5 | [0,2,3,5,6,8,9,11] | [1,4,7,10] | sandwich,cookie,banana,milk | walk×1,break×2 | met+glp1 | 0.7%* |
 
-*Day 3 requires BOOST (extraRate=4) to achieve 3★. Without BOOST: 0% 3★.
+*Day 3 requires BOOST to achieve 3★. Without BOOST: 0% 3★.
 
 Key puzzle solutions:
 - **Day 1**: lightwalk@2 covers burger+banana overlap
@@ -655,8 +675,8 @@ Progressive blue palette by placement order: 7-color Tailwind sky shades from `#
 - `alpha-10-stable` (v0.48.14) — stress slot pulse animation, T5 tutorial fixes, BOOST hidden for T1-T3, stress slot visual position fix, food balance rebalance (10 items), T2D1 chicken→chickpeas, archived branch docs cleanup
 - `alpha-11-stable` (v0.48.18) — T6 Metformin tutorial redesign (9 steps, highlightMedEffect prop, wpBudget=4), Heavy Run added to T6D1, locked slot drag rejection UX (red highlight + shake animation), T6D1 unlocked slots 9AM/1PM/5PM/6PM
 - `alpha-12-stable` (v0.50.0) — Row-pattern burn system replaces insulin profiles: ПЖ=[0,0], BOOST=[0,3], Metformin=[0,3,1], SGLT2=[0,2], GLP-1=[0,3]; removed glucose multipliers; 7-layer burn zone coloring; GLP-1 keeps duration/kcal/WP effects
+- `alpha-13-stable` (v0.51.2) — Pre-burn glucose phase: burn zone shown as food-colored before meteor drops; per-column hit timing via `bombHitDelays` Map; branch `stable/v0.51.2` for rollback
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
-- Food drag preview starts on top of alive stack (pancreasCaps), not on top of visible pattern-burn cubes — may show a slight gap in the preview
 
