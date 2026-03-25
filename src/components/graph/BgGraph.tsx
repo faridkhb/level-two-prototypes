@@ -609,17 +609,6 @@ export function BgGraph({
       const localRowToY = (row: number) => PAD_TOP + graphH - (row + 1) * localCellH;
       const firstDropCol = added[0]?.dropColumn ?? 0;
 
-      // Mark pancreas/boost burned cubes for digestAppearBurn animation
-      const newBurnIds = new Set<string>();
-      for (const layer of graphRenderData.layers) {
-        for (const cube of layer.cubes) {
-          if (cube.status !== 'burned') continue;
-          if (cube.burnColor !== '#f97316' && cube.burnColor !== '#f59e0b') continue;
-          if (burnAnimMode === 'incremental' && !newFoodCols.has(cube.col)) continue;
-          newBurnIds.add(`${layer.placementId}-${cube.col}-${cube.row}`);
-        }
-      }
-
       // Build bomb column data
       const bombs: BombCol[] = [];
       const colsToProcess = burnAnimMode === 'full'
@@ -644,17 +633,11 @@ export function BgGraph({
         bombs.push({ col, fallDistPx, burnColor, bombH: Math.max(4, bombH), waveDelay });
       }
 
-      if (newBurnIds.size > 0 || bombs.length > 0) {
-        setAnimatingBurnIds(prev => {
-          const next = new Set(prev);
-          newBurnIds.forEach(id => next.add(id));
-          return next;
-        });
+      if (bombs.length > 0) {
         setBombCols(bombs);
         onPancreasBurnStart?.();
         if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
         animateBurnTimerRef.current = setTimeout(() => {
-          setAnimatingBurnIds(new Set());
           setBombCols([]);
         }, 2200);
       }
