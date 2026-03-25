@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.51.12 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, GLP-1 peak reduction, burns visibility toggle (🔥), main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
+| `main` | BG Planner | v0.54.0 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, GLP-1 peak reduction, burns visibility toggle (👁️), PancreasButton L-shape redesign, Variant B phased reveal (per-food bomb animations, burn layers persist), main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
 
 Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
@@ -107,7 +107,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.51.12)
+- `src/version.ts` — version number (v0.54.0)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -157,7 +157,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.51.12) — GLP-1 Peak Reduction, Burns Visibility Toggle, Skylines Disabled
+### Current State (v0.54.0) — PancreasButton Redesign, Variant B Reveal, 👁️ Toggle
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -177,15 +177,15 @@ CONFIG:
   - Purple toggle buttons for medications (ON/OFF)
   - Green draggable cards for interventions (walk/run)
 
-- **Phased Layer Reveal Animation** ✅
-  - Submit triggers progressive layer-by-layer reveal (replaces old per-food replay)
+- **Phased Layer Reveal Animation — Variant B** ✅ (v0.54.0)
+  - Submit triggers progressive layer-by-layer reveal
   - Phase 1: Food cubes appear with wave animation + food emoji markers + label "🍽️ Food Cubes"
-  - Phase 2: Pancreas burns appear (orange/amber burned cubes) + label "🟠 Pancreas"
-  - Phase 3: Exercise burns (walk/run, green burned cubes) + label "🏃 Exercise"
-  - Phase 4: Medication burns (fuchsia/purple/violet burned cubes) + label "💊 Medications"
+  - Phase 2: Real bomb animations fire (`revealBombsTrigger` incremented → BgGraph second useLayoutEffect); wait for `onBurnAnimComplete` to advance (no hold timer). Orange/amber burned cubes persist as semi-transparent layers after bombs land
+  - Phase 3: Exercise burns (walk/run, green burned cubes) + label "🏃 Exercise" — hold timer 1200ms
+  - Phase 4: Medication burns (fuchsia/purple/violet) + label "💊 Medications" — hold timer 1200ms
   - Exercise and meds phases auto-skipped if not used; Pancreas always shown
   - Floating label badge in graph upper-right corner during each phase
-  - After all phases → penalty overlay + ResultPanel
+  - After all phases: `setShowBurns(true)` → all burn layers + penalty overlays + zone hatching visible → ResultPanel
 
 - **Single-Screen Design** ✅
   - Graph on top, food inventory + Actions panel below (horizontal card layout)
@@ -264,10 +264,11 @@ CONFIG:
   - `cubeBurn`: burned cubes fade to 0.55 opacity with wave effect (increased from 0.35 for burn color visibility)
   - Wave delay: 20ms per column offset from drop point
 
-- **Burn Animation System** ✅ (v0.51.0–v0.51.12, `hideBurnedInPlanning=true` by default)
+- **Burn Animation System** ✅ (v0.51.0–v0.54.0, `hideBurnedInPlanning=true` by default)
   - During planning, ПЖ/BOOST burned cubes are **hidden** by default — shown only via animated drops
-  - **🔥 Burns visibility toggle** (v0.51.12): button top-right on graph, planning mode only (not tutorial)
+  - **👁️ Burns visibility toggle** (v0.51.12 → v0.53.1): button in bottom day-nav bar, planning + results (not tutorial)
     - Default: hidden (`showBurns=false`); active button: orange highlight, burned cubes fully visible
+    - `hideBurnedInPlanning = (isPlanning || showResults) ? !showBurns : gamePhase === 'replaying' && revealPhase === 2`
   - **Pre-burn phase** (v0.51.2): before drops fall, burn zone rendered as food-colored glucose (class `--pre-burn`)
     - Plateau-extra cubes (above decay top) also rendered food-colored and get bombed away
     - CSS `preBurnFlash` (0.45s): opacity 1 → flash → 0, triggered at each column's hit time
@@ -283,6 +284,21 @@ CONFIG:
   - **Preview base fix** (v0.51.5): preview uses `columnCaps[col]` as base row (not `pancreasCaps`) when `hideBurnedInPlanning=true` — eliminates gap between visible food and hover preview
   - **Skylines disabled** (v0.51.12): individual food step-path skylines removed from rendering
   - **Stable tag**: `alpha-13-stable` = v0.51.2 (pre-burn glucose phase, reliable rollback point)
+
+- **Phased Layer Reveal — Variant B** ✅ (v0.54.0, replaces old hold-timer-only reveal)
+  - Phase 2 (pancreas): real bomb animations fire during reveal via `revealBombsTrigger` prop increment
+    - `onBurnAnimComplete` callback advances reveal from phase 2 (instead of hold timer)
+    - `advanceRevealRef` stores callback; `handleBurnAnimComplete` calls both tutorial + reveal advance
+  - After phase 2: pancreas/boost burned cubes remain visible as semi-transparent colored layers
+  - After all phases: `setShowBurns(true)` auto-called → burns visible in results by default
+  - Zone hatching visible in results: `showHatchingOverride={showResults}` prop on BgGraph
+  - Penalty overlays + hatching + all burn layers shown in final results state
+
+- **PancreasButton Redesign** ✅ (v0.53.0)
+  - L-shape layout: top row (🫀 emoji + charge circles + hint text) + bottom row (effectiveness bar)
+  - Effectiveness bar: 5 sections visual-only indicator; BOOST appends extra red-orange sections
+  - `pancreasEffectiveness?: number` in DayConfig (1-5, default 5) — passed from level config
+  - `boostSegPulse` animation on BOOST sections while boost is active
 
 - **WP Budget** ✅
   - Per-day wpBudget from level config (Day 1: 10, Day 2-3: 10)
@@ -675,6 +691,10 @@ Progressive blue palette by placement order: 7-color Tailwind sky shades from `#
 - `alpha-13-stable` (v0.51.2) — Pre-burn glucose phase: burn zone shown as food-colored before meteor drops; per-column hit timing via `bombHitDelays` Map; branch `stable/v0.51.2` for rollback
 - *(v0.51.11)* — GLP-1 peak reduction: `peakReduction = floor(extraCols/2)`, only when GLP-1 active; without GLP-1 all peaks unchanged
 - *(v0.51.12)* — Burns visibility toggle (🔥 button), individual food skylines disabled, burnedCols state removed
+- *(v0.52.1)* — Fix slowMotionRef race condition: `useLayoutEffect` was reading stale ref; fixed by using `slowMotionBurns` prop directly
+- *(v0.53.0)* — PancreasButton redesign: L-shape layout (top: emoji + charges + hint; bottom: effectiveness bar); `pancreasEffectiveness` in DayConfig
+- *(v0.53.1)* — UI cleanup: remove ∂/∑ cheat button; rename 🔥→👁️; move 👁️ to bottom day-nav; show 👁️ on results screen
+- *(v0.54.0)* — Variant B reveal: real bomb animations in phase 2 (`revealBombsTrigger` prop); burn layers persist after phase 2; zone hatching + penalty overlays in results; auto-show burns on results; fix 👁️ on results screen
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
