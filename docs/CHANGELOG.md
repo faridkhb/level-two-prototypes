@@ -1,5 +1,36 @@
 # Changelog
 
+## 25 марта (v0.51.8 → v0.51.12) — GLP-1 Peak Reduction + Burns Toggle + Skylines Off
+
+### v0.51.12 — Burns Visibility Toggle + Disable Skylines
+- **🔥 кнопка** в правом верхнем углу графика переключает видимость сжигателей (ПЖ/BOOST/медикаменты) во время планирования
+- По умолчанию сжигатели скрыты (`hideBurnedInPlanning=true`); активная кнопка подсвечивается оранжевым
+- Кнопка показывается только в режиме планирования, не в туториале
+- **Отключены индивидуальные food skylines** (white step-path контуры между продуктами)
+- Удалён `burnedCols` state и per-column sync таймеры (упрощение — скайлайн-синхронизация не нужна без скайлайнов)
+
+### v0.51.11 — GLP-1 Peak Reduction ⭐
+- **GLP-1** теперь снижает пик продуктов (а не только растягивает кривую)
+- Формула: `peakReduction = floor(extraCols / 2)`, где `extraCols = effectiveRiseCols − originalRiseCols`
+- Примеры (GLP-1 ×1.5): Pizza 90m→135m → origCols=3, effCols=5, extra=2 → −1 куб (5→4); Oatmeal 120m→180m → extra=2 → −1 куб (4→3); Rice 150m→225m → extra=3 → −1 куб (6→5)
+- Продукты с коротким riseCols без изменений: Banana extra=0 → пик без изменений (4)
+- Без GLP-1: все продукты без изменений (`durationMultiplier=1 → extraCols=0`)
+- Реализация: `applyMedicationToFood` возвращает `{glucose, duration, peakReduction}`; `calculateCurve` принимает `peakReduction` параметр (default=0)
+
+### v0.51.10 — Linear Duration Normalization (Reverted)
+- Введена общая нормализация: −1 куб на каждый дополнительный riseCol выше 2, исключение для ≤10г углеводов
+- Отменено в v0.51.11 — эффект оказался слишком сильным для всех продуктов
+
+### v0.51.9 — General Duration Normalization (Reverted)
+- Расширена нормализация на ВСЕ продукты: `normalizedGlucose = glucose * min(1, 2/riseCols)`
+- Отменено — пики упали слишком резко (Rice 6→2/3, Hamburger 5→2)
+
+### v0.51.8 — GLP-1 Explicit Peak Division (Reverted)
+- GLP-1: `effectiveGlucose = glucose / durationMultiplier` — явное деление
+- Отменено в пользу extraCols-based формулы
+
+---
+
 ## 22 февраля (v0.37.0 → v0.38.2) — Unified Rendering + Per-Food Colors + Decay Stacking
 
 ### v0.38.2 — Decay-Based Stacking (фундаментальный фикс) ⭐

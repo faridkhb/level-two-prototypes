@@ -1,6 +1,6 @@
 # BG Planner — Game Design Document
 
-**Version:** v0.51.7 (alpha-13-stable)
+**Version:** v0.51.12
 **Branch:** `main`
 **Deploy:** https://level-two-eight.vercel.app/
 
@@ -24,10 +24,10 @@
 ┌─────────────────────────────────────┐
 │  Day X          ☀️ WP: X/Y          │
 ├─────────────────────────────────────┤
-│  [BOOST]                            │
+│  [BOOST]         [🔥][B][☰]         │
 │          BG Graph (SVG)             │
 │    8 AM ──────────────── 8 PM       │
-│    Кубики еды + маркеры + скайлайны │
+│    Кубики еды + маркеры             │
 │                                     │
 ├─────────────────────────────────────┤
 │  satiety badge │ kcal bar │[Submit] │
@@ -77,11 +77,12 @@
 1. **Фон** — цветные зоны + сетка + baseline-линия при startingBg > 50
 2. **Alive кубики** — цветные (синий по прогрессивной палитре)
 3. **Burned кубики** — от упражнений/медикаментов (7 цветов по источнику, opacity 0.55)
-   - В режиме планирования (`hideBurnedInPlanning`) скрыты — показываются через анимацию при размещении еды
-4. **Индивидуальные скайлайны** — белые контурные линии между продуктами
-5. **Главный скайлайн** — белая линия по верху alive-зоны (обновляется синхронно со взрывами)
-6. **Маркеры** — emoji-пузырьки над пиками продуктов и упражнений
-7. **Метеоритные капли** — анимация ПЖ/BOOST при размещении еды
+   - В режиме планирования скрыты по умолчанию; **кнопка 🔥** в правом верхнем углу графика переключает видимость
+4. **Главный скайлайн** — белая линия по верху alive-зоны
+5. **Маркеры** — emoji-пузырьки над пиками продуктов и упражнений
+6. **Метеоритные капли** — анимация ПЖ/BOOST при размещении еды
+
+> Индивидуальные скайлайны (white step-paths между продуктами) отключены с v0.51.12.
 
 ---
 
@@ -96,7 +97,12 @@ riseCols  = round(duration / 30)   (cellWidthMin = 30)
 
 - **Фаза нарастания:** линейный рост от 1 до peakCubes за riseCols колонок
 - **После пика:** постепенный спад (decayRate ≈ 0.5 кубов/колонку ≈ 1 куб/30 мин)
-- **GLP-1:** duration × 1.5 перед вычислением кривой (шире + ниже)
+- **GLP-1:** duration × 1.5 перед вычислением кривой → пик смещается вправо + снижается:
+  ```
+  extraCols    = effectiveRiseCols − originalRiseCols
+  peakReduction = floor(extraCols / 2)   // −1 куб за каждые 2 добавленных колонки
+  peakCubes    = max(0, basePeak − peakReduction)
+  ```
 - **Pancreas/BOOST/Medications** поглощают кубики сверху стека (row-pattern burns)
 
 ### 4.2. Стекирование
@@ -227,6 +233,9 @@ Break interventions (☕/😴) have no cube effect — they only restore WP.
 **GLP-1 Agonist (💉 slowAbsorption)**
 - Burn pattern `[0,3]`: 2 строки сжигания, skip-3
 - Duration ×1.5 — кривые шире (медленное всасывание), вычисляется до curve
+- **Peak reduction:** каждые 2 дополнительных riseCol снижают пик на 1 куб
+  (`peakReduction = floor(extraCols / 2)`, где `extraCols = effectiveRiseCols − originalRiseCols`)
+  Пример: Pizza 90m→135m: origCols=3, effCols=5, extra=2 → −1 куб (5→4)
 - Kcal budget ×0.70 — аппетит снижен (бюджет kcal −30%)
 - WP +4 — дополнительная сила воли
 - Визуально: фиолетовые кубики `#a78bfa`
@@ -650,13 +659,20 @@ Offset в burned-зоне (снизу вверх):
   ...            → pancreas → boost → metformin → sglt2 → glp1
 ```
 
-### 16.4. hideBurnedInPlanning режим
+### 16.4. Режим видимости сжигателей
 
-Когда `hideBurnedInPlanning=true` (основной режим игры):
-- Burned кубики скрыты визуально
+**По умолчанию** (`hideBurnedInPlanning=true`) во время планирования:
+- Burned кубики (ПЖ/BOOST/медикаменты) скрыты визуально
 - Видимый верх стека = `columnCaps[col]`
-- При размещении еды: метеоритный дождь капель + per-column skyline update через `burnedCols` Set
+- При размещении еды: метеоритный дождь + pre-burn flash эффект
 - Pre-burn skyline = `columnCaps + pancreasD + boostD + plateauExtraRows`
+
+**Кнопка 🔥** (top-right угол графика, только в режиме планирования, не в туториале):
+- Переключает `showBurns` state в PlanningPhase
+- При `showBurns=true`: все burned кубики видны (классический режим)
+- Кнопка подсвечивается оранжевым в активном состоянии
+
+> Индивидуальные food skylines (white step-paths) удалены из рендеринга с v0.51.12.
 
 ---
 
@@ -671,7 +687,7 @@ Offset в burned-зоне (снизу вверх):
 
 ```
 src/
-├── version.ts                     — Версия (v0.51.7)
+├── version.ts                     — Версия (v0.51.12)
 ├── core/
 │   ├── types.ts                   — Типы, константы, GRAPH_CONFIG
 │   └── cubeEngine.ts              — Алгоритмы кривых, reduction, penalty
@@ -688,7 +704,7 @@ src/
 │   │   ├── ConfigScreen.tsx       — 3-tab editor (Food/Pancreas/Interventions+Meds)
 │   │   └── ConfigScreen.css       — Стили конфига
 │   ├── graph/
-│   │   ├── BgGraph.tsx            — SVG граф + вся визуализация (DropBomb, burnedCols, row-pattern burns)
+│   │   ├── BgGraph.tsx            — SVG граф + вся визуализация (DropBomb, row-pattern burns, burns visibility)
 │   │   └── BgGraph.css            — Стили, keyframe анимации (cubeAppear, cubeBurn, dropFall, etc.)
 │   ├── planning/
 │   │   ├── PlanningPhase.tsx      — Оркестратор DnD + callbacks

@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.51.7 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, per-column skyline sync, main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
+| `main` | BG Planner | v0.51.12 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, GLP-1 peak reduction, burns visibility toggle (🔥), main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
 
 Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
@@ -107,7 +107,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.51.7)
+- `src/version.ts` — version number (v0.51.12)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -157,7 +157,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.51.7) — Meteor Drop Burn Animations, Plateau Preview, Per-Column Skyline Sync
+### Current State (v0.51.12) — GLP-1 Peak Reduction, Burns Visibility Toggle, Skylines Disabled
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -253,7 +253,7 @@ CONFIG:
   - **SGLT2 Inhibitor** (🧪 `thresholdDrain`): burn pattern `[0,2]` — 2 rows, floor at 200 mg/dL
     - Purple dashed drain line at 200 mg/dL threshold
     - `sglt2D = min(rawSglt2D, max(0, heightBeforeSglt2 - floorRow))` — floor preserved
-  - **GLP-1 Agonist** (💉 `slowAbsorption`): burn pattern `[0,3]` + duration ×1.5, kcal −30%, WP +4
+  - **GLP-1 Agonist** (💉 `slowAbsorption`): burn pattern `[0,3]` + duration ×1.5 + peak reduction (`floor(extraCols/2)`) + kcal −30%, WP +4
   - Purple toggle panel between graph and food inventory
   - Available per day via `availableMedications` in level config
   - Day 1: none, Day 2: Metformin, Day 3: Metformin + GLP-1
@@ -264,8 +264,10 @@ CONFIG:
   - `cubeBurn`: burned cubes fade to 0.55 opacity with wave effect (increased from 0.35 for burn color visibility)
   - Wave delay: 20ms per column offset from drop point
 
-- **Burn Animation System** ✅ (v0.51.0–v0.51.7, `hideBurnedInPlanning=true`)
-  - During planning, ПЖ/BOOST burned cubes are **hidden** — shown only via animated drops
+- **Burn Animation System** ✅ (v0.51.0–v0.51.12, `hideBurnedInPlanning=true` by default)
+  - During planning, ПЖ/BOOST burned cubes are **hidden** by default — shown only via animated drops
+  - **🔥 Burns visibility toggle** (v0.51.12): button top-right on graph, planning mode only (not tutorial)
+    - Default: hidden (`showBurns=false`); active button: orange highlight, burned cubes fully visible
   - **Pre-burn phase** (v0.51.2): before drops fall, burn zone rendered as food-colored glucose (class `--pre-burn`)
     - Plateau-extra cubes (above decay top) also rendered food-colored and get bombed away
     - CSS `preBurnFlash` (0.45s): opacity 1 → flash → 0, triggered at each column's hit time
@@ -275,13 +277,11 @@ CONFIG:
     - Wave: `waveDelay = 400 + |col - firstDropCol| * 12 ms`; intra-column stagger: 60ms/drop
     - Animation: `dropFall` 1.0s (ПЖ) / 0.9s (BOOST); brightness flash at impact, disappears
     - BOOST drops: amber `#f59e0b`, slightly faster
-  - **Per-column skyline sync** (v0.51.4): `burnedCols: Set<number>` updated via `setTimeout` at each column's hit time
-    - Pre-hit: skyline = `columnCaps + pancreasDepths + boostDepths + plateauExtraRows`
-    - Post-hit: skyline = `columnCaps` (final burned state)
   - **Plateau preview** (v0.51.3): hover preview uses `decayRate=0` — shows flat plateau after peak
     - Plateau-extra cubes computed per food: columns where plateau height > decay height (post-peak only)
     - `plateauExtraRows[col]` accumulated globally, used in bomb height and pre-burn skyline
   - **Preview base fix** (v0.51.5): preview uses `columnCaps[col]` as base row (not `pancreasCaps`) when `hideBurnedInPlanning=true` — eliminates gap between visible food and hover preview
+  - **Skylines disabled** (v0.51.12): individual food step-path skylines removed from rendering
   - **Stable tag**: `alpha-13-stable` = v0.51.2 (pre-burn glucose phase, reliable rollback point)
 
 - **WP Budget** ✅
@@ -341,12 +341,9 @@ CONFIG:
   - **skylineRow vs aliveTop**: `aliveTop` = unclamped per-food boundary; `skylineRow` = clamped by `columnCaps` (responds to interventions)
   - **Stable marker positioning** (v0.39.7): markers use food's OWN visible height (skylineRow - baseRow) for peak finding, skylineRow for tail Y — prevents displacement for 4th+ foods
 
-- **Individual Food Skylines** ✅
-  - White outlined step-paths between each food's alive zone (when 2+ foods placed)
-  - Trace the boundary of food's ALIVE cubes using `skylineRow` (clamped by columnCaps)
-  - Shadow underneath for visibility over cubes
-  - Skylines descend when interventions burn cubes — wrap only unburned cells
-  - Rendered AFTER all cube layers (Z-order: cubes → med cubes → individual skylines → main skyline)
+- **Individual Food Skylines** — disabled (v0.51.12)
+  - White step-path skylines between food layers removed from rendering
+  - Were: traced ALIVE boundary per food using `skylineRow` (clamped by columnCaps)
 
 - **Penalty / Rating System** ✅
   - Submit button triggers penalty calculation on current graph state
@@ -511,7 +508,7 @@ CONFIG:
 |-----------|-------|------|-------------|---------------|
 | Metformin | 💊 | peakReduction | `[0,3,1]` — 3 rows, skip-3 | — |
 | SGLT2 Inhibitor | 🧪 | thresholdDrain | `[0,2]` — 2 rows, skip-2 | floorMgDl: 200 |
-| GLP-1 Agonist | 💉 | slowAbsorption | `[0,3]` — 2 rows, skip-3 | durationMult: 1.5, kcalMult: 0.7, wpBonus: +4 |
+| GLP-1 Agonist | 💉 | slowAbsorption | `[0,3]` — 2 rows, skip-3 | durationMult: 1.5, peakReduction: floor(extraCols/2), kcalMult: 0.7, wpBonus: +4 |
 
 ### Food Parameters Table
 
@@ -629,7 +626,7 @@ Key puzzle solutions:
 3. Rise phase (cols 0..riseCols-1): `height = round(peakCubes × (i+1)/riseCols)` — linear ramp
 4. Post-peak: decay via `decayRate = 0.5` (legacy formula — ~1 cube per 30 min)
 5. Drop column = left edge (start of food absorption)
-6. GLP-1: `duration × 1.5` before curve calculation (wider/shallower curve)
+6. GLP-1: `duration × 1.5` before curve calculation (wider curve); peak reduced by `floor(extraCols/2)` where `extraCols = effectiveRiseCols − originalRiseCols`
 
 #### Row-Pattern Burn Algorithm (v0.50.0)
 `patternDepth(pattern, col)` — for each element: `skip=0` → always +1; `skip=N` → group=floor(col/N), burn if group%2===1
@@ -676,6 +673,8 @@ Progressive blue palette by placement order: 7-color Tailwind sky shades from `#
 - `alpha-11-stable` (v0.48.18) — T6 Metformin tutorial redesign (9 steps, highlightMedEffect prop, wpBudget=4), Heavy Run added to T6D1, locked slot drag rejection UX (red highlight + shake animation), T6D1 unlocked slots 9AM/1PM/5PM/6PM
 - `alpha-12-stable` (v0.50.0) — Row-pattern burn system replaces insulin profiles: ПЖ=[0,0], BOOST=[0,3], Metformin=[0,3,1], SGLT2=[0,2], GLP-1=[0,3]; removed glucose multipliers; 7-layer burn zone coloring; GLP-1 keeps duration/kcal/WP effects
 - `alpha-13-stable` (v0.51.2) — Pre-burn glucose phase: burn zone shown as food-colored before meteor drops; per-column hit timing via `bombHitDelays` Map; branch `stable/v0.51.2` for rollback
+- *(v0.51.11)* — GLP-1 peak reduction: `peakReduction = floor(extraCols/2)`, only when GLP-1 active; without GLP-1 all peaks unchanged
+- *(v0.51.12)* — Burns visibility toggle (🔥 button), individual food skylines disabled, burnedCols state removed
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
