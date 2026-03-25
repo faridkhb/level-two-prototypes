@@ -68,6 +68,8 @@ interface FoodRenderLayer {
   cubes: FoodRenderCube[];
   colSummary: FoodColumnSummary[];
   skylinePath: string | null;
+  // Extra plateau cubes above decayed top (post-peak only), shown in pre-burn phase
+  plateauCubes: Array<{ col: number; row: number }>;
 }
 
 interface GraphRenderData {
@@ -82,6 +84,8 @@ interface GraphRenderData {
   metforminDepths: number[];
   sglt2Depths: number[];
   glp1Depths: number[];
+  // Total plateau-extra rows per column (post-peak decay visualized via bombs)
+  plateauExtraRows: number[];
 }
 
 // Bomb animation: one SVG capsule per column that falls from the top
@@ -228,6 +232,7 @@ export function BgGraph({
       emoji: string;
       carbs: number;
       columns: Array<{ col: number; baseRow: number; aliveCount: number }>;
+      plateauExtras: Array<{ col: number; startRow: number; extra: number }>;
     }> = [];
 
     for (const placed of placedFoods) {
@@ -236,14 +241,37 @@ export function BgGraph({
       const { duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
       const decayCurve = calculateCurve(ship.load, duration, placed.dropColumn, decayRate);
 
+      // Track per-col {baseRow, aliveCount} for plateau computation
+      const decayColMap = new Map<number, { baseRow: number; aliveCount: number }>();
       const cols: Array<{ col: number; baseRow: number; aliveCount: number }> = [];
       for (const dc of decayCurve) {
         const graphCol = placed.dropColumn + dc.columnOffset;
         if (graphCol < 0 || graphCol >= TOTAL_COLUMNS) continue;
         const baseRow = aliveStacks[graphCol];
         const aliveCount = dc.cubeCount;
+        decayColMap.set(graphCol, { baseRow, aliveCount });
         cols.push({ col: graphCol, baseRow, aliveCount });
         aliveStacks[graphCol] += aliveCount;
+      }
+
+      // Plateau extras: post-peak columns where plateau (decayRate=0) > decay curve
+      const plateauExtras: Array<{ col: number; startRow: number; extra: number }> = [];
+      if (decayRate > 0) {
+        const plateauCurve = calculateCurve(ship.load, duration, placed.dropColumn, 0);
+        const riseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
+        for (const pc of plateauCurve) {
+          if (pc.columnOffset < riseCols) continue; // ramp phase — skip
+          const graphCol = placed.dropColumn + pc.columnOffset;
+          if (graphCol < 0 || graphCol >= TOTAL_COLUMNS) continue;
+          const decayEntry = decayColMap.get(graphCol);
+          const decayH = decayEntry?.aliveCount ?? 0;
+          const extra = Math.max(0, pc.cubeCount - decayH);
+          if (extra <= 0) continue;
+          // For decay columns: startRow = decayEntry.baseRow + decayH
+          // For plateau-only columns: startRow = aliveStacks[col] (unmodified by this food)
+          const startRow = decayEntry ? decayEntry.baseRow + decayH : aliveStacks[graphCol];
+          plateauExtras.push({ col: graphCol, startRow, extra });
+        }
       }
 
       rawFoods.push({
@@ -254,6 +282,7 @@ export function BgGraph({
         emoji: ship.emoji,
         carbs: ship.carbs ?? 0,
         columns: cols,
+        plateauExtras,
       });
     }
 
@@ -314,11 +343,29 @@ export function BgGraph({
     }
 
     // Phase 3: Per-food layers — stamp cubes, compute skylines
+    // Accumulate global plateau extra rows per column (for bombs + pre-burn skyline)
+    const plateauExtraRows = new Array(TOTAL_COLUMNS).fill(0);
+    for (const food of rawFoods) {
+      for (const pe of food.plateauExtras) {
+        plateauExtraRows[pe.col] += pe.extra;
+      }
+    }
+
     const hasMultipleFoods = rawFoods.length >= 2;
     const bottomY = PAD_TOP + graphH;
     const layers: FoodRenderLayer[] = rawFoods.map((food) => {
       const cubes: FoodRenderCube[] = [];
       const colSummary: FoodColumnSummary[] = [];
+
+      // Plateau extra cubes for this food (shown food-colored in pre-burn phase)
+      const plateauCubes: Array<{ col: number; row: number }> = [];
+      for (const pe of food.plateauExtras) {
+        for (let i = 0; i < pe.extra; i++) {
+          const row = pe.startRow + i;
+          if (row >= effectiveRows) break;
+          plateauCubes.push({ col: pe.col, row });
+        }
+      }
 
       for (const c of food.columns) {
         let topNormalRow = c.baseRow;
@@ -416,6 +463,7 @@ export function BgGraph({
         cubes,
         colSummary,
         skylinePath,
+        plateauCubes,
       };
     });
 
@@ -449,7 +497,7 @@ export function BgGraph({
     if (inSegment && lastSegCol < TOTAL_COLUMNS - 1) mainParts.push(`V ${bottomY}`);
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
-    return { layers, mainSkylinePath, columnCaps, pancreasCaps, effectiveRows, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, glp1Depths };
+    return { layers, mainSkylinePath, columnCaps, pancreasCaps, effectiveRows, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, glp1Depths, plateauExtraRows };
   }, [placedFoods, allShips, medicationModifiers, decayRate, boostActive, interventionReduction, interventionReductions, baselineRow, graphH]);
 
   // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
@@ -462,7 +510,8 @@ export function BgGraph({
     if (!previewShip || previewColumn === undefined) return null;
 
     const { duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
-    const decayCurve = calculateCurve(previewShip.load, duration, previewColumn, decayRate);
+    // Use decayRate=0 for preview — shows plateau after peak (decay revealed via bombs after drop)
+    const decayCurve = calculateCurve(previewShip.load, duration, previewColumn, 0);
 
     const { pancreasCaps, columnCaps } = graphRenderData;
     const foodCubes: Array<{ col: number; row: number }> = [];
@@ -624,7 +673,8 @@ export function BgGraph({
         if (graphRenderData.pancreasCaps[col] <= baselineRow) continue;
 
         const cap = graphRenderData.columnCaps[col];
-        const bombH = (pancreasR + boostR) * localCellH;
+        const plateauExtra = graphRenderData.plateauExtraRows[col] ?? 0;
+        const bombH = (pancreasR + boostR + plateauExtra) * localCellH;
         const targetY = localRowToY(cap);
         const fallDistPx = targetY - PAD_TOP;
         if (fallDistPx < 0) continue;
@@ -1093,6 +1143,27 @@ export function BgGraph({
           </g>
         ))}
 
+        {/* Plateau extra cubes per food — food-colored, shown during pre-burn phase only */}
+        {bombHitDelays !== null && graphRenderData.layers.map(layer =>
+          layer.plateauCubes.map(pc => {
+            const hitDelay = bombHitDelays.get(pc.col) ?? 0;
+            return (
+              <rect
+                key={`plateau-${layer.placementId}-${pc.col}-${pc.row}`}
+                x={colToX(pc.col) + 0.5}
+                y={rowToY(pc.row) + 0.5}
+                width={CELL_SIZE - 1}
+                height={cellHeight - 1}
+                fill={layer.color}
+                rx={2}
+                className="bg-graph__cube--pre-burn"
+                style={{ animationDelay: `${hitDelay}ms` }}
+                pointerEvents="none"
+              />
+            );
+          })
+        )}
+
         {/* Drag preview: intervention burn overlay — green cubes on food that would burn */}
         {interventionPreviewData && (
           <g pointerEvents="none">
@@ -1282,7 +1353,7 @@ export function BgGraph({
             let inSeg = false;
             let lastCol = -1;
             for (let col = 0; col < TOTAL_COLUMNS; col++) {
-              const h = columnCaps[col] + (pancreasDepths[col] ?? 0) + (boostDepths[col] ?? 0);
+              const h = columnCaps[col] + (pancreasDepths[col] ?? 0) + (boostDepths[col] ?? 0) + (graphRenderData.plateauExtraRows[col] ?? 0);
               if (h <= 0) {
                 if (inSeg && lastCol < TOTAL_COLUMNS - 1) parts.push(`V ${bottomY}`);
                 inSeg = false;
@@ -1294,7 +1365,7 @@ export function BgGraph({
                 else { parts.push(`M ${colToX(col)} ${bottomY}`); parts.push(`V ${y}`); }
                 inSeg = true;
               } else {
-                const prevH = (columnCaps[col - 1] + (pancreasDepths[col - 1] ?? 0) + (boostDepths[col - 1] ?? 0));
+                const prevH = (columnCaps[col - 1] + (pancreasDepths[col - 1] ?? 0) + (boostDepths[col - 1] ?? 0) + (graphRenderData.plateauExtraRows[col - 1] ?? 0));
                 if (prevH !== h) parts.push(`V ${y}`);
               }
               parts.push(`H ${colToX(col) + CELL_SIZE}`);
