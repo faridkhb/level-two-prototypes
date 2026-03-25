@@ -88,13 +88,17 @@ interface GraphRenderData {
   plateauExtraRows: number[];
 }
 
-// Bomb animation: one SVG capsule per column that falls from the top
-interface BombCol {
+// Bomb animation: individual meteor drops falling at 70° angle
+interface DropBomb {
+  id: string;
   col: number;
-  fallDistPx: number; // CSS translateY distance in px (SVG units)
+  dropIndex: number;  // 0-based index within column
+  cx: number;         // SVG x start position
+  cy: number;         // SVG y start position (PAD_TOP)
+  dx: number;         // CSS translate X (negative = leftward)
+  dy: number;         // CSS translate Y (positive = downward)
   burnColor: string;  // orange or amber
-  bombH: number;      // height of bomb capsule (matches burn zone height)
-  waveDelay: number;  // ms delay for left-to-right wave
+  delay: number;      // animation delay in ms
 }
 
 interface ExitingCube {
@@ -186,7 +190,7 @@ export function BgGraph({
 
   // Bomb animation state (ПЖ/BOOST burns on food placement)
   const [animatingBurnIds, setAnimatingBurnIds] = useState<Set<string>>(new Set());
-  const [bombCols, setBombCols] = useState<BombCol[]>([]);
+  const [bombDrops, setBombDrops] = useState<DropBomb[]>([]);
   // Per-column bomb hit delays (ms) — non-null during pre-burn phase (food colored → flash → disappear)
   const [bombHitDelays, setBombHitDelays] = useState<Map<number, number> | null>(null);
   // Columns whose bomb has already hit — skyline updates synchronously per column
@@ -658,56 +662,64 @@ export function BgGraph({
       }
     }
 
-    // Bomb animation trigger: when new food added and hideBurnedInPlanning
+    // Meteor drop animation trigger: when new food added and hideBurnedInPlanning
     if (added.length > 0 && hideBurnedInPlanning) {
       const newFoodCols = new Set(added.flatMap(a => a.cubes.map(c => c.col)));
       const localCellH = graphH / graphRenderData.effectiveRows;
-      const localRowToY = (row: number) => PAD_TOP + graphH - (row + 1) * localCellH;
       const firstDropCol = added[0]?.dropColumn ?? 0;
 
-      // Build bomb column data
-      const bombs: BombCol[] = [];
       const colsToProcess = burnAnimMode === 'full'
         ? Array.from({ length: TOTAL_COLUMNS }, (_, i) => i)
         : Array.from(newFoodCols);
 
+      const drops: DropBomb[] = [];
+      const hitDelayMap = new Map<number, number>();
+      const TAN70 = Math.tan(70 * Math.PI / 180); // ≈ 2.747
+
       for (const col of colsToProcess) {
         const pancreasR = graphRenderData.pancreasDepths[col];
         const boostR = graphRenderData.boostDepths[col];
-        if (pancreasR + boostR <= 0) continue;
+        const totalDrops = pancreasR + boostR;
+        if (totalDrops <= 0) continue;
         if (graphRenderData.pancreasCaps[col] <= baselineRow) continue;
 
         const cap = graphRenderData.columnCaps[col];
-        const plateauExtra = graphRenderData.plateauExtraRows[col] ?? 0;
-        const bombH = (pancreasR + boostR + plateauExtra) * localCellH;
-        const targetY = localRowToY(cap);
-        const fallDistPx = targetY - PAD_TOP;
-        if (fallDistPx < 0) continue;
-
         const burnColor = boostR > 0 ? '#f59e0b' : '#f97316';
+        const fallDuration = boostR > 0 ? 650 : 700;
+        const hitPercent = boostR > 0 ? 0.60 : 0.65;
         // 400ms base delay (food appear takes ~350ms) + left-to-right wave
         const waveDelay = 400 + Math.abs(col - firstDropCol) * 12;
-        bombs.push({ col, fallDistPx, burnColor, bombH: Math.max(4, bombH), waveDelay });
+        const targetXCenter = PAD_LEFT + col * CELL_SIZE + CELL_SIZE / 2;
+
+        for (let i = 0; i < totalDrops; i++) {
+          const targetRow = cap + i; // i-th burn row above alive stack
+          const targetYCenter = PAD_TOP + graphH - (targetRow + 0.5) * localCellH;
+          const dy = Math.max(2, targetYCenter - PAD_TOP);
+          const dx = -(dy / TAN70); // horizontal offset for 70° angle (leftward)
+          const cx = targetXCenter - dx; // start to the right of target
+          const cy = PAD_TOP;
+          const delay = waveDelay + i * 60; // stagger drops within column
+
+          drops.push({ id: `drop-${col}-${i}`, col, dropIndex: i, cx, cy, dx, dy, burnColor, delay });
+
+          // hitDelay from first drop in each column (skyline updates at that moment)
+          if (i === 0) {
+            hitDelayMap.set(col, Math.round(delay + fallDuration * hitPercent));
+          }
+        }
       }
 
-      if (bombs.length > 0) {
-        // Per-column hit delay: waveDelay + time for bomb to reach food stack
-        const hitDelayMap = new Map<number, number>();
-        for (const bomb of bombs) {
-          const fallDuration = bomb.burnColor === '#f59e0b' ? 650 : 700;
-          const hitPercent = bomb.burnColor === '#f59e0b' ? 0.60 : 0.65;
-          hitDelayMap.set(bomb.col, Math.round(bomb.waveDelay + fallDuration * hitPercent));
-        }
+      if (drops.length > 0) {
         setBombHitDelays(hitDelayMap);
         setBurnedCols(new Set());
-        setBombCols(bombs);
+        setBombDrops(drops);
         onPancreasBurnStart?.();
 
         // Clear previous per-column timers
         for (const t of burnedColTimersRef.current) clearTimeout(t);
         burnedColTimersRef.current = [];
 
-        // Schedule per-column skyline update at each bomb's impact time
+        // Schedule per-column skyline update at each column's first drop impact time
         for (const [col, hitDelay] of hitDelayMap) {
           const t = setTimeout(() => {
             setBurnedCols(prev => { const next = new Set(prev); next.add(col); return next; });
@@ -717,7 +729,7 @@ export function BgGraph({
 
         if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
         animateBurnTimerRef.current = setTimeout(() => {
-          setBombCols([]);
+          setBombDrops([]);
           setBombHitDelays(null);
           setBurnedCols(new Set());
         }, 2200);
@@ -811,7 +823,7 @@ export function BgGraph({
       if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
       animateBurnTimerRef.current = setTimeout(() => {
         setAnimatingBurnIds(new Set());
-        setBombCols([]);
+        setBombDrops([]);
       }, 2200);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1317,22 +1329,22 @@ export function BgGraph({
           return <g pointerEvents="none">{fallCubes}</g>;
         })()}
 
-        {/* Pancreas/BOOST bomb animation — capsules falling from top onto burn zone */}
-        {bombCols.length > 0 && (
+        {/* Meteor drop animation — insulin rain falling at 70° angle */}
+        {bombDrops.length > 0 && (
           <g pointerEvents="none">
-            {bombCols.map(bomb => (
-              <rect
-                key={`bomb-${bomb.col}`}
-                x={colToX(bomb.col) + 2}
-                y={PAD_TOP}
-                width={CELL_SIZE - 4}
-                height={Math.max(4, bomb.bombH)}
-                fill={bomb.burnColor}
-                rx={3}
-                className={bomb.burnColor === '#f59e0b' ? 'bg-graph__bomb--boost' : 'bg-graph__bomb'}
+            {bombDrops.map(drop => (
+              <ellipse
+                key={drop.id}
+                cx={drop.cx}
+                cy={drop.cy}
+                rx={1.5}
+                ry={4}
+                fill={drop.burnColor}
+                className={drop.burnColor === '#f59e0b' ? 'bg-graph__drop--boost' : 'bg-graph__drop'}
                 style={{
-                  '--bomb-fall': `${bomb.fallDistPx}px`,
-                  animationDelay: `${bomb.waveDelay}ms`,
+                  '--drop-dx': `${drop.dx}px`,
+                  '--drop-dy': `${drop.dy}px`,
+                  animationDelay: `${drop.delay}ms`,
                 } as React.CSSProperties}
               />
             ))}
