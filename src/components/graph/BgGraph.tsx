@@ -189,6 +189,9 @@ export function BgGraph({
   const [bombCols, setBombCols] = useState<BombCol[]>([]);
   // Per-column bomb hit delays (ms) — non-null during pre-burn phase (food colored → flash → disappear)
   const [bombHitDelays, setBombHitDelays] = useState<Map<number, number> | null>(null);
+  // Columns whose bomb has already hit — skyline updates synchronously per column
+  const [burnedCols, setBurnedCols] = useState<Set<number>>(new Set());
+  const burnedColTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const animateBurnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevMedModifiersRef = useRef(DEFAULT_MEDICATION_MODIFIERS);
 
@@ -694,12 +697,27 @@ export function BgGraph({
           hitDelayMap.set(bomb.col, Math.round(bomb.waveDelay + fallDuration * hitPercent));
         }
         setBombHitDelays(hitDelayMap);
+        setBurnedCols(new Set());
         setBombCols(bombs);
         onPancreasBurnStart?.();
+
+        // Clear previous per-column timers
+        for (const t of burnedColTimersRef.current) clearTimeout(t);
+        burnedColTimersRef.current = [];
+
+        // Schedule per-column skyline update at each bomb's impact time
+        for (const [col, hitDelay] of hitDelayMap) {
+          const t = setTimeout(() => {
+            setBurnedCols(prev => { const next = new Set(prev); next.add(col); return next; });
+          }, hitDelay);
+          burnedColTimersRef.current.push(t);
+        }
+
         if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
         animateBurnTimerRef.current = setTimeout(() => {
           setBombCols([]);
           setBombHitDelays(null);
+          setBurnedCols(new Set());
         }, 2200);
       }
     }
@@ -802,6 +820,7 @@ export function BgGraph({
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     for (const timer of burningIntTimersRef.current.values()) clearTimeout(timer);
     if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
+    for (const t of burnedColTimersRef.current) clearTimeout(t);
   }, []);
 
   // Dynamic zone clip bands (Y-positions from mg/dL thresholds)
@@ -1353,7 +1372,10 @@ export function BgGraph({
             let inSeg = false;
             let lastCol = -1;
             for (let col = 0; col < TOTAL_COLUMNS; col++) {
-              const h = columnCaps[col] + (pancreasDepths[col] ?? 0) + (boostDepths[col] ?? 0) + (graphRenderData.plateauExtraRows[col] ?? 0);
+              // After bomb hits column → show final height; before → show full plateau height
+              const h = burnedCols.has(col)
+                ? columnCaps[col]
+                : columnCaps[col] + (pancreasDepths[col] ?? 0) + (boostDepths[col] ?? 0) + (graphRenderData.plateauExtraRows[col] ?? 0);
               if (h <= 0) {
                 if (inSeg && lastCol < TOTAL_COLUMNS - 1) parts.push(`V ${bottomY}`);
                 inSeg = false;
@@ -1365,7 +1387,10 @@ export function BgGraph({
                 else { parts.push(`M ${colToX(col)} ${bottomY}`); parts.push(`V ${y}`); }
                 inSeg = true;
               } else {
-                const prevH = (columnCaps[col - 1] + (pancreasDepths[col - 1] ?? 0) + (boostDepths[col - 1] ?? 0) + (graphRenderData.plateauExtraRows[col - 1] ?? 0));
+                const prevCol = col - 1;
+                const prevH = burnedCols.has(prevCol)
+                  ? columnCaps[prevCol]
+                  : (columnCaps[prevCol] + (pancreasDepths[prevCol] ?? 0) + (boostDepths[prevCol] ?? 0) + (graphRenderData.plateauExtraRows[prevCol] ?? 0));
                 if (prevH !== h) parts.push(`V ${y}`);
               }
               parts.push(`H ${colToX(col) + CELL_SIZE}`);
