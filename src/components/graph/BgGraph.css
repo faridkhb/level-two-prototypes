@@ -299,32 +299,32 @@
   color: #fc8181;
 }
 
-/* Insulin meteor drop — falls at 70° angle (upper-right → lower-left), impacts and disappears */
+/* Insulin meteor drop — falls at 70° angle (upper-left → lower-right), impacts and disappears */
 @keyframes dropFall {
-  0%   { opacity: 0;   transform: translate(0, 0) rotate(-20deg) scale(1); }
+  0%   { opacity: 0;   transform: translate(0, 0) rotate(20deg) scale(1); }
   8%   { opacity: 1;   filter: brightness(2.5);
-         transform: translate(0, 0) rotate(-20deg) scale(1); }
+         transform: translate(0, 0) rotate(20deg) scale(1); }
   65%  { opacity: 1;   filter: brightness(1.4);
-         transform: translate(var(--drop-dx), var(--drop-dy)) rotate(-20deg) scale(1); }
+         transform: translate(var(--drop-dx), var(--drop-dy)) rotate(20deg) scale(1); }
   73%  { opacity: 1;   filter: brightness(5);
-         transform: translate(var(--drop-dx), var(--drop-dy)) rotate(-20deg) scale(2.5); }
+         transform: translate(var(--drop-dx), var(--drop-dy)) rotate(20deg) scale(2.5); }
   86%  { opacity: 0.5; filter: brightness(2);
-         transform: translate(var(--drop-dx), var(--drop-dy)) rotate(-20deg) scale(1.2); }
+         transform: translate(var(--drop-dx), var(--drop-dy)) rotate(20deg) scale(1.2); }
   100% { opacity: 0;
-         transform: translate(var(--drop-dx), var(--drop-dy)) rotate(-20deg) scale(0); }
+         transform: translate(var(--drop-dx), var(--drop-dy)) rotate(20deg) scale(0); }
 }
 
 .bg-graph__drop {
   transform-box: fill-box;
   transform-origin: center;
-  animation: dropFall 0.7s ease-in both;
+  animation: dropFall 1.0s ease-in both;
   pointer-events: none;
 }
 
 .bg-graph__drop--boost {
   transform-box: fill-box;
   transform-origin: center;
-  animation: dropFall 0.65s ease-in both;
+  animation: dropFall 0.9s ease-in both;
   pointer-events: none;
 }
 

@@ -685,7 +685,7 @@ export function BgGraph({
 
         const cap = graphRenderData.columnCaps[col];
         const burnColor = boostR > 0 ? '#f59e0b' : '#f97316';
-        const fallDuration = boostR > 0 ? 650 : 700;
+        const fallDuration = boostR > 0 ? 900 : 1000;
         const hitPercent = boostR > 0 ? 0.60 : 0.65;
         // 400ms base delay (food appear takes ~350ms) + left-to-right wave
         const waveDelay = 400 + Math.abs(col - firstDropCol) * 12;
@@ -695,8 +695,8 @@ export function BgGraph({
           const targetRow = cap + i; // i-th burn row above alive stack
           const targetYCenter = PAD_TOP + graphH - (targetRow + 0.5) * localCellH;
           const dy = Math.max(2, targetYCenter - PAD_TOP);
-          const dx = -(dy / TAN70); // horizontal offset for 70° angle (leftward)
-          const cx = targetXCenter - dx; // start to the right of target
+          const dx = dy / TAN70; // horizontal offset for 70° angle (rightward)
+          const cx = targetXCenter - dx; // start to the left of target
           const cy = PAD_TOP;
           const delay = waveDelay + i * 60; // stagger drops within column
 
@@ -1337,8 +1337,8 @@ export function BgGraph({
                 key={drop.id}
                 cx={drop.cx}
                 cy={drop.cy}
-                rx={1.5}
-                ry={4}
+                rx={2.5}
+                ry={6}
                 fill={drop.burnColor}
                 className={drop.burnColor === '#f59e0b' ? 'bg-graph__drop--boost' : 'bg-graph__drop'}
                 style={{
