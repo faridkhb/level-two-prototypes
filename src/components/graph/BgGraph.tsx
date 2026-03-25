@@ -183,6 +183,8 @@ export function BgGraph({
   // Bomb animation state (ПЖ/BOOST burns on food placement)
   const [animatingBurnIds, setAnimatingBurnIds] = useState<Set<string>>(new Set());
   const [bombCols, setBombCols] = useState<BombCol[]>([]);
+  // Per-column bomb hit delays (ms) — non-null during pre-burn phase (food colored → flash → disappear)
+  const [bombHitDelays, setBombHitDelays] = useState<Map<number, number> | null>(null);
   const animateBurnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevMedModifiersRef = useRef(DEFAULT_MEDICATION_MODIFIERS);
 
@@ -634,11 +636,20 @@ export function BgGraph({
       }
 
       if (bombs.length > 0) {
+        // Per-column hit delay: waveDelay + time for bomb to reach food stack
+        const hitDelayMap = new Map<number, number>();
+        for (const bomb of bombs) {
+          const fallDuration = bomb.burnColor === '#f59e0b' ? 650 : 700;
+          const hitPercent = bomb.burnColor === '#f59e0b' ? 0.60 : 0.65;
+          hitDelayMap.set(bomb.col, Math.round(bomb.waveDelay + fallDuration * hitPercent));
+        }
+        setBombHitDelays(hitDelayMap);
         setBombCols(bombs);
         onPancreasBurnStart?.();
         if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
         animateBurnTimerRef.current = setTimeout(() => {
           setBombCols([]);
+          setBombHitDelays(null);
         }, 2200);
       }
     }
@@ -999,8 +1010,11 @@ export function BgGraph({
                   if (cube.status === 'normal') return true;
                   if (cube.status === 'burned') {
                     if (!hideBurnedInPlanning) return true; // old behavior
-                    // In new mode: only show if in active burn animation
                     const cubeKey = `${layer.placementId}-${cube.col}-${cube.row}`;
+                    // Pancreas/BOOST burns: visible as food-color during pre-bomb phase
+                    const isPancreasBurn = cube.burnColor === '#f97316' || cube.burnColor === '#f59e0b';
+                    if (isPancreasBurn) return bombHitDelays !== null && bombHitDelays.has(cube.col);
+                    // Med burns: visible only during med toggle animation
                     return animatingBurnIds.has(cubeKey);
                   }
                   return true;
@@ -1020,15 +1034,22 @@ export function BgGraph({
               })
               .map(cube => {
               const cubeKey = `${layer.placementId}-${cube.col}-${cube.row}`;
-              const isAnimatingBurn = hideBurnedInPlanning && cube.status === 'burned' && animatingBurnIds.has(cubeKey);
+              const isPancreasBurnCube = cube.burnColor === '#f97316' || cube.burnColor === '#f59e0b';
+              const isPreBurnCube = hideBurnedInPlanning && cube.status === 'burned' && isPancreasBurnCube && bombHitDelays !== null && bombHitDelays.has(cube.col);
+              const isAnimatingBurn = !isPreBurnCube && hideBurnedInPlanning && cube.status === 'burned' && animatingBurnIds.has(cubeKey);
               const waveDelay = (cube.col - layer.dropColumn) * 20;
-              const cubeClass = isAnimatingBurn
-                ? 'bg-graph__cube--digest-appear-burn'
-                : cube.status === 'burned'
-                  ? 'bg-graph__cube--burned'
-                  : 'bg-graph__cube';
+              const effectiveAnimDelay = isPreBurnCube ? (bombHitDelays!.get(cube.col) ?? 0) : waveDelay;
+              const cubeClass = isPreBurnCube
+                ? 'bg-graph__cube--pre-burn'
+                : isAnimatingBurn
+                  ? 'bg-graph__cube--digest-appear-burn'
+                  : cube.status === 'burned'
+                    ? 'bg-graph__cube--burned'
+                    : 'bg-graph__cube';
               let cubeFill: string;
-              if (cube.status === 'burned' && cube.burnColor) {
+              if (isPreBurnCube) {
+                cubeFill = layer.color; // food-colored before bomb hits
+              } else if (cube.status === 'burned' && cube.burnColor) {
                 cubeFill = cube.burnColor;
               } else if (revealPhase !== undefined || showPenaltyHighlight) {
                 // Results phase: color cubes by danger zone
@@ -1053,7 +1074,7 @@ export function BgGraph({
                     fill={cubeFill}
                     rx={2}
                     className={cubeClass}
-                    style={{ animationDelay: `${waveDelay}ms` }}
+                    style={{ animationDelay: `${effectiveAnimDelay}ms` }}
                   />
                   {showHatch && (
                     <rect
@@ -1251,33 +1272,47 @@ export function BgGraph({
         {/* Individual skylines — hidden, contrast via alternating food colors instead */}
 
         {/* BG skyline — single path with rounded corners + shadow line below */}
-        {graphRenderData.mainSkylinePath && (revealPhase === undefined || revealPhase >= 1) && (
-          <g className="bg-graph__skyline" pointerEvents="none">
-            {/* Shadow line — offset 2px below, wider, semi-transparent */}
-            <path
-              d={graphRenderData.mainSkylinePath}
-              fill="none"
-              stroke="rgba(0,0,0,0.18)"
-              strokeWidth={5}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              transform="translate(0, 2)"
-            />
-            {/* Zone-colored skyline — clipped per zone band */}
-            {zoneClipBands.map(z => (
-              <path
-                key={z.id}
-                d={graphRenderData.mainSkylinePath}
-                fill="none"
-                stroke={z.color}
-                strokeWidth={3}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                clipPath={`url(#${z.id})`}
-              />
-            ))}
-          </g>
-        )}
+        {(revealPhase === undefined || revealPhase >= 1) && (() => {
+          // Pre-bomb phase: show skyline at full glucose height (columnCaps + pancreas/boost burns)
+          let activeSkylinePath = graphRenderData.mainSkylinePath;
+          if (bombHitDelays !== null) {
+            const { columnCaps, pancreasDepths, boostDepths } = graphRenderData;
+            const bottomY = PAD_TOP + graphH;
+            const parts: string[] = [];
+            let inSeg = false;
+            let lastCol = -1;
+            for (let col = 0; col < TOTAL_COLUMNS; col++) {
+              const h = columnCaps[col] + (pancreasDepths[col] ?? 0) + (boostDepths[col] ?? 0);
+              if (h <= 0) {
+                if (inSeg && lastCol < TOTAL_COLUMNS - 1) parts.push(`V ${bottomY}`);
+                inSeg = false;
+                continue;
+              }
+              const y = PAD_TOP + graphH - h * cellHeight;
+              if (!inSeg) {
+                if (col === 0) parts.push(`M ${colToX(col)} ${y}`);
+                else { parts.push(`M ${colToX(col)} ${bottomY}`); parts.push(`V ${y}`); }
+                inSeg = true;
+              } else {
+                const prevH = (columnCaps[col - 1] + (pancreasDepths[col - 1] ?? 0) + (boostDepths[col - 1] ?? 0));
+                if (prevH !== h) parts.push(`V ${y}`);
+              }
+              parts.push(`H ${colToX(col) + CELL_SIZE}`);
+              lastCol = col;
+            }
+            if (inSeg && lastCol < TOTAL_COLUMNS - 1) parts.push(`V ${bottomY}`);
+            activeSkylinePath = parts.length > 0 ? parts.join(' ') : '';
+          }
+          if (!activeSkylinePath) return null;
+          return (
+            <g className="bg-graph__skyline" pointerEvents="none">
+              <path d={activeSkylinePath} fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" transform="translate(0, 2)" />
+              {zoneClipBands.map(z => (
+                <path key={z.id} d={activeSkylinePath} fill="none" stroke={z.color} strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" clipPath={`url(#${z.id})`} />
+              ))}
+            </g>
+          );
+        })()}
 
         {/* Penalty highlight overlays (after submit) */}
         {showPenaltyHighlight && graphRenderData.layers.map(layer =>

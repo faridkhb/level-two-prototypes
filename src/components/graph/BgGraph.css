@@ -103,6 +103,19 @@
   pointer-events: none;
 }
 
+/* Pre-burn cubes: shown as food-colored before bomb hits, then flash+disappear on impact */
+@keyframes preBurnFlash {
+  0%   { opacity: 1; filter: brightness(1); transform: scale(1); }
+  30%  { opacity: 1; filter: brightness(3.5); transform: scale(1.12); }
+  100% { opacity: 0; filter: brightness(0.5); transform: scale(0.1); }
+}
+.bg-graph__cube--pre-burn {
+  animation: preBurnFlash 0.45s ease-out both;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 /* Insulin fall cubes: invisible → appear above food → fall → burn */
 @keyframes insulinFall {
   0%   { opacity: 0; transform: translateY(0); }
