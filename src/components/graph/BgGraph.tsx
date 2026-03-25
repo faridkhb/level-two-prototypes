@@ -245,8 +245,8 @@ export function BgGraph({
     for (const placed of placedFoods) {
       const ship = allShips.find(s => s.id === placed.shipId);
       if (!ship) continue;
-      const { glucose: effectiveGlucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
-      const decayCurve = calculateCurve(effectiveGlucose, duration, placed.dropColumn, decayRate);
+      const { glucose: effectiveGlucose, duration, peakReduction } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
+      const decayCurve = calculateCurve(effectiveGlucose, duration, placed.dropColumn, decayRate, peakReduction);
 
       // Track per-col {baseRow, aliveCount} for plateau computation
       const decayColMap = new Map<number, { baseRow: number; aliveCount: number }>();
@@ -516,9 +516,9 @@ export function BgGraph({
   const previewData = useMemo(() => {
     if (!previewShip || previewColumn === undefined) return null;
 
-    const { glucose: effectiveGlucose, duration } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
+    const { glucose: effectiveGlucose, duration, peakReduction } = applyMedicationToFood(previewShip.load, previewShip.duration, medicationModifiers);
     // Use decayRate=0 for preview — shows plateau after peak (decay revealed via bombs after drop)
-    const decayCurve = calculateCurve(effectiveGlucose, duration, previewColumn, 0);
+    const decayCurve = calculateCurve(effectiveGlucose, duration, previewColumn, 0, peakReduction);
 
     const { pancreasCaps, columnCaps } = graphRenderData;
     const foodCubes: Array<{ col: number; row: number }> = [];

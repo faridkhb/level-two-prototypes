@@ -25,16 +25,12 @@ export function calculateCurve(
   glucose: number,
   durationMinutes: number,
   dropColumn: number,
-  decayRate: number = 0.5
+  decayRate: number = 0.5,
+  peakReduction: number = 0,
 ): CubeColumn[] {
   const riseCols = Math.max(1, Math.round(durationMinutes / GRAPH_CONFIG.cellWidthMin));
-  // Linear peak reduction: −1 cube per riseCol above threshold (2 cols = 60 min).
-  // Exempt: foods with ≤10g carbs (glucose ≤ 100) — low-carb foods unaffected.
-  const REF_COLS = 2;
-  const CARB_EXEMPTION_GLUCOSE = 100; // 10g carbs × 10 = 100 mg/dL
-  const extraCols = glucose > CARB_EXEMPTION_GLUCOSE ? Math.max(0, riseCols - REF_COLS) : 0;
   const basePeak = Math.round(glucose / GRAPH_CONFIG.cellHeightMgDl);
-  const peakCubes = Math.max(0, basePeak - extraCols);
+  const peakCubes = Math.max(0, basePeak - peakReduction);
 
   if (peakCubes <= 0) return [];
 
@@ -250,18 +246,19 @@ export function computeMedicationModifiers(
 
 /**
  * Apply medication effects to food before curve calculation.
- * GLP-1 extends duration (×1.5); peak reduction comes naturally from
- * the area-preserving normalization inside calculateCurve.
+ * GLP-1 extends duration (×1.5) and reduces peak: −1 cube per 2 extra riseCols gained.
  */
 export function applyMedicationToFood(
   glucose: number,
   duration: number,
   modifiers: MedicationModifiers,
-): { glucose: number; duration: number } {
-  return {
-    glucose,
-    duration: duration * modifiers.durationMultiplier,
-  };
+): { glucose: number; duration: number; peakReduction: number } {
+  const effectiveDuration = duration * modifiers.durationMultiplier;
+  const originalRiseCols = Math.max(1, Math.round(duration / GRAPH_CONFIG.cellWidthMin));
+  const effectiveRiseCols = Math.max(1, Math.round(effectiveDuration / GRAPH_CONFIG.cellWidthMin));
+  const extraCols = Math.max(0, effectiveRiseCols - originalRiseCols);
+  const peakReduction = Math.floor(extraCols / 2);
+  return { glucose, duration: effectiveDuration, peakReduction };
 }
 
 // ============================================
@@ -314,8 +311,8 @@ export function calculatePenaltyFromState(
   for (const placed of placedFoods) {
     const ship = allShips.find(s => s.id === placed.shipId);
     if (!ship) continue;
-    const { glucose: effectiveGlucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
-    const curve = calculateCurve(effectiveGlucose, duration, placed.dropColumn, decayRate);
+    const { glucose: effectiveGlucose, duration, peakReduction } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
+    const curve = calculateCurve(effectiveGlucose, duration, placed.dropColumn, decayRate, peakReduction);
     for (const col of curve) {
       const graphCol = placed.dropColumn + col.columnOffset;
       if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
