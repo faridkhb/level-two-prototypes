@@ -28,11 +28,13 @@ export function calculateCurve(
   decayRate: number = 0.5
 ): CubeColumn[] {
   const riseCols = Math.max(1, Math.round(durationMinutes / GRAPH_CONFIG.cellWidthMin));
-  // Area-preserving peak normalization: longer absorption = lower peak.
-  // Threshold = 2 cols (≤60 min): no reduction. Each extra col reduces proportionally.
+  // Linear peak reduction: −1 cube per riseCol above threshold (2 cols = 60 min).
+  // Exempt: foods with ≤10g carbs (glucose ≤ 100) — low-carb foods unaffected.
   const REF_COLS = 2;
-  const normalizedGlucose = glucose * Math.min(1, REF_COLS / riseCols);
-  const peakCubes = Math.round(normalizedGlucose / GRAPH_CONFIG.cellHeightMgDl);
+  const CARB_EXEMPTION_GLUCOSE = 100; // 10g carbs × 10 = 100 mg/dL
+  const extraCols = glucose > CARB_EXEMPTION_GLUCOSE ? Math.max(0, riseCols - REF_COLS) : 0;
+  const basePeak = Math.round(glucose / GRAPH_CONFIG.cellHeightMgDl);
+  const peakCubes = Math.max(0, basePeak - extraCols);
 
   if (peakCubes <= 0) return [];
 
