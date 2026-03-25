@@ -199,6 +199,9 @@ export function BgGraph({
   const [bombHitDelays, setBombHitDelays] = useState<Map<number, number> | null>(null);
   const burnedColTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const animateBurnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Staircase cascade: per-column visible height ceiling during bomb animation (null = inactive)
+  const [cascadeLevels, setCascadeLevels] = useState<number[] | null>(null);
+  const cascadeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const prevMedModifiersRef = useRef(DEFAULT_MEDICATION_MODIFIERS);
   const slowMotionRef = useRef(slowMotionBurns);
   useEffect(() => { slowMotionRef.current = slowMotionBurns; }, [slowMotionBurns]);
@@ -678,6 +681,7 @@ export function BgGraph({
 
       const drops: DropBomb[] = [];
       const hitDelayMap = new Map<number, number>();
+      const colLastHitTime = new Map<number, number>(); // col -> last bomb hit time (for cascade)
       const TAN70 = Math.tan(70 * Math.PI / 180); // ≈ 2.747
 
       for (const col of colsToProcess) {
@@ -706,6 +710,8 @@ export function BgGraph({
           const delay = waveDelay + i * 60; // stagger drops within column
 
           drops.push({ id: `drop-${col}-${i}`, col, dropIndex: i, cx, cy, dx, dy, burnColor, delay });
+          // Track last bomb hit time per col (overwrites each i → ends up with last bomb)
+          colLastHitTime.set(col, Math.round(delay + fallDuration * hitPercent));
 
           // hitDelay from first drop in each column (skyline updates at that moment)
           if (i === 0) {
@@ -719,6 +725,27 @@ export function BgGraph({
         setBombDrops(drops);
         onPancreasBurnStart?.();
 
+        // Staircase cascade: init to full pancreasCaps, then step down col-by-col
+        setCascadeLevels([...graphRenderData.pancreasCaps]);
+        for (const t of cascadeTimersRef.current) clearTimeout(t);
+        cascadeTimersRef.current = [];
+        const cascadeCols = [...colLastHitTime.keys()].sort((a, b) => a - b);
+        for (const col of cascadeCols) {
+          const lastHitMs = colLastHitTime.get(col)!;
+          const ct = setTimeout(() => {
+            setCascadeLevels(prev => {
+              if (!prev) return prev;
+              const next = [...prev];
+              const newLevel = graphRenderData.columnCaps[col];
+              for (let c = col + 1; c < TOTAL_COLUMNS; c++) {
+                if (next[c] > newLevel) next[c] = newLevel;
+              }
+              return next;
+            });
+          }, lastHitMs + 40);
+          cascadeTimersRef.current.push(ct);
+        }
+
         for (const t of burnedColTimersRef.current) clearTimeout(t);
         burnedColTimersRef.current = [];
 
@@ -727,6 +754,9 @@ export function BgGraph({
         animateBurnTimerRef.current = setTimeout(() => {
           setBombDrops([]);
           setBombHitDelays(null);
+          setCascadeLevels(null);
+          for (const t of cascadeTimersRef.current) clearTimeout(t);
+          cascadeTimersRef.current = [];
           onBurnAnimComplete?.();
         }, maxEnd + 300);
       }
@@ -831,6 +861,7 @@ export function BgGraph({
     for (const timer of burningIntTimersRef.current.values()) clearTimeout(timer);
     if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
     for (const t of burnedColTimersRef.current) clearTimeout(t);
+    for (const t of cascadeTimersRef.current) clearTimeout(t);
   }, []);
 
   // Dynamic zone clip bands (Y-positions from mg/dL thresholds)
@@ -1119,7 +1150,8 @@ export function BgGraph({
               .map(cube => {
               const cubeKey = `${layer.placementId}-${cube.col}-${cube.row}`;
               const isPancreasBurnCube = cube.burnColor === '#f97316' || cube.burnColor === '#f59e0b';
-              const isPreBurnCube = hideBurnedInPlanning && cube.status === 'burned' && isPancreasBurnCube && bombHitDelays !== null && bombHitDelays.has(cube.col);
+              const cascadeVisible = cascadeLevels === null || cube.row < cascadeLevels[cube.col];
+              const isPreBurnCube = hideBurnedInPlanning && cube.status === 'burned' && isPancreasBurnCube && bombHitDelays !== null && bombHitDelays.has(cube.col) && cascadeVisible;
               const isAnimatingBurn = !isPreBurnCube && hideBurnedInPlanning && cube.status === 'burned' && animatingBurnIds.has(cubeKey);
               const waveDelay = (cube.col - layer.dropColumn) * 20;
               // Per-row stagger: bomb-0 hits row cap, bomb-1 hits row cap+1 (60ms later), etc.
@@ -1182,6 +1214,8 @@ export function BgGraph({
         {/* Plateau extra cubes per food — food-colored, shown during pre-burn phase only */}
         {bombHitDelays !== null && graphRenderData.layers.map(layer =>
           layer.plateauCubes.map(pc => {
+            // Hide plateau cubes clipped by cascade staircase
+            if (cascadeLevels !== null && pc.row >= cascadeLevels[pc.col]) return null;
             const baseHitDelay = bombHitDelays.get(pc.col) ?? 0;
             // Plateau cubes above burn zone: stagger by row offset from columnCaps
             const plateauBurnK = Math.max(0, pc.row - graphRenderData.columnCaps[pc.col]);
