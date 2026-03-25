@@ -27,8 +27,12 @@ export function calculateCurve(
   dropColumn: number,
   decayRate: number = 0.5
 ): CubeColumn[] {
-  const peakCubes = Math.round(glucose / GRAPH_CONFIG.cellHeightMgDl);
   const riseCols = Math.max(1, Math.round(durationMinutes / GRAPH_CONFIG.cellWidthMin));
+  // Area-preserving peak normalization: longer absorption = lower peak.
+  // Threshold = 2 cols (≤60 min): no reduction. Each extra col reduces proportionally.
+  const REF_COLS = 2;
+  const normalizedGlucose = glucose * Math.min(1, REF_COLS / riseCols);
+  const peakCubes = Math.round(normalizedGlucose / GRAPH_CONFIG.cellHeightMgDl);
 
   if (peakCubes <= 0) return [];
 
@@ -243,9 +247,9 @@ export function computeMedicationModifiers(
 }
 
 /**
- * Apply medication effects to food before curve calculation (GLP-1 effect).
- * GLP-1 extends duration (×1.5) and inversely reduces peak glucose (÷1.5),
- * preserving the same total glucose area under the curve.
+ * Apply medication effects to food before curve calculation.
+ * GLP-1 extends duration (×1.5); peak reduction comes naturally from
+ * the area-preserving normalization inside calculateCurve.
  */
 export function applyMedicationToFood(
   glucose: number,
@@ -253,7 +257,7 @@ export function applyMedicationToFood(
   modifiers: MedicationModifiers,
 ): { glucose: number; duration: number } {
   return {
-    glucose: glucose / modifiers.durationMultiplier,
+    glucose,
     duration: duration * modifiers.durationMultiplier,
   };
 }
