@@ -1,5 +1,36 @@
 # Changelog
 
+## 26 марта (v0.52.1 → v0.54.0) — PancreasButton Redesign + Variant B Reveal + 👁️ Toggle
+
+### v0.54.0 — Variant B Reveal: реальные бомбы + результаты с burns ⭐
+- **Variant B reveal**: фаза 2 (Pancreas) запускает реальные meteor-бомбы через `revealBombsTrigger` prop
+  - BgGraph второй `useLayoutEffect` ловит инкремент → анимация идентична planning-режиму
+  - Продвижение фазы 2 через `onBurnAnimComplete` callback (не hold-таймер)
+- **После всех фаз:** `setShowBurns(true)` вызывается автоматически → все burn-слои видны в результатах
+- **Zone hatching в результатах:** `showHatchingOverride={showResults}` prop — штриховка видна независимо от `showBurns`
+- **Penalty overlays + hatching** поверх кубиков в зонах опасности на экране результатов
+- **Фикс 👁️ на results-экране:** кнопка корректно работает после reveal
+
+### v0.53.1 — UI cleanup: ∂/∑ → удалён, 🔥 → 👁️, перемещён в day-nav
+- Удалён cheat-button (∂/∑) из интерфейса
+- Кнопка видимости сжигателей переименована: 🔥 → 👁️
+- Перемещена из правого верхнего угла графика **в нижнюю day-nav панель**
+- Кнопка 👁️ теперь видна и на экране результатов (не только в режиме планирования)
+
+### v0.53.0 — PancreasButton L-shape redesign ⭐
+- **PancreasButton** полностью переработан в L-образный overlay на графике:
+  - Верхний ряд: 🫀 emoji + кружки зарядов + hint-текст
+  - Нижний ряд: effectiveness bar (5 секций), визуальный индикатор глубины ПЖ
+  - BOOST активен → добавляются красно-оранжевые секции с `boostSegPulse` анимацией
+- `pancreasEffectiveness?: number` в DayConfig — конфигурируется из level config (1–5, default 5)
+- Overlay: top-center графика (`position: absolute; left: 50%; transform: translateX(-50%)`)
+
+### v0.52.1 — Fix: slowMotionRef race condition
+- `useLayoutEffect` в BgGraph читал устаревший `slowMotionRef` при быстрых обновлениях
+- Исправлено: используется `slowMotionBurns` prop напрямую (не через ref)
+
+---
+
 ## 25 марта (v0.51.8 → v0.51.12) — GLP-1 Peak Reduction + Burns Toggle + Skylines Off
 
 ### v0.51.12 — Burns Visibility Toggle + Disable Skylines

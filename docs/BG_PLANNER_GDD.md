@@ -1,6 +1,6 @@
 # BG Planner — Game Design Document
 
-**Version:** v0.51.12
+**Version:** v0.54.0
 **Branch:** `main`
 **Deploy:** https://level-two-eight.vercel.app/
 
@@ -24,7 +24,7 @@
 ┌─────────────────────────────────────┐
 │  Day X          ☀️ WP: X/Y          │
 ├─────────────────────────────────────┤
-│  [BOOST]         [🔥][B][☰]         │
+│        [🫀ПЖ ON/BOOST]       [☰]    │
 │          BG Graph (SVG)             │
 │    8 AM ──────────────── 8 PM       │
 │    Кубики еды + маркеры             │
@@ -41,7 +41,7 @@
 ├─────────────────────────────────────┤
 │  Food Cards                         │
 ├─────────────────────────────────────┤
-│  Day 1│2│3                          │
+│  Day 1│2│3          [👁️ Burns]      │
 └─────────────────────────────────────┘
 ```
 
@@ -77,7 +77,7 @@
 1. **Фон** — цветные зоны + сетка + baseline-линия при startingBg > 50
 2. **Alive кубики** — цветные (синий по прогрессивной палитре)
 3. **Burned кубики** — от упражнений/медикаментов (7 цветов по источнику, opacity 0.55)
-   - В режиме планирования скрыты по умолчанию; **кнопка 🔥** в правом верхнем углу графика переключает видимость
+   - В режиме планирования скрыты по умолчанию; **кнопка 👁️** в нижней навигационной панели переключает видимость (показывается также на экране результатов)
 4. **Главный скайлайн** — белая линия по верху alive-зоны
 5. **Маркеры** — emoji-пузырьки над пиками продуктов и упражнений
 6. **Метеоритные капли** — анимация ПЖ/BOOST при размещении еды
@@ -194,7 +194,11 @@ Break interventions (☕/😴) have no cube effect — they only restore WP.
 |----------|------|-----|---------|
 | Ходьба 🚶 | Светло-зелёный | `#86efac` | 0.55 |
 | Бег 🏃 | Насыщенный зелёный | `#22c55e` | 0.55 |
+| Pancreas ПЖ | Оранжевый | `#f97316` | 0.55 |
+| BOOST | Янтарный | `#f59e0b` | 0.55 |
+| Metformin 💊 | Фуксия | `#f0abfc` | 0.55 |
 | SGLT2 🧪 | Фиолетовый | `#c084fc` | 0.55 |
+| GLP-1 💉 | Сине-фиолетовый | `#a78bfa` | 0.55 |
 
 ### 5.5. Маркеры упражнений
 
@@ -307,8 +311,18 @@ columnCaps[col] = max(baselineRow,
 
 - ON/OFF toggle, **1 использование на уровень**
 - Паттерн `[0,3]` добавляется поверх панкреаса
-- Кнопка overlaid на graph top-left (скрыта в T1-T3)
+- Кнопка overlaid на graph top-center (скрыта в T1-T3)
 - Янтарные кубики `#f59e0b` в burned-зоне
+
+### 7.5. PancreasButton — Дизайн (v0.53.0)
+
+L-образный layout кнопки ПЖ/BOOST на графике:
+
+- **Верхний ряд:** 🫀 emoji + кружки зарядов + hint-текст
+- **Нижний ряд:** effectiveness bar (5 секций) — визуальный индикатор глубины ПЖ
+  - При BOOST активен: добавляются красно-оранжевые секции с анимацией `boostSegPulse`
+- `pancreasEffectiveness?: number` в DayConfig (1–5, default 5) — конфигурируется в level config
+- Overlay: `position: absolute; top: 26px; left: 50%; transform: translateX(-50%)`
 
 ### 7.5. Цвета всей burned-зоны (снизу вверх)
 
@@ -659,7 +673,7 @@ Offset в burned-зоне (снизу вверх):
   ...            → pancreas → boost → metformin → sglt2 → glp1
 ```
 
-### 16.4. Режим видимости сжигателей
+### 16.4. Режим видимости сжигателей (v0.51.12–v0.53.1)
 
 **По умолчанию** (`hideBurnedInPlanning=true`) во время планирования:
 - Burned кубики (ПЖ/BOOST/медикаменты) скрыты визуально
@@ -667,12 +681,41 @@ Offset в burned-зоне (снизу вверх):
 - При размещении еды: метеоритный дождь + pre-burn flash эффект
 - Pre-burn skyline = `columnCaps + pancreasD + boostD + plateauExtraRows`
 
-**Кнопка 🔥** (top-right угол графика, только в режиме планирования, не в туториале):
+**Кнопка 👁️** (нижняя nav-панель, планирование + результаты, не в туториале):
 - Переключает `showBurns` state в PlanningPhase
 - При `showBurns=true`: все burned кубики видны (классический режим)
 - Кнопка подсвечивается оранжевым в активном состоянии
+- После Variant B reveal все фазы завершены → `setShowBurns(true)` вызывается автоматически
+
+**Формула `hideBurnedInPlanning`:**
+```
+hideBurnedInPlanning = (isPlanning || showResults) ? !showBurns
+                       : gamePhase === 'replaying' && revealPhase === 2
+```
 
 > Индивидуальные food skylines (white step-paths) удалены из рендеринга с v0.51.12.
+
+### 16.5. Variant B Reveal (v0.54.0)
+
+Анимация раскрытия результатов после Submit:
+
+| Фаза | Содержание | Продвижение |
+|------|-----------|------------|
+| 1 | Появление кубиков еды (wave) + маркеры + лейбл "🍽️ Food Cubes" | Hold 900ms |
+| 2 | Реальные meteor-бомбы ПЖ/BOOST (`revealBombsTrigger` инкрементируется → `useLayoutEffect` в BgGraph) + лейбл "🟠 Pancreas" | По `onBurnAnimComplete` callback |
+| 3 | Зелёные burned кубики упражнений + лейбл "🏃 Exercise" | Hold 1200ms (пропускается если нет упражнений) |
+| 4 | Цветные burned кубики медикаментов + лейбл "💊 Medications" | Hold 1200ms (пропускается если нет медикаментов) |
+
+После всех фаз:
+- `setShowBurns(true)` — все слои burns видны автоматически
+- Zone hatching виден (`showHatchingOverride={showResults}`)
+- Penalty overlays поверх кубиков в опасных зонах
+- ResultPanel с звёздами и breakdown
+
+**Ключевые props BgGraph:**
+- `revealBombsTrigger: number` — инкремент запускает вторую волну бомб в reveal
+- `onBurnAnimComplete: () => void` — коллбэк после завершения всех бомб в reveal
+- `showHatchingOverride?: boolean` — принудительно показывает zone hatching независимо от `showBurns`
 
 ---
 
@@ -687,7 +730,7 @@ Offset в burned-зоне (снизу вверх):
 
 ```
 src/
-├── version.ts                     — Версия (v0.51.12)
+├── version.ts                     — Версия (v0.54.0)
 ├── core/
 │   ├── types.ts                   — Типы, константы, GRAPH_CONFIG
 │   └── cubeEngine.ts              — Алгоритмы кривых, reduction, penalty
