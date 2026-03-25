@@ -66,50 +66,25 @@
   cursor: not-allowed;
 }
 
-/* Burn visibility toggle — top-right, left of burn-mode-btn */
+/* Burns visibility toggle — in day-nav bottom bar */
 .planning-phase__show-burns-btn {
-  position: absolute;
-  top: 8px;
-  right: 70px;
-  z-index: 11;
-  padding: 3px 7px;
-  border: 1.5px solid rgba(249, 115, 22, 0.35);
-  border-radius: 5px;
-  background: rgba(26, 32, 44, 0.75);
-  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  background: #2d3748;
+  font-size: 14px;
   cursor: pointer;
-  backdrop-filter: blur(4px);
   transition: background 0.15s, border-color 0.15s;
-  opacity: 0.45;
+  opacity: 0.5;
+  line-height: 1;
 }
 .planning-phase__show-burns-btn--active {
   border-color: rgba(249, 115, 22, 0.85);
-  background: rgba(249, 115, 22, 0.18);
+  background: rgba(249, 115, 22, 0.15);
   opacity: 1;
 }
 .planning-phase__show-burns-btn:hover {
   opacity: 1;
-}
-
-/* Burn animation mode toggle (cheat) — top-right corner, above menu btn */
-.planning-phase__burn-mode-btn {
-  position: absolute;
-  top: 8px;
-  right: 40px;
-  z-index: 11;
-  padding: 3px 7px;
-  border: 1.5px solid rgba(99, 179, 237, 0.4);
-  border-radius: 5px;
-  background: rgba(26, 32, 44, 0.75);
-  color: #63b3ed;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-  transition: background 0.15s;
-}
-.planning-phase__burn-mode-btn:hover {
-  background: rgba(49, 130, 206, 0.25);
 }
 
 /* Boost button -- top-center of graph */

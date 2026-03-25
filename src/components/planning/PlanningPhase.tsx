@@ -116,7 +116,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const revealSequenceRef = useRef<number[]>([]);
 
   // Burn animation mode + PancreasButton blink state
-  const [burnAnimMode, setBurnAnimMode] = useState<BurnAnimMode>('incremental');
+  const [burnAnimMode, _setBurnAnimMode] = useState<BurnAnimMode>('incremental');
   const [isPJBlinking, setIsPJBlinking] = useState(false);
   const [showBurns, setShowBurns] = useState(false);
   const pjBlinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -611,26 +611,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                 />
               </div>
             )}
-            {/* Burn visibility toggle */}
-            {isPlanning && !isTutorial && (
-              <button
-                className={`planning-phase__show-burns-btn${showBurns ? ' planning-phase__show-burns-btn--active' : ''}`}
-                onClick={() => setShowBurns(v => !v)}
-                title={showBurns ? 'Burns: visible — click to hide' : 'Burns: hidden — click to show'}
-              >
-                🔥
-              </button>
-            )}
-            {/* Burn animation mode toggle (cheat button) */}
-            {isPlanning && !isTutorial && (
-              <button
-                className="planning-phase__burn-mode-btn"
-                onClick={() => setBurnAnimMode(m => m === 'incremental' ? 'full' : 'incremental')}
-                title={burnAnimMode === 'incremental' ? 'Mode: only new burns animated' : 'Mode: all burns animated on each placement'}
-              >
-                {burnAnimMode === 'incremental' ? '∂' : '∑'}
-              </button>
-            )}
           </div>
 
           {isPlanning && (
@@ -696,10 +676,10 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
         </div>
       </div>
 
-      {/* Day navigation — fixed to bottom, outside scrollable content */}
-      {isPlanning && !isTutorial && (
+      {/* Day navigation + burns toggle — fixed to bottom, outside scrollable content */}
+      {(isPlanning || showResults) && !isTutorial && (
         <div className="planning-phase__day-nav">
-          {Array.from({ length: currentLevel.days }, (_, i) => i + 1).map(day => (
+          {isPlanning && Array.from({ length: currentLevel.days }, (_, i) => i + 1).map(day => (
             <button
               key={day}
               className={`planning-phase__day-btn ${day === currentDay ? 'planning-phase__day-btn--active' : ''}`}
@@ -709,6 +689,13 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               Day {day}
             </button>
           ))}
+          <button
+            className={`planning-phase__show-burns-btn${showBurns ? ' planning-phase__show-burns-btn--active' : ''}`}
+            onClick={() => setShowBurns(v => !v)}
+            title={showBurns ? 'Burns: visible — click to hide' : 'Burns: hidden — click to show'}
+          >
+            👁️
+          </button>
         </div>
       )}
 
