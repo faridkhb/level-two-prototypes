@@ -118,6 +118,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   // Burn animation mode + PancreasButton blink state
   const [burnAnimMode, setBurnAnimMode] = useState<BurnAnimMode>('incremental');
   const [isPJBlinking, setIsPJBlinking] = useState(false);
+  const [showBurns, setShowBurns] = useState(false);
   const pjBlinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePancreasBurnStart = useCallback(() => {
@@ -591,7 +592,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               highlightMedEffect={tutorialStep?.highlightMedEffect ?? false}
               isMobile={isMobile}
               baselineRow={baselineRow}
-              hideBurnedInPlanning={isPlanning}
+              hideBurnedInPlanning={isPlanning && !showBurns}
               burnAnimMode={burnAnimMode}
               onPancreasBurnStart={handlePancreasBurnStart}
             />
@@ -605,6 +606,16 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                   isBlinking={isPJBlinking}
                 />
               </div>
+            )}
+            {/* Burn visibility toggle */}
+            {isPlanning && !isTutorial && (
+              <button
+                className={`planning-phase__show-burns-btn${showBurns ? ' planning-phase__show-burns-btn--active' : ''}`}
+                onClick={() => setShowBurns(v => !v)}
+                title={showBurns ? 'Burns: visible — click to hide' : 'Burns: hidden — click to show'}
+              >
+                🔥
+              </button>
             )}
             {/* Burn animation mode toggle (cheat button) */}
             {isPlanning && !isTutorial && (

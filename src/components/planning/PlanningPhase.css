@@ -66,6 +66,31 @@
   cursor: not-allowed;
 }
 
+/* Burn visibility toggle — top-right, left of burn-mode-btn */
+.planning-phase__show-burns-btn {
+  position: absolute;
+  top: 8px;
+  right: 70px;
+  z-index: 11;
+  padding: 3px 7px;
+  border: 1.5px solid rgba(249, 115, 22, 0.35);
+  border-radius: 5px;
+  background: rgba(26, 32, 44, 0.75);
+  font-size: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s, border-color 0.15s;
+  opacity: 0.45;
+}
+.planning-phase__show-burns-btn--active {
+  border-color: rgba(249, 115, 22, 0.85);
+  background: rgba(249, 115, 22, 0.18);
+  opacity: 1;
+}
+.planning-phase__show-burns-btn:hover {
+  opacity: 1;
+}
+
 /* Burn animation mode toggle (cheat) — top-right corner, above menu btn */
 .planning-phase__burn-mode-btn {
   position: absolute;
