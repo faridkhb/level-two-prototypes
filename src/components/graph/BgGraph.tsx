@@ -203,8 +203,6 @@ export function BgGraph({
   const [cascadeLevels, setCascadeLevels] = useState<number[] | null>(null);
   const cascadeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const prevMedModifiersRef = useRef(DEFAULT_MEDICATION_MODIFIERS);
-  const slowMotionRef = useRef(slowMotionBurns);
-  useEffect(() => { slowMotionRef.current = slowMotionBurns; }, [slowMotionBurns]);
 
   // Calculate intervention reduction per column, split by type (walk/run)
   const interventionReductions = useMemo(() => {
@@ -693,7 +691,7 @@ export function BgGraph({
 
         const cap = graphRenderData.columnCaps[col];
         const burnColor = boostR > 0 ? '#f59e0b' : '#f97316';
-        const SLOW_MO = slowMotionRef.current ? 3.0 : 1.0;
+        const SLOW_MO = slowMotionBurns ? 3.0 : 1.0;
         const fallDuration = (boostR > 0 ? 900 : 1000) * SLOW_MO;
         const hitPercent = 0.73; // align with visual impact peak in dropFall keyframe (73%)
         // 400ms base delay (food appear takes ~350ms) + left-to-right wave
@@ -750,7 +748,7 @@ export function BgGraph({
         burnedColTimersRef.current = [];
 
         if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
-        const maxEnd = Math.max(...drops.map(d => d.delay + (slowMotionRef.current ? 3000 : 1000)));
+        const maxEnd = Math.max(...drops.map(d => d.delay + (slowMotionBurns ? 3000 : 1000)));
         animateBurnTimerRef.current = setTimeout(() => {
           setBombDrops([]);
           setBombHitDelays(null);
