@@ -121,11 +121,21 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [showBurns, setShowBurns] = useState(false);
   const pjBlinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Reveal phase 2: bomb trigger + completion callback
+  const [revealBombsTrigger, setRevealBombsTrigger] = useState(0);
+  const advanceRevealRef = useRef<(() => void) | null>(null);
+
   const handlePancreasBurnStart = useCallback(() => {
     setIsPJBlinking(true);
     if (pjBlinkTimerRef.current) clearTimeout(pjBlinkTimerRef.current);
     pjBlinkTimerRef.current = setTimeout(() => setIsPJBlinking(false), 1200);
   }, []);
+
+  // Handles bomb animation completion: advances tutorial AND reveal phase 2
+  const handleBurnAnimComplete = useCallback(() => {
+    notifyBurnAnimComplete();        // tutorial: L1D1 slow-mo step
+    advanceRevealRef.current?.();    // reveal: advance from phase 2 when bombs done
+  }, [notifyBurnAnimComplete]);
 
   // Load configs on mount
   useEffect(() => {
@@ -449,12 +459,20 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     let seqIndex = 0;
 
     function advancePhase() {
+      advanceRevealRef.current = null; // clear any waiting callback
       if (seqIndex < sequence.length) {
         const phase = sequence[seqIndex];
         setRevealPhase(phase);
         seqIndex++;
-        const holdTime = REVEAL_HOLD[phase] ?? 1200;
-        revealTimerRef.current = setTimeout(advancePhase, holdTime);
+
+        if (phase === 2) {
+          // Phase 2: trigger bomb animation, wait for onBurnAnimComplete to advance
+          setRevealBombsTrigger(v => v + 1);
+          advanceRevealRef.current = advancePhase;
+        } else {
+          const holdTime = REVEAL_HOLD[phase] ?? 1200;
+          revealTimerRef.current = setTimeout(advancePhase, holdTime);
+        }
       } else {
         // All phases done — calculate penalty and show results
         const penalty = calculatePenaltyFromState(
@@ -487,6 +505,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
 
         setPenaltyResult(penalty);
         setRevealPhase(undefined);
+        setShowBurns(true); // auto-show burns in results
         setGamePhase('results');
       }
     }
@@ -495,6 +514,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
 
     return () => {
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      advanceRevealRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gamePhase]);
@@ -502,27 +522,33 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   // === Result actions ===
   const handleRetry = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    advanceRevealRef.current = null;
     unlockBoostBars(currentDay);
     clearFoods();
     setGamePhase('planning');
     setRevealPhase(undefined);
+    setShowBurns(false);
     setPenaltyResult(null);
   }, [clearFoods, unlockBoostBars, currentDay]);
 
   const handleNextDay = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    advanceRevealRef.current = null;
     startNextDay();
     setGamePhase('planning');
     setRevealPhase(undefined);
+    setShowBurns(false);
     setPenaltyResult(null);
   }, [startNextDay]);
 
   // Reset phase when day changes (e.g., via cheat buttons)
   const handleGoToDay = useCallback((day: number) => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    advanceRevealRef.current = null;
     goToDay(day);
     setGamePhase('planning');
     setRevealPhase(undefined);
+    setShowBurns(false);
     setPenaltyResult(null);
   }, [goToDay]);
 
@@ -593,11 +619,13 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               highlightMedEffect={tutorialStep?.highlightMedEffect ?? false}
               isMobile={isMobile}
               baselineRow={baselineRow}
-              hideBurnedInPlanning={isPlanning && !showBurns}
+              hideBurnedInPlanning={(isPlanning || showResults) ? !showBurns : gamePhase === 'replaying' && revealPhase === 2}
               burnAnimMode={burnAnimMode}
               onPancreasBurnStart={handlePancreasBurnStart}
               slowMotionBurns={tutorialStep?.advanceOn === 'burn-anim-complete'}
-              onBurnAnimComplete={notifyBurnAnimComplete}
+              onBurnAnimComplete={handleBurnAnimComplete}
+              revealBombsTrigger={revealBombsTrigger}
+              showHatchingOverride={showResults}
             />
             {isPlanning && showBoostButton && (
               <div className="planning-phase__pancreas-overlay">

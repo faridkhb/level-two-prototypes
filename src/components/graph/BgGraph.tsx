@@ -133,6 +133,8 @@ interface BgGraphProps {
   onPancreasBurnStart?: () => void;      // called when ПЖ bomb animation begins (for blink trigger)
   slowMotionBurns?: boolean;             // tutorial: slow down meteor drop animation 3x
   onBurnAnimComplete?: () => void;       // called when all meteor drops finish
+  revealBombsTrigger?: number;           // increment to trigger bomb animation during reveal phase 2
+  showHatchingOverride?: boolean;        // force zone hatching visible (results state)
 }
 
 // Convert column to SVG x
@@ -166,6 +168,8 @@ export function BgGraph({
   onPancreasBurnStart,
   slowMotionBurns = false,
   onBurnAnimComplete,
+  revealBombsTrigger = 0,
+  showHatchingOverride = false,
 }: BgGraphProps) {
   // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
   const graphH = isMobile ? TOTAL_ROWS * 20 : GRAPH_H;  // 320 vs 192 — taller cells on mobile
@@ -764,6 +768,91 @@ export function BgGraph({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphRenderData.layers, placedInterventions, allInterventions]);
 
+  // Reveal-triggered bomb animation: fires when revealBombsTrigger increments (reveal phase 2)
+  useLayoutEffect(() => {
+    if (!revealBombsTrigger) return; // skip initial value (0)
+    if (graphRenderData.layers.length === 0) {
+      onBurnAnimComplete?.();
+      return;
+    }
+
+    const localCellH = graphH / graphRenderData.effectiveRows;
+    const TAN70 = Math.tan(70 * Math.PI / 180);
+    const drops: DropBomb[] = [];
+    const hitDelayMap = new Map<number, number>();
+    const colLastHitTime = new Map<number, number>();
+
+    for (let col = 0; col < TOTAL_COLUMNS; col++) {
+      const pancreasR = graphRenderData.pancreasDepths[col];
+      const boostR = graphRenderData.boostDepths[col];
+      const totalDrops = pancreasR + boostR;
+      if (totalDrops <= 0) continue;
+      if (graphRenderData.pancreasCaps[col] <= baselineRow) continue;
+
+      const cap = graphRenderData.columnCaps[col];
+      const burnColor = boostR > 0 ? '#f59e0b' : '#f97316';
+      const fallDuration = boostR > 0 ? 900 : 1000;
+      const hitPercent = 0.73;
+      const waveDelay = 400 + col * 12;
+      const targetXCenter = PAD_LEFT + col * CELL_SIZE + CELL_SIZE / 2;
+
+      for (let i = 0; i < totalDrops; i++) {
+        const targetRow = cap + i;
+        const targetYCenter = PAD_TOP + graphH - (targetRow + 0.5) * localCellH;
+        const dy = Math.max(2, targetYCenter - PAD_TOP);
+        const dx = dy / TAN70;
+        const cx = targetXCenter - dx;
+        const cy = PAD_TOP;
+        const delay = waveDelay + i * 60;
+
+        drops.push({ id: `reveal-drop-${col}-${i}`, col, dropIndex: i, cx, cy, dx, dy, burnColor, delay });
+        colLastHitTime.set(col, Math.round(delay + fallDuration * hitPercent));
+        if (i === 0) hitDelayMap.set(col, Math.round(delay + fallDuration * hitPercent));
+      }
+    }
+
+    if (drops.length === 0) {
+      onBurnAnimComplete?.();
+      return;
+    }
+
+    setBombHitDelays(hitDelayMap);
+    setBombDrops(drops);
+    onPancreasBurnStart?.();
+
+    setCascadeLevels([...graphRenderData.pancreasCaps]);
+    for (const t of cascadeTimersRef.current) clearTimeout(t);
+    cascadeTimersRef.current = [];
+    const cascadeCols = [...colLastHitTime.keys()].sort((a, b) => a - b);
+    for (const col of cascadeCols) {
+      const lastHitMs = colLastHitTime.get(col)!;
+      const ct = setTimeout(() => {
+        setCascadeLevels(prev => {
+          if (!prev) return prev;
+          const next = [...prev];
+          const newLevel = graphRenderData.columnCaps[col];
+          for (let c = col + 1; c < TOTAL_COLUMNS; c++) {
+            if (next[c] > newLevel) next[c] = newLevel;
+          }
+          return next;
+        });
+      }, lastHitMs + 40);
+      cascadeTimersRef.current.push(ct);
+    }
+
+    if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
+    const maxEnd = Math.max(...drops.map(d => d.delay + 1000));
+    animateBurnTimerRef.current = setTimeout(() => {
+      setBombDrops([]);
+      setBombHitDelays(null);
+      setCascadeLevels(null);
+      for (const t of cascadeTimersRef.current) clearTimeout(t);
+      cascadeTimersRef.current = [];
+      onBurnAnimComplete?.();
+    }, maxEnd + 300);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealBombsTrigger]);
+
   // Detect added interventions → fall animation
   useLayoutEffect(() => {
     const currIds = new Set(placedInterventions.map(p => p.id));
@@ -1179,7 +1268,8 @@ export function BgGraph({
               } else {
                 cubeFill = layer.color;
               }
-              const showHatch = cube.status === 'normal' && cube.row >= PENALTY_ORANGE_ROW && revealPhase === undefined && !showPenaltyHighlight;
+              const showHatch = cube.status === 'normal' && cube.row >= PENALTY_ORANGE_ROW &&
+                ((revealPhase === undefined && !showPenaltyHighlight) || showHatchingOverride);
               return (
                 <g key={`${layer.placementId}-${cube.col}-${cube.row}`}>
                   <rect
