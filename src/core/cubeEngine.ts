@@ -243,7 +243,9 @@ export function computeMedicationModifiers(
 }
 
 /**
- * Apply duration multiplier to food before curve calculation (GLP-1 effect).
+ * Apply medication effects to food before curve calculation (GLP-1 effect).
+ * GLP-1 extends duration (×1.5) and inversely reduces peak glucose (÷1.5),
+ * preserving the same total glucose area under the curve.
  */
 export function applyMedicationToFood(
   glucose: number,
@@ -251,7 +253,7 @@ export function applyMedicationToFood(
   modifiers: MedicationModifiers,
 ): { glucose: number; duration: number } {
   return {
-    glucose,
+    glucose: glucose / modifiers.durationMultiplier,
     duration: duration * modifiers.durationMultiplier,
   };
 }
@@ -306,8 +308,8 @@ export function calculatePenaltyFromState(
   for (const placed of placedFoods) {
     const ship = allShips.find(s => s.id === placed.shipId);
     if (!ship) continue;
-    const { duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
-    const curve = calculateCurve(ship.load, duration, placed.dropColumn, decayRate);
+    const { glucose: effectiveGlucose, duration } = applyMedicationToFood(ship.load, ship.duration, medicationModifiers);
+    const curve = calculateCurve(effectiveGlucose, duration, placed.dropColumn, decayRate);
     for (const col of curve) {
       const graphCol = placed.dropColumn + col.columnOffset;
       if (graphCol >= 0 && graphCol < TOTAL_COLUMNS) {
