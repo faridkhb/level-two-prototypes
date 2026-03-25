@@ -181,6 +181,7 @@ export interface DayConfig {
   stressSlots?: number[];
   startingBg?: number;          // Starting BG in mg/dL (default 60 = graph bottom)
   bonusBoostBars?: number;      // Extra BOOST charges granted at the start of this day
+  pancreasEffectiveness?: number; // 1-5 visual bar sections (default 5 = fully healthy)
 }
 
 /** Compute baseline row from starting BG level. Default = 0 (60 mg/dL) */

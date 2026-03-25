@@ -1,19 +1,15 @@
 .pancreas-btn {
   display: flex;
-  align-items: center;
-  gap: 7px;
+  flex-direction: column;
+  gap: 5px;
   background: rgba(45, 55, 72, 0.88);
   border: 1.5px solid rgba(160, 174, 192, 0.3);
   border-radius: 10px;
-  padding: 8px 14px;
+  padding: 8px 12px;
+  min-width: 120px;
   cursor: pointer;
   user-select: none;
-  color: #cbd5e0;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
   backdrop-filter: blur(4px);
 }
 
@@ -27,39 +23,11 @@
   transform: scale(0.96);
 }
 
-/* Boost active — orange accent */
-.pancreas-btn--boost {
-  border-color: rgba(246, 153, 63, 0.5);
-  background: rgba(45, 55, 72, 0.92);
-}
-
-.pancreas-btn--boost .pancreas-btn__text {
-  color: #f6993f;
-}
-
-/* No uses left — muted */
-.pancreas-btn--locked {
-  opacity: 0.5;
-  cursor: default;
-  pointer-events: none;
-}
-
-.pancreas-btn--disabled {
-  opacity: 0.45;
-  cursor: default;
-  pointer-events: none;
-}
-
-/* Blink animation triggered when ПЖ burns food (bomb animation) */
-@keyframes pancreasBlink {
-  0%, 100% { opacity: 1; box-shadow: none; }
-  25%       { opacity: 0.3; filter: brightness(2); box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); }
-  50%       { opacity: 1; filter: brightness(1); box-shadow: 0 0 6px rgba(249, 115, 22, 0.4); }
-  75%       { opacity: 0.4; filter: brightness(1.8); box-shadow: 0 0 12px rgba(249, 115, 22, 0.9); }
-}
-
-.pancreas-btn--blinking {
-  animation: pancreasBlink 0.5s ease-in-out 2;
+/* ── Top row: emoji + charges + hint ── */
+.pancreas-btn__top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .pancreas-btn__emoji {
@@ -67,14 +35,8 @@
   line-height: 1;
 }
 
-.pancreas-btn__text {
-  color: #a0aec0;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-/* Uses remaining indicator */
-.pancreas-btn__uses {
+/* Charge circle */
+.pancreas-btn__charges {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,16 +50,99 @@
   line-height: 1;
 }
 
-.pancreas-btn__uses--empty {
+.pancreas-btn__charges--empty {
   background: rgba(113, 128, 150, 0.2);
   color: #718096;
 }
 
-/* Mobile portrait */
+/* Hint text */
+.pancreas-btn__hint {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #a0aec0;
+  white-space: nowrap;
+}
+
+/* ── Effectiveness bar ── */
+.pancreas-btn__bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 8px;
+}
+
+.pancreas-btn__seg {
+  flex: 0 0 10px;
+  height: 100%;
+  border-radius: 2px;
+  transition: background 0.2s ease;
+}
+
+.pancreas-btn__seg--orange {
+  background: #f97316;
+}
+
+.pancreas-btn__seg--gray {
+  background: rgba(113, 128, 150, 0.3);
+}
+
+.pancreas-btn__seg--red {
+  background: #f6553a; /* red-orange boost */
+}
+
+/* ── Boost active state ── */
+.pancreas-btn--boost {
+  border-color: rgba(246, 153, 63, 0.5);
+  background: rgba(45, 55, 72, 0.92);
+}
+
+.pancreas-btn--boost .pancreas-btn__hint {
+  color: #f6993f;
+}
+
+/* Boost segments pulse */
+@keyframes boostSegPulse {
+  0%, 100% { opacity: 0.85; }
+  50%       { opacity: 1; filter: brightness(1.25); }
+}
+
+.pancreas-btn--boost .pancreas-btn__seg--red {
+  animation: boostSegPulse 1.2s ease-in-out infinite;
+}
+
+/* ── Locked / disabled ── */
+.pancreas-btn--locked {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
+.pancreas-btn--disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ── Blink animation (triggered during ПЖ bomb drop) ── */
+@keyframes pancreasBlink {
+  0%, 100% { opacity: 1; box-shadow: none; }
+  25%       { opacity: 0.3; filter: brightness(2); box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); }
+  50%       { opacity: 1; filter: brightness(1); box-shadow: 0 0 6px rgba(249, 115, 22, 0.4); }
+  75%       { opacity: 0.4; filter: brightness(1.8); box-shadow: 0 0 12px rgba(249, 115, 22, 0.9); }
+}
+
+.pancreas-btn--blinking {
+  animation: pancreasBlink 0.5s ease-in-out 2;
+}
+
+/* ── Mobile portrait ── */
 @media (max-width: 480px) {
   .pancreas-btn {
     padding: 6px 10px;
-    gap: 5px;
+    min-width: 100px;
+    gap: 4px;
     border-radius: 8px;
   }
 
@@ -105,13 +150,18 @@
     font-size: 14px;
   }
 
-  .pancreas-btn__text {
-    font-size: 11px;
-  }
-
-  .pancreas-btn__uses {
+  .pancreas-btn__charges {
     min-width: 16px;
     height: 16px;
     font-size: 10px;
+  }
+
+  .pancreas-btn__hint {
+    display: none; /* save space on small screens */
+  }
+
+  .pancreas-btn__seg {
+    flex: 0 0 8px;
+    height: 7px;
   }
 }

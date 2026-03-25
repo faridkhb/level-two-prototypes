@@ -218,6 +218,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       .reduce((sum, dc) => sum + (dc.bonusBoostBars ?? 0), 0);
   }, [currentLevel, currentDay]);
   const barsAvailable = PANCREAS_TOTAL_BARS + bonusBoostBars - totalLockedBars;
+  const pancreasEffectiveness = currentLevel?.dayConfigs?.find(dc => dc.day === currentDay)?.pancreasEffectiveness;
   // Hide BOOST button for tutorials before T4 (introduced in tutorial-04)
   const showBoostButton = !['tutorial-01', 'tutorial-02', 'tutorial-03'].includes(currentLevel?.id ?? '');
 
@@ -606,6 +607,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                   onToggle={handleToggleBoost}
                   disabled={gamePhase !== 'planning'}
                   isBlinking={isPJBlinking}
+                  pancreasEffectiveness={pancreasEffectiveness}
                 />
               </div>
             )}
