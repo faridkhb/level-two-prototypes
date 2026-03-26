@@ -119,7 +119,6 @@ interface BgGraphProps {
   medicationModifiers?: MedicationModifiers;
   showDangerZone?: boolean;          // show danger-zone colors + penalty overlays (replaces showPenaltyHighlight)
   showHatchFlash?: boolean;          // one-shot flash animation on 200 line + hatching bands
-  showBurnLabels?: boolean;          // show burn source labels to the right (results state)
   previewShip?: Ship;        // food being dragged (for preview on graph)
   previewColumn?: number;    // target column for preview
   previewIntervention?: Intervention;   // intervention being dragged
@@ -157,7 +156,6 @@ export function BgGraph({
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   showDangerZone = false,
   showHatchFlash = false,
-  showBurnLabels = false,
   previewShip,
   previewColumn,
   previewIntervention,
@@ -889,59 +887,6 @@ export function BgGraph({
 
 
 
-  // Burn source labels: SVG text at the topmost burned cell of each source's peak column
-  const burnLabels = useMemo(() => {
-    if (!showBurnLabels) return null;
-    const { columnCaps, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, glp1Depths, effectiveRows: effRows } = graphRenderData;
-    const ch = graphH / effRows;
-    const walkDepths = interventionReductions.walk;
-    const runDepths = interventionReductions.run;
-
-    // Find column where a given depth array is maximum
-    const findPeakCol = (depths: number[]): number => {
-      let best = 0, bestCol = -1;
-      for (let c = 0; c < TOTAL_COLUMNS; c++) {
-        if (depths[c] > best) { best = depths[c]; bestCol = c; }
-      }
-      return bestCol;
-    };
-
-    // Y center of the topmost cell in a layer starting at layerBase with depth rows
-    const topCellY = (layerBase: number, depth: number) => {
-      const topRow = layerBase + depth - 1;
-      return PAD_TOP + graphH - (topRow + 0.5) * ch;
-    };
-
-    const result: { key: string; name: string; color: string; x: number; y: number }[] = [];
-
-    // Stacking order: walk → run → pancreas → boost → metformin → sglt2 → glp1
-    const addLabel = (
-      key: string, name: string, color: string,
-      depths: number[],
-      depthsBelow: (c: number) => number,
-    ) => {
-      const col = findPeakCol(depths);
-      if (col < 0 || depths[col] <= 0) return;
-      const layerBase = columnCaps[col] + depthsBelow(col);
-      result.push({
-        key, name, color,
-        x: PAD_LEFT + col * CELL_SIZE + CELL_SIZE / 2,
-        y: topCellY(layerBase, depths[col]),
-      });
-    };
-
-    addLabel('walk',     '🚶 Walk',     '#86efac', walkDepths,     (_c) => 0);
-    addLabel('run',      '🏃 Run',      '#22c55e', runDepths,      (c)  => walkDepths[c]);
-    addLabel('pancreas', '🫀 Pancreas', '#f97316', pancreasDepths, (c)  => walkDepths[c] + runDepths[c]);
-    addLabel('boost',    '⚡ BOOST',    '#f59e0b', boostDepths,    (c)  => walkDepths[c] + runDepths[c] + pancreasDepths[c]);
-    addLabel('metformin','💊 Metformin','#f0abfc', metforminDepths,(c)  => walkDepths[c] + runDepths[c] + pancreasDepths[c] + boostDepths[c]);
-    addLabel('sglt2',    '🧪 SGLT2',   '#c084fc', sglt2Depths,    (c)  => walkDepths[c] + runDepths[c] + pancreasDepths[c] + boostDepths[c] + metforminDepths[c]);
-    addLabel('glp1',     '💉 GLP-1',   '#a78bfa', glp1Depths,     (c)  => walkDepths[c] + runDepths[c] + pancreasDepths[c] + boostDepths[c] + metforminDepths[c] + sglt2Depths[c]);
-
-    return result.length > 0 ? result : null;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showBurnLabels, graphRenderData, interventionReductions, graphH]);
-
   return (
     <div className="bg-graph__wrapper">
       <svg
@@ -1524,26 +1469,6 @@ export function BgGraph({
           return labels;
         })()}
 
-        {/* Burn source labels: SVG text at the topmost cell of each source's peak column */}
-        {burnLabels && burnLabels.map(l => (
-          <text
-            key={l.key}
-            x={l.x}
-            y={l.y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={isMobile ? 9 : 7}
-            fontWeight={700}
-            fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-            fill={l.color}
-            stroke="rgba(10,20,35,0.85)"
-            strokeWidth={2.5}
-            paintOrder="stroke"
-            pointerEvents="none"
-          >
-            {l.name}
-          </text>
-        ))}
 
       </svg>
     </div>

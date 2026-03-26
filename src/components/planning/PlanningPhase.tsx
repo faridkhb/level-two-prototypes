@@ -752,7 +752,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               onPancreasBurnStart={handlePancreasBurnStart}
               slowMotionBurns={tutorialStep?.advanceOn === 'burn-anim-complete'}
               onBurnAnimComplete={handleBurnAnimComplete}
-              showBurnLabels={!isPlanning}
               showHatchingOverride={isResultsRevealing || showResults}
             />
             {isPlanning && showBoostButton && (
