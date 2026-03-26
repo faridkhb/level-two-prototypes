@@ -127,6 +127,8 @@ interface BgGraphProps {
   stressSlots?: Set<number>;            // slot indices with stress (reduced insulin)
   highlightStressSlots?: boolean;        // tutorial: pulse animation on stress columns
   highlightDangerZone?: boolean;         // tutorial: pulse animation on the glucose zone above 200 mg/dL
+  highlightBaselineCubes?: boolean;      // tutorial: pulse animation on baseline BG cubes
+  highlightDangerLine?: boolean;         // tutorial: continuous pulse on 200 mg/dL line + hatching bands
   highlightMedEffect?: boolean;          // reserved: tutorial pulse (med-prevented cubes removed)
   isMobile?: boolean;                    // mobile-responsive sizing
   baselineRow?: number;                  // row offset for starting BG (default 0 = 60 mg/dL)
@@ -164,6 +166,8 @@ export function BgGraph({
   stressSlots,
   highlightStressSlots = false,
   highlightDangerZone = false,
+  highlightBaselineCubes = false,
+  highlightDangerLine = false,
   highlightMedEffect: _highlightMedEffect = false,
   isMobile = false,
   baselineRow = 0,
@@ -1045,7 +1049,7 @@ export function BgGraph({
             height={Math.max(0, graphH - zoneRow(300) * cellHeight)}
             fill="url(#hatch-red)"
             opacity={0.35}
-            className={showHatchFlash ? 'bg-graph__hatch-band--flash' : undefined}
+            className={showHatchFlash ? 'bg-graph__hatch-band--flash' : highlightDangerLine ? 'bg-graph__hatch-band--pulse' : undefined}
             pointerEvents="none"
           />
         )}
@@ -1095,7 +1099,7 @@ export function BgGraph({
           stroke="#ef4444"
           strokeWidth={1.5}
           opacity={0.7}
-          className={showHatchFlash ? 'bg-graph__danger-line--flash' : undefined}
+          className={showHatchFlash ? 'bg-graph__danger-line--flash' : highlightDangerLine ? 'bg-graph__danger-line--pulse' : undefined}
           pointerEvents="none"
         />
 
@@ -1112,6 +1116,7 @@ export function BgGraph({
               opacity={0.85}
               rx={2}
               pointerEvents="none"
+              className={highlightBaselineCubes ? 'bg-graph__baseline-cube--pulse' : undefined}
             />
           ))
         )}

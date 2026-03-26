@@ -790,6 +790,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               stressSlots={stressSlotSet}
               highlightStressSlots={tutorialStep?.highlight === 'stress-slots'}
               highlightDangerZone={tutorialStep?.highlight === 'danger-zone'}
+              highlightBaselineCubes={tutorialStep?.highlight === 'baseline-cubes'}
+              highlightDangerLine={tutorialStep?.highlight === 'danger-line'}
               highlightMedEffect={tutorialStep?.highlightMedEffect ?? false}
               isMobile={isMobile}
               baselineRow={baselineRow}

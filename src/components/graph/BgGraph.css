@@ -264,6 +264,33 @@
   animation: dangerZonePulse 1.4s ease-in-out infinite;
 }
 
+/* Tutorial: baseline BG cubes pulse */
+@keyframes baselineCubePulse {
+  0%, 100% { opacity: 0.85; }
+  50%       { opacity: 0.2; }
+}
+.bg-graph__baseline-cube--pulse {
+  animation: baselineCubePulse 1.2s ease-in-out infinite;
+}
+
+/* Tutorial: 200 mg/dL line continuous pulse */
+@keyframes dangerLinePulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; filter: drop-shadow(0 0 4px #ef4444); }
+}
+.bg-graph__danger-line--pulse {
+  animation: dangerLinePulse 1.2s ease-in-out infinite;
+}
+
+/* Tutorial: hatching bands continuous pulse (synced with dangerLinePulse) */
+@keyframes hatchBandPulse {
+  0%, 100% { opacity: 0.05; }
+  50%       { opacity: 0.6; }
+}
+.bg-graph__hatch-band--pulse {
+  animation: hatchBandPulse 1.2s ease-in-out infinite;
+}
+
 .med-effect-pulse {
   animation: medEffectPulse 1.2s ease-in-out infinite;
 }
