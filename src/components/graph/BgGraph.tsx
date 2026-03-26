@@ -1108,8 +1108,8 @@ export function BgGraph({
               y={rowToY(rowIdx) + 0.5}
               width={CELL_SIZE - 1}
               height={cellHeight - 1}
-              fill="#fbbf24"
-              opacity={0.65}
+              fill="#7dd3fc"
+              opacity={0.85}
               rx={2}
               pointerEvents="none"
             />
