@@ -14,28 +14,6 @@
   overflow: hidden;
 }
 
-/* Burn source labels — shown to the right edge in results state */
-.bg-graph__burn-labels {
-  position: absolute;
-  right: 6px;
-  top: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-
-.bg-graph__burn-label {
-  position: absolute;
-  right: 0;
-  transform: translateY(-50%);
-  font-size: 10px;
-  font-weight: 700;
-  white-space: nowrap;
-  padding: 2px 5px;
-  border-radius: 4px;
-  background: rgba(10, 20, 35, 0.80);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  letter-spacing: 0.01em;
-}
 
 /* Cube appear animation (wave effect on food placement) */
 @keyframes cubeAppear {

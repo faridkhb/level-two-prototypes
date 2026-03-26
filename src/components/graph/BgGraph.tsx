@@ -889,43 +889,58 @@ export function BgGraph({
 
 
 
-  // Burn source labels: computed when showBurnLabels=true (results state)
+  // Burn source labels: SVG text at the topmost burned cell of each source's peak column
   const burnLabels = useMemo(() => {
     if (!showBurnLabels) return null;
-    const { columnCaps, pancreasCaps, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, glp1Depths, effectiveRows: effRows } = graphRenderData;
-    // Reference column: highest food height
-    let refCol = 0, maxCap = -1;
-    for (let c = 0; c < TOTAL_COLUMNS; c++) {
-      if (pancreasCaps[c] > maxCap) { maxCap = pancreasCaps[c]; refCol = c; }
-    }
-    if (maxCap <= baselineRow) return null;
+    const { columnCaps, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, glp1Depths, effectiveRows: effRows } = graphRenderData;
     const ch = graphH / effRows;
-    const padBottom = isMobile ? 30 : PAD_BOTTOM;
-    const svgH = PAD_TOP + graphH + padBottom;
-    // Center Y as percentage of SVG height: centerY_svg = PAD_TOP + graphH - (base + depth/2) * ch
-    const pct = (base: number, depth: number) =>
-      ((PAD_TOP + graphH - (base + depth / 2) * ch) / svgH) * 100;
+    const walkDepths = interventionReductions.walk;
+    const runDepths = interventionReductions.run;
 
-    const result: { key: string; name: string; color: string; pct: number }[] = [];
-    let base = columnCaps[refCol];
-    const walkD = interventionReductions.walk[refCol];
-    const runD = interventionReductions.run[refCol];
-    const pancreasD = pancreasDepths[refCol];
-    const boostD = boostDepths[refCol];
-    const metforminD = metforminDepths[refCol];
-    const sglt2D = sglt2Depths[refCol];
-    const glp1D = glp1Depths[refCol];
+    // Find column where a given depth array is maximum
+    const findPeakCol = (depths: number[]): number => {
+      let best = 0, bestCol = -1;
+      for (let c = 0; c < TOTAL_COLUMNS; c++) {
+        if (depths[c] > best) { best = depths[c]; bestCol = c; }
+      }
+      return bestCol;
+    };
 
-    if (walkD > 0)     { result.push({ key: 'walk',     name: '🚶 Walk',     color: '#86efac', pct: pct(base, walkD) });     base += walkD; }
-    if (runD > 0)      { result.push({ key: 'run',      name: '🏃 Run',      color: '#22c55e', pct: pct(base, runD) });      base += runD; }
-    if (pancreasD > 0) { result.push({ key: 'pancreas', name: '🫀 Pancreas', color: '#f97316', pct: pct(base, pancreasD) }); base += pancreasD; }
-    if (boostD > 0)    { result.push({ key: 'boost',    name: '⚡ BOOST',    color: '#f59e0b', pct: pct(base, boostD) });    base += boostD; }
-    if (metforminD > 0){ result.push({ key: 'metformin',name: '💊 Metformin',color: '#f0abfc', pct: pct(base, metforminD) });base += metforminD; }
-    if (sglt2D > 0)    { result.push({ key: 'sglt2',    name: '🧪 SGLT2',    color: '#c084fc', pct: pct(base, sglt2D) });    base += sglt2D; }
-    if (glp1D > 0)     { result.push({ key: 'glp1',     name: '💉 GLP-1',    color: '#a78bfa', pct: pct(base, glp1D) }); }
+    // Y center of the topmost cell in a layer starting at layerBase with depth rows
+    const topCellY = (layerBase: number, depth: number) => {
+      const topRow = layerBase + depth - 1;
+      return PAD_TOP + graphH - (topRow + 0.5) * ch;
+    };
+
+    const result: { key: string; name: string; color: string; x: number; y: number }[] = [];
+
+    // Stacking order: walk → run → pancreas → boost → metformin → sglt2 → glp1
+    const addLabel = (
+      key: string, name: string, color: string,
+      depths: number[],
+      depthsBelow: (c: number) => number,
+    ) => {
+      const col = findPeakCol(depths);
+      if (col < 0 || depths[col] <= 0) return;
+      const layerBase = columnCaps[col] + depthsBelow(col);
+      result.push({
+        key, name, color,
+        x: PAD_LEFT + col * CELL_SIZE + CELL_SIZE / 2,
+        y: topCellY(layerBase, depths[col]),
+      });
+    };
+
+    addLabel('walk',     '🚶 Walk',     '#86efac', walkDepths,     (_c) => 0);
+    addLabel('run',      '🏃 Run',      '#22c55e', runDepths,      (c)  => walkDepths[c]);
+    addLabel('pancreas', '🫀 Pancreas', '#f97316', pancreasDepths, (c)  => walkDepths[c] + runDepths[c]);
+    addLabel('boost',    '⚡ BOOST',    '#f59e0b', boostDepths,    (c)  => walkDepths[c] + runDepths[c] + pancreasDepths[c]);
+    addLabel('metformin','💊 Metformin','#f0abfc', metforminDepths,(c)  => walkDepths[c] + runDepths[c] + pancreasDepths[c] + boostDepths[c]);
+    addLabel('sglt2',    '🧪 SGLT2',   '#c084fc', sglt2Depths,    (c)  => walkDepths[c] + runDepths[c] + pancreasDepths[c] + boostDepths[c] + metforminDepths[c]);
+    addLabel('glp1',     '💉 GLP-1',   '#a78bfa', glp1Depths,     (c)  => walkDepths[c] + runDepths[c] + pancreasDepths[c] + boostDepths[c] + metforminDepths[c] + sglt2Depths[c]);
+
     return result.length > 0 ? result : null;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showBurnLabels, graphRenderData, interventionReductions, baselineRow, isMobile, graphH]);
+  }, [showBurnLabels, graphRenderData, interventionReductions, graphH]);
 
   return (
     <div className="bg-graph__wrapper">
@@ -1509,20 +1524,28 @@ export function BgGraph({
           return labels;
         })()}
 
+        {/* Burn source labels: SVG text at the topmost cell of each source's peak column */}
+        {burnLabels && burnLabels.map(l => (
+          <text
+            key={l.key}
+            x={l.x}
+            y={l.y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={isMobile ? 9 : 7}
+            fontWeight={700}
+            fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            fill={l.color}
+            stroke="rgba(10,20,35,0.85)"
+            strokeWidth={2.5}
+            paintOrder="stroke"
+            pointerEvents="none"
+          >
+            {l.name}
+          </text>
+        ))}
+
       </svg>
-      {burnLabels && (
-        <div className="bg-graph__burn-labels">
-          {burnLabels.map(l => (
-            <div
-              key={l.key}
-              className="bg-graph__burn-label"
-              style={{ top: `${l.pct}%`, color: l.color }}
-            >
-              {l.name}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
