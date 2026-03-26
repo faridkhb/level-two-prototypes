@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.54.0 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, GLP-1 peak reduction, burns visibility toggle (👁️), PancreasButton L-shape redesign, Variant B phased reveal (per-food bomb animations, burn layers persist), main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
+| `main` | BG Planner | v0.55.0 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, GLP-1 peak reduction, burns visibility toggle (👁️), PancreasButton L-shape redesign, Variant B phased reveal (per-food bomb animations, burn layers persist), animated results reveal (danger sweep, Excess Glucose counter, star-by-star, label bounce-in, tap-to-skip), main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
 
 Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
@@ -107,7 +107,7 @@ CONFIG:
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.54.0)
+- `src/version.ts` — version number (v0.55.0)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
@@ -157,7 +157,7 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.54.0) — PancreasButton Redesign, Variant B Reveal, 👁️ Toggle
+### Current State (v0.55.0) — Animated Results Reveal, Excess Glucose Counter, Star-by-Star
 
 - **Main Menu** ✅
   - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
@@ -264,11 +264,11 @@ CONFIG:
   - `cubeBurn`: burned cubes fade to 0.55 opacity with wave effect (increased from 0.35 for burn color visibility)
   - Wave delay: 20ms per column offset from drop point
 
-- **Burn Animation System** ✅ (v0.51.0–v0.54.0, `hideBurnedInPlanning=true` by default)
+- **Burn Animation System** ✅ (v0.51.0–v0.55.0, `hideBurnedInPlanning=true` by default)
   - During planning, ПЖ/BOOST burned cubes are **hidden** by default — shown only via animated drops
   - **👁️ Burns visibility toggle** (v0.51.12 → v0.53.1): button in bottom day-nav bar, planning + results (not tutorial)
     - Default: hidden (`showBurns=false`); active button: orange highlight, burned cubes fully visible
-    - `hideBurnedInPlanning = (isPlanning || showResults) ? !showBurns : gamePhase === 'replaying' && revealPhase === 2`
+    - `hideBurnedInPlanning = (isPlanning || showResults) ? !showBurns : gamePhase === 'replaying' && ((revealPhase ?? 99) <= 2)`
   - **Pre-burn phase** (v0.51.2): before drops fall, burn zone rendered as food-colored glucose (class `--pre-burn`)
     - Plateau-extra cubes (above decay top) also rendered food-colored and get bombed away
     - CSS `preBurnFlash` (0.45s): opacity 1 → flash → 0, triggered at each column's hit time
@@ -283,7 +283,7 @@ CONFIG:
     - `plateauExtraRows[col]` accumulated globally, used in bomb height and pre-burn skyline
   - **Preview base fix** (v0.51.5): preview uses `columnCaps[col]` as base row (not `pancreasCaps`) when `hideBurnedInPlanning=true` — eliminates gap between visible food and hover preview
   - **Skylines disabled** (v0.51.12): individual food step-path skylines removed from rendering
-  - **Stable tag**: `alpha-13-stable` = v0.51.2 (pre-burn glucose phase, reliable rollback point)
+  - **Stable tag**: `alpha-14-stable` = v0.55.0 (animated results reveal sequence)
 
 - **Phased Layer Reveal — Variant B** ✅ (v0.54.0, replaces old hold-timer-only reveal)
   - Phase 2 (pancreas): real bomb animations fire during reveal via `revealBombsTrigger` prop increment
@@ -293,6 +293,18 @@ CONFIG:
   - After all phases: `setShowBurns(true)` auto-called → burns visible in results by default
   - Zone hatching visible in results: `showHatchingOverride={showResults}` prop on BgGraph
   - Penalty overlays + hatching + all burn layers shown in final results state
+
+- **Animated Results Reveal Sequence** ✅ (v0.55.0)
+  - After all burn phases complete, a 4-phase sub-sequence plays before showing action buttons
+  - **Phase 0 — danger flash** (600ms): red 200 mg/dL line + hatching bands flash simultaneously (`dangerLineFlash` / `hatchBandFlash` CSS animations)
+  - **Phase 1 — counting** (50ms × columns + min 600ms): cubes above 200 change color food→danger column-by-column left-to-right (`dangerReveal` brightness flash); "Excess Glucose" counter ticks 0→N with ease-out quadratic interpolation
+  - **Phase 2 — stars** (250ms × earned stars): 3 empty ☆☆☆ visible immediately, then earned ★ pop in one-by-one (`starReveal` rotation animation); key-based React remount triggers animation on each star
+  - **Phase 3 — label** (400ms): result label appears with `labelBounceIn` bounce animation; then action buttons revealed
+  - **Tap/click to skip**: click anywhere during animation → `skipResultsReveal()` clears all timers, jumps to final state
+  - State: `resultsRevealPhase: 0|1|2|3|undefined`, `displayedPenalty: number`, `visibleStars: number`
+  - `showDangerZone` prop on BgGraph: replaces `revealPhase !== undefined || showPenaltyHighlight` bug — danger coloring only when `resultsRevealPhase >= 1 || showResults`
+  - `showHatchFlash` prop on BgGraph: triggers one-shot flash on hatching bands and 200 line
+  - ResultPanel props: `visibleStars`, `showLabel`, `displayedPenalty`
 
 - **PancreasButton Redesign** ✅ (v0.53.0)
   - L-shape layout: top row (🫀 emoji + charge circles + hint text) + bottom row (effectiveness bar)
@@ -695,6 +707,9 @@ Progressive blue palette by placement order: 7-color Tailwind sky shades from `#
 - *(v0.53.0)* — PancreasButton redesign: L-shape layout (top: emoji + charges + hint; bottom: effectiveness bar); `pancreasEffectiveness` in DayConfig
 - *(v0.53.1)* — UI cleanup: remove ∂/∑ cheat button; rename 🔥→👁️; move 👁️ to bottom day-nav; show 👁️ on results screen
 - *(v0.54.0)* — Variant B reveal: real bomb animations in phase 2 (`revealBombsTrigger` prop); burn layers persist after phase 2; zone hatching + penalty overlays in results; auto-show burns on results; fix 👁️ on results screen
+- *(v0.54.1)* — Fix: `hideBurnedInPlanning` extended to phases 0-2 (was phase 2 only) — no pre-burned state flash at start of results
+- *(v0.54.2)* — Fix: show full glucose stack (pre-burn layer) during reveal phase 1 via `isRevealPreBurn` flag; pancreas/boost cube filter changed to `revealPhase >= 1`
+- `alpha-14-stable` (v0.55.0) — Animated results reveal: danger flash → cubes sweep + Excess Glucose counter → stars one-by-one → label bounce-in; `showDangerZone` prop fixes danger-coloring bug during burn phases; tap-to-skip
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
