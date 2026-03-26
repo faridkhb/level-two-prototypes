@@ -117,7 +117,8 @@ interface BgGraphProps {
   decayRate: number;
   boostActive?: boolean;
   medicationModifiers?: MedicationModifiers;
-  showPenaltyHighlight?: boolean;
+  showDangerZone?: boolean;          // show danger-zone colors + penalty overlays (replaces showPenaltyHighlight)
+  showHatchFlash?: boolean;          // one-shot flash animation on 200 line + hatching bands
   revealPhase?: number; // undefined = all visible, 0-4 = progressive layer reveal
   previewShip?: Ship;        // food being dragged (for preview on graph)
   previewColumn?: number;    // target column for preview
@@ -152,7 +153,8 @@ export function BgGraph({
   decayRate = 0.5,
   boostActive = false,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
-  showPenaltyHighlight = false,
+  showDangerZone = false,
+  showHatchFlash = false,
   revealPhase,
   previewShip,
   previewColumn,
@@ -1025,6 +1027,7 @@ export function BgGraph({
             height={Math.max(0, graphH - zoneRow(300) * cellHeight)}
             fill="url(#hatch-red)"
             opacity={0.35}
+            className={showHatchFlash ? 'bg-graph__hatch-band--flash' : undefined}
             pointerEvents="none"
           />
         )}
@@ -1035,6 +1038,7 @@ export function BgGraph({
           height={Math.max(0, (zoneRow(300) - zoneRow(200)) * cellHeight)}
           fill="url(#hatch-orange)"
           opacity={0.35}
+          className={showHatchFlash ? 'bg-graph__hatch-band--flash' : undefined}
           pointerEvents="none"
         />
 
@@ -1073,6 +1077,7 @@ export function BgGraph({
           stroke="#ef4444"
           strokeWidth={1.5}
           opacity={0.7}
+          className={showHatchFlash ? 'bg-graph__danger-line--flash' : undefined}
           pointerEvents="none"
         />
 
@@ -1245,23 +1250,29 @@ export function BgGraph({
               const waveDelay = (cube.col - layer.dropColumn) * 20;
               // Per-row stagger: bomb-0 hits row cap, bomb-1 hits row cap+1 (60ms later), etc.
               const burnK = isPreBurnCube ? Math.max(0, cube.row - graphRenderData.columnCaps[cube.col]) : 0;
-              const effectiveAnimDelay = isPreBurnCube ? (bombHitDelays!.get(cube.col) ?? 0) + burnK * 60 : waveDelay;
+              // Danger-reveal: normal cubes above 200 flash with sweep animation (left→right)
+              const isDangerRevealCube = showDangerZone && cube.status === 'normal' && cube.row >= PENALTY_ORANGE_ROW;
+              const effectiveAnimDelay = isPreBurnCube ? (bombHitDelays!.get(cube.col) ?? 0) + burnK * 60
+                : isDangerRevealCube ? cube.col * 50  // absolute column sweep
+                : waveDelay;
               const cubeClass = isPreBurnCube
                 ? 'bg-graph__cube--pre-burn'
                 : isRevealPreBurn
                   ? 'bg-graph__cube'
-                  : isAnimatingBurn
-                    ? 'bg-graph__cube--digest-appear-burn'
-                    : cube.status === 'burned'
-                      ? 'bg-graph__cube--burned'
-                      : 'bg-graph__cube';
+                  : isDangerRevealCube
+                    ? 'bg-graph__cube--danger-reveal'
+                    : isAnimatingBurn
+                      ? 'bg-graph__cube--digest-appear-burn'
+                      : cube.status === 'burned'
+                        ? 'bg-graph__cube--burned'
+                        : 'bg-graph__cube';
               let cubeFill: string;
               if (isPreBurnCube || isRevealPreBurn) {
                 cubeFill = layer.color; // food-colored before bomb hits
               } else if (cube.status === 'burned' && cube.burnColor) {
                 cubeFill = cube.burnColor;
-              } else if (revealPhase !== undefined || showPenaltyHighlight) {
-                // Results phase: color cubes by danger zone
+              } else if (showDangerZone) {
+                // Danger zone: color cubes by zone
                 if (cube.row >= PENALTY_RED_ROW) {
                   cubeFill = '#f56565'; // red-400
                 } else if (cube.row >= PENALTY_ORANGE_ROW) {
@@ -1273,7 +1284,7 @@ export function BgGraph({
                 cubeFill = layer.color;
               }
               const showHatch = cube.status === 'normal' && cube.row >= PENALTY_ORANGE_ROW &&
-                ((revealPhase === undefined && !showPenaltyHighlight) || showHatchingOverride);
+                ((revealPhase === undefined && !showDangerZone) || showHatchingOverride);
               return (
                 <g key={`${layer.placementId}-${cube.col}-${cube.row}`}>
                   <rect
@@ -1510,7 +1521,7 @@ export function BgGraph({
         {/* BG skyline — disabled */}
 
         {/* Penalty highlight overlays (after submit) */}
-        {showPenaltyHighlight && graphRenderData.layers.map(layer =>
+        {showDangerZone && graphRenderData.layers.map(layer =>
           layer.cubes
             .filter(cube => cube.status === 'normal')
             .map(cube => {
@@ -1535,8 +1546,8 @@ export function BgGraph({
             })
         )}
 
-        {/* Penalty threshold line at 200 mg/dL (shown during results) */}
-        {showPenaltyHighlight && (
+        {/* Penalty threshold line at 200 mg/dL (shown during danger-flash and beyond) */}
+        {(showDangerZone || showHatchFlash) && (
           <line
             x1={PAD_LEFT}
             y1={rowToY(PENALTY_ORANGE_ROW - 1)}

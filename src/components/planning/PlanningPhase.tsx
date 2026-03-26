@@ -115,6 +115,14 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealSequenceRef = useRef<number[]>([]);
 
+  // Results reveal sub-sequence (after all burn phases)
+  const [resultsRevealPhase, setResultsRevealPhase] = useState<number | undefined>(undefined);
+  const [displayedPenalty, setDisplayedPenalty] = useState(0);
+  const [visibleStars, setVisibleStars] = useState(0);
+  const resultsRevealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const penaltyCounterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const penaltyResultRef = useRef<PenaltyResult | null>(null); // stable ref for use in effects
+
   // Burn animation mode + PancreasButton blink state
   const [burnAnimMode, _setBurnAnimMode] = useState<BurnAnimMode>('incremental');
   const [isPJBlinking, setIsPJBlinking] = useState(false);
@@ -504,9 +512,12 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
         }
 
         setPenaltyResult(penalty);
+        penaltyResultRef.current = penalty;
         setRevealPhase(undefined);
-        setShowBurns(true); // auto-show burns in results
-        setGamePhase('results');
+        setShowBurns(true); // show burns from results reveal start
+        setDisplayedPenalty(0);
+        setVisibleStars(0);
+        setResultsRevealPhase(0); // start results reveal sub-sequence
       }
     }
 
@@ -519,24 +530,123 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gamePhase]);
 
+  // === Results reveal sub-sequence (danger-flash → counting → stars → label → done) ===
+  useEffect(() => {
+    if (resultsRevealPhase === undefined) return;
+
+    if (resultsRevealPhase === 0) {
+      // Phase 0: danger-flash — 600ms, flash 200-line + hatching, then start counting
+      resultsRevealTimerRef.current = setTimeout(() => setResultsRevealPhase(1), 600);
+
+    } else if (resultsRevealPhase === 1) {
+      // Phase 1: counting — sweep cubes + animate penalty counter
+      const penalty = penaltyResultRef.current;
+      if (!penalty) { setResultsRevealPhase(2); return; }
+
+      // Animate penalty counter: 0 → totalPenalty over ~1000ms
+      const total = penalty.totalPenalty;
+      const COUNTER_MS = 1000;
+      const INTERVAL_MS = 40;
+      const steps = Math.max(1, Math.ceil(COUNTER_MS / INTERVAL_MS));
+      let step = 0;
+      if (total > 0) {
+        penaltyCounterRef.current = setInterval(() => {
+          step++;
+          const progress = step / steps;
+          const eased = 1 - Math.pow(1 - progress, 2); // ease-out quad
+          setDisplayedPenalty(Math.round(eased * total * 10) / 10);
+          if (step >= steps) {
+            clearInterval(penaltyCounterRef.current!);
+            penaltyCounterRef.current = null;
+            setDisplayedPenalty(total);
+          }
+        }, INTERVAL_MS);
+      }
+
+      // Duration: based on danger cube count for sweep timing (50ms/col, min 800ms)
+      const dangerCubes = penalty.orangeCount + penalty.redCount;
+      const sweepDuration = Math.max(800, Math.min(1400, dangerCubes > 0 ? 50 * 24 : 800));
+      resultsRevealTimerRef.current = setTimeout(() => setResultsRevealPhase(2), sweepDuration);
+
+    } else if (resultsRevealPhase === 2) {
+      // Phase 2: stars — light up one by one (250ms each)
+      const penalty = penaltyResultRef.current;
+      const earnedStars = penalty?.stars ?? 0;
+      setVisibleStars(0);
+
+      if (earnedStars === 0) {
+        resultsRevealTimerRef.current = setTimeout(() => setResultsRevealPhase(3), 300);
+        return;
+      }
+
+      let starStep = 0;
+      const addStar = () => {
+        starStep++;
+        setVisibleStars(starStep);
+        if (starStep < earnedStars) {
+          resultsRevealTimerRef.current = setTimeout(addStar, 280);
+        } else {
+          resultsRevealTimerRef.current = setTimeout(() => setResultsRevealPhase(3), 400);
+        }
+      };
+      resultsRevealTimerRef.current = setTimeout(addStar, 150);
+
+    } else if (resultsRevealPhase === 3) {
+      // Phase 3: label bounce-in, then done
+      resultsRevealTimerRef.current = setTimeout(() => {
+        setResultsRevealPhase(undefined);
+        setGamePhase('results');
+      }, 500);
+    }
+
+    return () => {
+      if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultsRevealPhase]);
+
+  // === Skip results reveal (tap anywhere during animation) ===
+  const skipResultsReveal = useCallback(() => {
+    if (resultsRevealPhase === undefined) return;
+    if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
+    if (penaltyCounterRef.current) { clearInterval(penaltyCounterRef.current); penaltyCounterRef.current = null; }
+    const penalty = penaltyResultRef.current;
+    if (penalty) {
+      setDisplayedPenalty(penalty.totalPenalty);
+      setVisibleStars(penalty.stars);
+    }
+    setResultsRevealPhase(undefined);
+    setGamePhase('results');
+  }, [resultsRevealPhase]);
+
   // === Result actions ===
   const handleRetry = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
+    if (penaltyCounterRef.current) { clearInterval(penaltyCounterRef.current); penaltyCounterRef.current = null; }
     advanceRevealRef.current = null;
     unlockBoostBars(currentDay);
     clearFoods();
     setGamePhase('planning');
     setRevealPhase(undefined);
+    setResultsRevealPhase(undefined);
+    setDisplayedPenalty(0);
+    setVisibleStars(0);
     setShowBurns(false);
     setPenaltyResult(null);
   }, [clearFoods, unlockBoostBars, currentDay]);
 
   const handleNextDay = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
+    if (penaltyCounterRef.current) { clearInterval(penaltyCounterRef.current); penaltyCounterRef.current = null; }
     advanceRevealRef.current = null;
     startNextDay();
     setGamePhase('planning');
     setRevealPhase(undefined);
+    setResultsRevealPhase(undefined);
+    setDisplayedPenalty(0);
+    setVisibleStars(0);
     setShowBurns(false);
     setPenaltyResult(null);
   }, [startNextDay]);
@@ -544,10 +654,15 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   // Reset phase when day changes (e.g., via cheat buttons)
   const handleGoToDay = useCallback((day: number) => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
+    if (penaltyCounterRef.current) { clearInterval(penaltyCounterRef.current); penaltyCounterRef.current = null; }
     advanceRevealRef.current = null;
     goToDay(day);
     setGamePhase('planning');
     setRevealPhase(undefined);
+    setResultsRevealPhase(undefined);
+    setDisplayedPenalty(0);
+    setVisibleStars(0);
     setShowBurns(false);
     setPenaltyResult(null);
   }, [goToDay]);
@@ -559,8 +674,13 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     if (idx < 0 || idx >= TUTORIAL_LEVEL_ORDER.length - 1) return;
     const nextId = TUTORIAL_LEVEL_ORDER[idx + 1];
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
+    if (penaltyCounterRef.current) { clearInterval(penaltyCounterRef.current); penaltyCounterRef.current = null; }
     setGamePhase('planning');
     setRevealPhase(undefined);
+    setResultsRevealPhase(undefined);
+    setDisplayedPenalty(0);
+    setVisibleStars(0);
     setPenaltyResult(null);
     onNextLevel(nextId);
   }, [tutorialLevelId, onNextLevel]);
@@ -580,6 +700,13 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
 
   const isPlanning = gamePhase === 'planning';
   const showResults = gamePhase === 'results';
+  const isResultsRevealing = resultsRevealPhase !== undefined;
+  // showDangerZone: true from counting phase (1) through full results
+  const showDangerZone = showResults || (isResultsRevealing && resultsRevealPhase >= 1);
+  // showHatchFlash: true only during danger-flash phase (0) — one-shot
+  const showHatchFlash = isResultsRevealing && resultsRevealPhase === 0;
+  // ResultPanel shown from counting phase (1) onwards
+  const showResultPanel = showResults || (isResultsRevealing && resultsRevealPhase >= 1);
 
   return (
     <DndContext
@@ -589,7 +716,10 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="planning-phase">
+      <div
+        className="planning-phase"
+        onClick={isResultsRevealing ? skipResultsReveal : undefined}
+      >
         <div className={`planning-phase__content${!isPlanning ? ' planning-phase__content--results' : ''}`}>
           <div className="planning-phase__graph-wrapper">
             <button
@@ -608,7 +738,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               decayRate={0.5}
               boostActive={isBoostActive}
               medicationModifiers={medicationModifiers}
-              showPenaltyHighlight={showResults}
+              showDangerZone={showDangerZone}
+              showHatchFlash={showHatchFlash}
               revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
               previewShip={activeShip && previewSlot !== null ? activeShip : undefined}
               previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}
@@ -625,7 +756,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               slowMotionBurns={tutorialStep?.advanceOn === 'burn-anim-complete'}
               onBurnAnimComplete={handleBurnAnimComplete}
               revealBombsTrigger={revealBombsTrigger}
-              showHatchingOverride={showResults}
+              showHatchingOverride={isResultsRevealing || showResults}
             />
             {isPlanning && showBoostButton && (
               <div className="planning-phase__pancreas-overlay">
@@ -686,7 +817,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             </InventoryDropZone>
           )}
 
-          {showResults && penaltyResult && (
+          {showResultPanel && penaltyResult && (
             <ResultPanel
               result={penaltyResult}
               currentDay={currentDay}
@@ -698,6 +829,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               isTutorial={isTutorial}
               onNextLevel={!isLastTutorialLevel ? handleNextTutorialLevel : undefined}
               onBackToTutorials={onBackToTutorials}
+              visibleStars={showResults ? undefined : visibleStars}
+              showLabel={showResults ? undefined : resultsRevealPhase !== undefined && resultsRevealPhase >= 3}
+              displayedPenalty={showResults ? undefined : displayedPenalty}
             />
           )}
 
