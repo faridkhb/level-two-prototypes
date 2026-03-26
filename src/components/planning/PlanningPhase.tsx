@@ -122,6 +122,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const resultsRevealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const penaltyCounterRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const penaltyResultRef = useRef<PenaltyResult | null>(null); // stable ref for use in effects
+  const tutorialStepRef = useRef(tutorialStep);  // stable ref so advancePhase closure can read current step
+  const pendingResultsRevealRef = useRef(false);  // true when burns done but counting blocked by tutorial step
 
   // Burn animation mode + PancreasButton blink state
   const [burnAnimMode, _setBurnAnimMode] = useState<BurnAnimMode>('incremental');
@@ -138,6 +140,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     if (pjBlinkTimerRef.current) clearTimeout(pjBlinkTimerRef.current);
     pjBlinkTimerRef.current = setTimeout(() => setIsPJBlinking(false), 1200);
   }, []);
+
+  // Keep tutorialStepRef current so advancePhase closure can read it without stale closure issues
+  useEffect(() => { tutorialStepRef.current = tutorialStep; }, [tutorialStep]);
 
   // Handles bomb animation completion: advances tutorial AND reveal phase 2
   const handleBurnAnimComplete = useCallback(() => {
@@ -517,7 +522,12 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
         setShowBurns(true); // show burns from results reveal start
         setDisplayedPenalty(0);
         setVisibleStars(0);
-        setResultsRevealPhase(0); // start results reveal sub-sequence
+        // If a tutorial step blocks the counting sequence, wait for it to be tapped first
+        if (isTutorial && tutorialStepRef.current?.blocksResultsReveal) {
+          pendingResultsRevealRef.current = true;
+        } else {
+          setResultsRevealPhase(0); // start results reveal sub-sequence
+        }
       }
     }
 
@@ -605,8 +615,38 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resultsRevealPhase]);
 
+  // === Start counting after tutorial blocking step is tapped ===
+  useEffect(() => {
+    if (!pendingResultsRevealRef.current) return;
+    if (gamePhase !== 'replaying') return;
+    if (resultsRevealPhase !== undefined) return;
+    if (tutorialStep?.blocksResultsReveal) return; // still on the blocking step
+    // Tutorial step was tapped — start counting after a short pause
+    pendingResultsRevealRef.current = false;
+    const t = setTimeout(() => {
+      setDisplayedPenalty(0);
+      setVisibleStars(0);
+      setResultsRevealPhase(0);
+    }, 400);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep, gamePhase, resultsRevealPhase]);
+
   // === Skip results reveal (tap anywhere during animation) ===
   const skipResultsReveal = useCallback(() => {
+    // Handle case where counting is pending (tutorial blocking step was just tapped)
+    if (pendingResultsRevealRef.current) {
+      pendingResultsRevealRef.current = false;
+      if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
+      const penalty = penaltyResultRef.current;
+      if (penalty) {
+        setDisplayedPenalty(penalty.totalPenalty);
+        setVisibleStars(penalty.stars);
+      }
+      setResultsRevealPhase(undefined);
+      setGamePhase('results');
+      return;
+    }
     if (resultsRevealPhase === undefined) return;
     if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
     if (penaltyCounterRef.current) { clearInterval(penaltyCounterRef.current); penaltyCounterRef.current = null; }
@@ -625,6 +665,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
     if (penaltyCounterRef.current) { clearInterval(penaltyCounterRef.current); penaltyCounterRef.current = null; }
     advanceRevealRef.current = null;
+    pendingResultsRevealRef.current = false;
     unlockBoostBars(currentDay);
     clearFoods();
     setGamePhase('planning');
@@ -641,6 +682,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     if (resultsRevealTimerRef.current) clearTimeout(resultsRevealTimerRef.current);
     if (penaltyCounterRef.current) { clearInterval(penaltyCounterRef.current); penaltyCounterRef.current = null; }
     advanceRevealRef.current = null;
+    pendingResultsRevealRef.current = false;
     startNextDay();
     setGamePhase('planning');
     setRevealPhase(undefined);

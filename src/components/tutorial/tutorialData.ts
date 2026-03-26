@@ -40,6 +40,7 @@ export interface TutorialStep {
   blockInteraction?: boolean;
   expectedAction?: ExpectedAction;
   highlightMedEffect?: boolean;  // tutorial: pulse animation on med-prevented cubes
+  blocksResultsReveal?: boolean; // if true — PlanningPhase holds counting sequence until this step is tapped
 }
 
 // ======= LEVEL 1 — First Steps =======
@@ -106,12 +107,19 @@ const L1D1: TutorialStep[] = [
     expectedAction: { type: 'click-submit' },
   },
   {
-    id: 'L1D1-8',
-    bubble: { type: 'success', text: 'The reveal shows how your food, insulin, and exercise interact. Check your star rating!', expression: 'celebrating', position: 'top' },
-    highlight: 'result-next-btn',
-    highlightType: 'glow',
+    id: 'L1D1-7b',
+    bubble: { type: 'dialogue', text: "Your pancreas sensed the glucose spike and is releasing insulin right now — watch it bring the curve back down!", expression: 'happy', position: 'center' },
     noBackdrop: true,
+    blockInteraction: true,
     advanceOn: 'tap',
+  },
+  {
+    id: 'L1D1-8',
+    bubble: { type: 'dialogue', text: "Now let's count how much glucose crossed the 200 mg/dL line — that's your Excess Glucose score. Less is better!", expression: 'neutral', position: 'center' },
+    noBackdrop: true,
+    blockInteraction: true,
+    advanceOn: 'tap',
+    blocksResultsReveal: true,
   },
 ];
 
