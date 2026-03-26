@@ -54,7 +54,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-2',
-    bubble: { type: 'dialogue', text: 'This is your Blood Glucose graph. Your current level is 100\u00a0mg/dL \u2014 those blocks at the bottom represent the glucose already in your blood.', expression: 'neutral', position: 'center' },
+    bubble: { type: 'dialogue', text: 'This is our Blood Glucose graph. Our current level is 100\u00a0mg/dL.', expression: 'neutral', position: 'center' },
     highlight: 'baseline-cubes',
     noBackdrop: true,
     advanceOn: 'tap',
@@ -62,7 +62,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-2b',
-    bubble: { type: 'warning', text: 'When planning your day, try to keep blood glucose below 200\u00a0mg/dL. Crossing that red line means you\u2019re in the danger zone!', expression: 'concerned', position: 'center' },
+    bubble: { type: 'warning', text: 'When planning our day, try to keep blood glucose below 200\u00a0mg/dL. Crossing that red line means we\u2019re in the danger zone!', expression: 'concerned', position: 'center' },
     highlight: 'danger-line',
     noBackdrop: true,
     advanceOn: 'tap',
@@ -70,7 +70,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-3',
-    bubble: { type: 'dialogue', text: 'When you eat, carbs raise your blood glucose. More carbs = higher peak. Each food card shows its absorption speed \u2014 Fast foods spike quickly, Slow foods rise gradually.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'When we eat, carbs raise our blood glucose. More carbs = higher peak. Each food card shows its absorption speed \u2014 Fast foods spike quickly, Slow foods rise gradually.', expression: 'neutral' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -78,7 +78,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-4',
-    bubble: { type: 'dialogue', text: 'Drag the \ud83c\udf4c Banana onto the graph! Place it in the 10:00 AM slot.', expression: 'happy' },
+    bubble: { type: 'dialogue', text: "Let's plan our first meal! Drag the \ud83c\udf4c Banana to the 10:00\u00a0AM slot.", expression: 'happy' },
     highlight: ['food:banana', 'slot:2'],
     highlightType: 'glow',
     cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:2' },
@@ -95,19 +95,13 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-5',
-    bubble: { type: 'dialogue', text: 'Your pancreas detected the glucose rise and released insulin! This happens automatically.', expression: 'happy', position: 'center' },
-    blockInteraction: true,
-    advanceOn: 'tap',
-  },
-  {
-    id: 'L1D1-6',
-    bubble: { type: 'dialogue', text: 'Insulin helps your cells absorb sugar — that\'s why the curve comes back down.', expression: 'neutral', position: 'center' },
+    bubble: { type: 'dialogue', text: 'Wow! Did you see those meteors? Our pancreas detected the glucose rise and released insulin \u2014 working with our body to bring the level back down!', expression: 'happy', position: 'center' },
     blockInteraction: true,
     advanceOn: 'tap',
   },
   {
     id: 'L1D1-7',
-    bubble: { type: 'dialogue', text: 'Now hit Submit to see your results!', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Now hit Submit to see our results!', expression: 'neutral' },
     highlight: 'submit-btn',
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'submit-btn' },
@@ -115,15 +109,8 @@ const L1D1: TutorialStep[] = [
     expectedAction: { type: 'click-submit' },
   },
   {
-    id: 'L1D1-7b',
-    bubble: { type: 'dialogue', text: "Your pancreas sensed the glucose spike and is releasing insulin right now — watch it bring the curve back down!", expression: 'happy', position: 'center' },
-    noBackdrop: true,
-    blockInteraction: true,
-    advanceOn: 'tap',
-  },
-  {
     id: 'L1D1-8',
-    bubble: { type: 'dialogue', text: "Now let's count how much glucose crossed the 200 mg/dL line — that's your Excess Glucose score. Less is better!", expression: 'neutral', position: 'center' },
+    bubble: { type: 'dialogue', text: "Now let's count how much glucose crossed the 200\u00a0mg/dL line \u2014 that's our Excess Glucose score. Less is better!", expression: 'neutral', position: 'center' },
     noBackdrop: true,
     blockInteraction: true,
     advanceOn: 'tap',
