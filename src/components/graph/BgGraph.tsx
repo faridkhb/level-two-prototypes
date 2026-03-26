@@ -1099,30 +1099,21 @@ export function BgGraph({
           pointerEvents="none"
         />
 
-        {/* Baseline BG zone (starting blood sugar level) */}
-        {baselineRow > 0 && (
-          <>
+        {/* Baseline BG cubes (starting blood sugar level — rendered as real glucose cubes) */}
+        {baselineRow > 0 && Array.from({ length: TOTAL_COLUMNS }, (_, col) =>
+          Array.from({ length: baselineRow }, (_, rowIdx) => (
             <rect
-              x={PAD_LEFT}
-              y={PAD_TOP + graphH - baselineRow * cellHeight}
-              width={GRAPH_W}
-              height={baselineRow * cellHeight}
-              fill="#94a3b8"
-              opacity={0.12}
+              key={`baseline-${col}-${rowIdx}`}
+              x={colToX(col) + 0.5}
+              y={rowToY(rowIdx) + 0.5}
+              width={CELL_SIZE - 1}
+              height={cellHeight - 1}
+              fill="#fbbf24"
+              opacity={0.65}
+              rx={2}
               pointerEvents="none"
             />
-            <line
-              x1={PAD_LEFT}
-              y1={PAD_TOP + graphH - baselineRow * cellHeight}
-              x2={PAD_LEFT + GRAPH_W}
-              y2={PAD_TOP + graphH - baselineRow * cellHeight}
-              stroke="#64748b"
-              strokeWidth={1}
-              strokeDasharray="4 2"
-              opacity={0.5}
-              pointerEvents="none"
-            />
-          </>
+          ))
         )}
 
         {/* Stress zone boundary lines and markers */}
