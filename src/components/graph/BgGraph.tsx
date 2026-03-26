@@ -1229,7 +1229,7 @@ export function BgGraph({
                   const isPancreas = bc === '#f97316';
                   const isBoost = bc === '#f59e0b';
                   if (isExercise) return revealPhase >= 3;
-                  if (isPancreas || isBoost) return revealPhase >= 2;
+                  if (isPancreas || isBoost) return revealPhase >= 1; // show food-colored from phase 1
                   return revealPhase >= 4;
                 }
                 return false;
@@ -1239,20 +1239,24 @@ export function BgGraph({
               const isPancreasBurnCube = cube.burnColor === '#f97316' || cube.burnColor === '#f59e0b';
               const cascadeVisible = cascadeLevels === null || cube.row < cascadeLevels[cube.col];
               const isPreBurnCube = hideBurnedInPlanning && cube.status === 'burned' && isPancreasBurnCube && bombHitDelays !== null && bombHitDelays.has(cube.col) && cascadeVisible;
-              const isAnimatingBurn = !isPreBurnCube && hideBurnedInPlanning && cube.status === 'burned' && animatingBurnIds.has(cubeKey);
+              // Phase 1 of reveal: pancreas-burned cubes appear food-colored (no bombs yet)
+              const isRevealPreBurn = revealPhase === 1 && cube.status === 'burned' && isPancreasBurnCube;
+              const isAnimatingBurn = !isPreBurnCube && !isRevealPreBurn && hideBurnedInPlanning && cube.status === 'burned' && animatingBurnIds.has(cubeKey);
               const waveDelay = (cube.col - layer.dropColumn) * 20;
               // Per-row stagger: bomb-0 hits row cap, bomb-1 hits row cap+1 (60ms later), etc.
               const burnK = isPreBurnCube ? Math.max(0, cube.row - graphRenderData.columnCaps[cube.col]) : 0;
               const effectiveAnimDelay = isPreBurnCube ? (bombHitDelays!.get(cube.col) ?? 0) + burnK * 60 : waveDelay;
               const cubeClass = isPreBurnCube
                 ? 'bg-graph__cube--pre-burn'
-                : isAnimatingBurn
-                  ? 'bg-graph__cube--digest-appear-burn'
-                  : cube.status === 'burned'
-                    ? 'bg-graph__cube--burned'
-                    : 'bg-graph__cube';
+                : isRevealPreBurn
+                  ? 'bg-graph__cube'
+                  : isAnimatingBurn
+                    ? 'bg-graph__cube--digest-appear-burn'
+                    : cube.status === 'burned'
+                      ? 'bg-graph__cube--burned'
+                      : 'bg-graph__cube';
               let cubeFill: string;
-              if (isPreBurnCube) {
+              if (isPreBurnCube || isRevealPreBurn) {
                 cubeFill = layer.color; // food-colored before bomb hits
               } else if (cube.status === 'burned' && cube.burnColor) {
                 cubeFill = cube.burnColor;
