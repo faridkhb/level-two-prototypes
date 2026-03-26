@@ -208,6 +208,9 @@ export function BgGraph({
   const [bombDrops, setBombDrops] = useState<DropBomb[]>([]);
   // Per-column bomb hit delays (ms) — non-null during pre-burn phase (food colored → flash → disappear)
   const [bombHitDelays, setBombHitDelays] = useState<Map<number, number> | null>(null);
+  // Plateau phase: true from food placement until bomb pre-delay ends (~500ms)
+  // During this phase, burn zone cubes are shown food-colored (full plateau visible, no animation)
+  const [plateauPhase, setPlateauPhase] = useState(false);
   const burnedColTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const animateBurnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Staircase cascade: per-column visible height ceiling during bomb animation (null = inactive)
@@ -615,7 +618,7 @@ export function BgGraph({
     const currIds = new Set(graphRenderData.layers.map(l => l.placementId));
     const prevIds = new Set(prev.map(l => l.placementId));
 
-    // Detect removed foods → exit animation
+    // Detect removed foods → exit animation + cancel pending bomb setup
     const removed = prev.filter(l => !currIds.has(l.placementId));
     if (removed.length > 0) {
       const cubes = removed.flatMap(l =>
@@ -626,6 +629,15 @@ export function BgGraph({
       setExitingCubes(cubes);
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
       exitTimerRef.current = setTimeout(() => setExitingCubes([]), 1200);
+      // Cancel pending plateau-delay or cleanup timer; clear all bomb states
+      if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
+      animateBurnTimerRef.current = null;
+      for (const t of cascadeTimersRef.current) clearTimeout(t);
+      cascadeTimersRef.current = [];
+      setPlateauPhase(false);
+      setCascadeLevels(null);
+      setBombDrops([]);
+      setBombHitDelays(null);
     }
 
     // Detect added foods → re-burn animation for exercise interventions
@@ -730,44 +742,55 @@ export function BgGraph({
       }
 
       if (drops.length > 0) {
-        setBombHitDelays(hitDelayMap);
-        setBombDrops(drops);
-        onPancreasBurnStart?.();
+        // Immediately show full plateau: cascade starts at plateauTop (above decay)
+        const plateauTop = graphRenderData.pancreasCaps.map(
+          (cap, c) => cap + graphRenderData.plateauExtraRows[c]
+        );
+        setCascadeLevels(plateauTop);
+        setPlateauPhase(true);
 
-        // Staircase cascade: init to full pancreasCaps, then step down col-by-col
-        setCascadeLevels([...graphRenderData.pancreasCaps]);
-        for (const t of cascadeTimersRef.current) clearTimeout(t);
-        cascadeTimersRef.current = [];
-        const cascadeCols = [...colLastHitTime.keys()].sort((a, b) => a - b);
-        for (const col of cascadeCols) {
-          const lastHitMs = colLastHitTime.get(col)!;
-          const ct = setTimeout(() => {
-            setCascadeLevels(prev => {
-              if (!prev) return prev;
-              const next = [...prev];
-              const newLevel = graphRenderData.columnCaps[col];
-              for (let c = col + 1; c < TOTAL_COLUMNS; c++) {
-                if (next[c] > newLevel) next[c] = newLevel;
-              }
-              return next;
-            });
-          }, lastHitMs + 40);
-          cascadeTimersRef.current.push(ct);
-        }
-
-        for (const t of burnedColTimersRef.current) clearTimeout(t);
-        burnedColTimersRef.current = [];
-
+        // After 500ms pause: start bomb animation + staircase cascade
         if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
-        const maxEnd = Math.max(...drops.map(d => d.delay + (slowMotionBurns ? 3000 : 1000)));
         animateBurnTimerRef.current = setTimeout(() => {
-          setBombDrops([]);
-          setBombHitDelays(null);
-          setCascadeLevels(null);
+          animateBurnTimerRef.current = null;
+          setPlateauPhase(false);
+          setBombHitDelays(hitDelayMap);
+          setBombDrops(drops);
+          onPancreasBurnStart?.();
+
+          // Staircase cascade: step each col from plateauTop down to columnCaps on bomb hit
           for (const t of cascadeTimersRef.current) clearTimeout(t);
           cascadeTimersRef.current = [];
-          onBurnAnimComplete?.();
-        }, maxEnd + 300);
+          const cascadeCols = [...colLastHitTime.keys()].sort((a, b) => a - b);
+          for (const col of cascadeCols) {
+            const lastHitMs = colLastHitTime.get(col)!;
+            const ct = setTimeout(() => {
+              setCascadeLevels(prev => {
+                if (!prev) return prev;
+                const next = [...prev];
+                const newLevel = graphRenderData.columnCaps[col];
+                for (let c = col + 1; c < TOTAL_COLUMNS; c++) {
+                  if (next[c] > newLevel) next[c] = newLevel;
+                }
+                return next;
+              });
+            }, lastHitMs + 40);
+            cascadeTimersRef.current.push(ct);
+          }
+
+          for (const t of burnedColTimersRef.current) clearTimeout(t);
+          burnedColTimersRef.current = [];
+
+          const maxEnd = Math.max(...drops.map(d => d.delay + (slowMotionBurns ? 3000 : 1000)));
+          animateBurnTimerRef.current = setTimeout(() => {
+            setBombDrops([]);
+            setBombHitDelays(null);
+            setCascadeLevels(null);
+            for (const t of cascadeTimersRef.current) clearTimeout(t);
+            cascadeTimersRef.current = [];
+            onBurnAnimComplete?.();
+          }, maxEnd + 300);
+        }, 500);
       }
     }
 
@@ -1148,9 +1171,9 @@ export function BgGraph({
                   if (cube.status === 'burned') {
                     if (!hideBurnedInPlanning) return true; // old behavior
                     const cubeKey = `${layer.placementId}-${cube.col}-${cube.row}`;
-                    // Pancreas/BOOST burns: visible as food-color during pre-bomb phase
+                    // Pancreas/BOOST burns: visible as food-color during plateau phase or pre-bomb phase
                     const isPancreasBurn = cube.burnColor === '#f97316' || cube.burnColor === '#f59e0b';
-                    if (isPancreasBurn) return bombHitDelays !== null && bombHitDelays.has(cube.col);
+                    if (isPancreasBurn) return plateauPhase || (bombHitDelays !== null && bombHitDelays.has(cube.col));
                     // Med burns: visible only during med toggle animation
                     return animatingBurnIds.has(cubeKey);
                   }
@@ -1173,7 +1196,9 @@ export function BgGraph({
               const cubeKey = `${layer.placementId}-${cube.col}-${cube.row}`;
               const isPancreasBurnCube = cube.burnColor === '#f97316' || cube.burnColor === '#f59e0b';
               const cascadeVisible = cascadeLevels === null || cube.row < cascadeLevels[cube.col];
-              const isPreBurnCube = hideBurnedInPlanning && cube.status === 'burned' && isPancreasBurnCube && bombHitDelays !== null && bombHitDelays.has(cube.col) && cascadeVisible;
+              // Plateau phase: static food-colored burn cube (no animation, full plateau visible)
+              const isPlateauBurnCube = plateauPhase && hideBurnedInPlanning && cube.status === 'burned' && isPancreasBurnCube && cascadeVisible;
+              const isPreBurnCube = !isPlateauBurnCube && hideBurnedInPlanning && cube.status === 'burned' && isPancreasBurnCube && bombHitDelays !== null && bombHitDelays.has(cube.col) && cascadeVisible;
               // Phase 1 of reveal: pancreas-burned cubes appear food-colored (no bombs yet)
               const isRevealPreBurn = revealPhase === 1 && cube.status === 'burned' && isPancreasBurnCube;
               const isAnimatingBurn = !isPreBurnCube && !isRevealPreBurn && hideBurnedInPlanning && cube.status === 'burned' && animatingBurnIds.has(cubeKey);
@@ -1185,7 +1210,9 @@ export function BgGraph({
               const effectiveAnimDelay = isPreBurnCube ? (bombHitDelays!.get(cube.col) ?? 0) + burnK * 60
                 : isDangerRevealCube ? cube.col * 50  // absolute column sweep
                 : waveDelay;
-              const cubeClass = isPreBurnCube
+              const cubeClass = isPlateauBurnCube
+                ? 'bg-graph__cube'
+                : isPreBurnCube
                 ? 'bg-graph__cube--pre-burn'
                 : isRevealPreBurn
                   ? 'bg-graph__cube'
@@ -1197,8 +1224,8 @@ export function BgGraph({
                         ? 'bg-graph__cube--burned'
                         : 'bg-graph__cube';
               let cubeFill: string;
-              if (isPreBurnCube || isRevealPreBurn) {
-                cubeFill = layer.color; // food-colored before bomb hits
+              if (isPlateauBurnCube || isPreBurnCube || isRevealPreBurn) {
+                cubeFill = layer.color; // food-colored during plateau/pre-burn phases
               } else if (cube.status === 'burned' && cube.burnColor) {
                 cubeFill = cube.burnColor;
               } else if (showDangerZone) {
@@ -1244,12 +1271,12 @@ export function BgGraph({
           </g>
         ))}
 
-        {/* Plateau extra cubes per food — food-colored, shown during pre-burn phase only */}
-        {bombHitDelays !== null && graphRenderData.layers.map(layer =>
+        {/* Plateau extra cubes per food — food-colored, shown from placement until cascade clears them */}
+        {(plateauPhase || bombHitDelays !== null) && graphRenderData.layers.map(layer =>
           layer.plateauCubes.map(pc => {
             // Hide plateau cubes clipped by cascade staircase
             if (cascadeLevels !== null && pc.row >= cascadeLevels[pc.col]) return null;
-            const baseHitDelay = bombHitDelays.get(pc.col) ?? 0;
+            const baseHitDelay = bombHitDelays?.get(pc.col) ?? 0;
             // Plateau cubes above burn zone: stagger by row offset from columnCaps
             const plateauBurnK = Math.max(0, pc.row - graphRenderData.columnCaps[pc.col]);
             const hitDelay = baseHitDelay + plateauBurnK * 60;
@@ -1262,8 +1289,8 @@ export function BgGraph({
                 height={cellHeight - 1}
                 fill={layer.color}
                 rx={2}
-                className="bg-graph__cube--pre-burn"
-                style={{ animationDelay: `${hitDelay}ms` }}
+                className={plateauPhase ? 'bg-graph__cube' : 'bg-graph__cube--pre-burn'}
+                style={plateauPhase ? undefined : { animationDelay: `${hitDelay}ms` }}
                 pointerEvents="none"
               />
             );
