@@ -91,8 +91,8 @@
     },
     {
       "day": 3,
-      "kcalBudget": 1000,
-      "wpBudget": 8,
+      "kcalBudget": 2000,
+      "wpBudget": 10,
       "availableFoods": [
         {
           "id": "banana",
@@ -115,34 +115,13 @@
       "availableMedications": [],
       "preplacedFoods": [
         {
-          "shipId": "popcorn",
-          "slotIndex": 3
+          "shipId": "chocolatemuffin",
+          "slotIndex": 0
         }
       ],
       "lockedSlots": [
-        0,
-        1,
-        3,
-        4,
-        7,
-        10,
-        11
+        0
       ],
-      "insulinProfile": {
-        "mode": "cumulative",
-        "segments": [
-          {
-            "from": 0,
-            "to": 23,
-            "rate": 1
-          },
-          {
-            "from": 24,
-            "to": 47,
-            "rate": 1
-          }
-        ]
-      },
       "startingBg": 100
     }
   ]
