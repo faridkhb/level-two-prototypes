@@ -9,22 +9,50 @@
       "kcalBudget": 1600,
       "wpBudget": 4,
       "availableFoods": [
-        { "id": "banana", "count": 1 },
-        { "id": "cookie", "count": 1 }
+        {
+          "id": "banana",
+          "count": 1
+        },
+        {
+          "id": "cookie",
+          "count": 1
+        }
       ],
       "availableInterventions": [
-        { "id": "takeabreak", "count": 1 },
-        { "id": "lightwalk", "count": 1 }
+        {
+          "id": "takeabreak",
+          "count": 1
+        },
+        {
+          "id": "lightwalk",
+          "count": 1
+        }
       ],
       "availableMedications": [],
       "preplacedFoods": [
-        { "shipId": "chocolatemuffin", "slotIndex": 1 }
+        {
+          "shipId": "chocolatemuffin",
+          "slotIndex": 1
+        }
       ],
-      "lockedSlots": [5, 6, 7, 8, 9],
+      "lockedSlots": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
       "insulinProfile": {
         "mode": "cumulative",
-        "segments": [{ "from": 0, "to": 47, "rate": 1 }]
-      }
+        "segments": [
+          {
+            "from": 0,
+            "to": 47,
+            "rate": 1
+          }
+        ]
+      },
+      "startingBg": 100
     },
     {
       "day": 2,
@@ -32,47 +60,113 @@
       "wpBudget": 9,
       "bonusBoostBars": 1,
       "availableFoods": [
-        { "id": "apple", "count": 1 },
-        { "id": "chickpeas", "count": 1 },
-        { "id": "caesarsalad", "count": 1 }
+        {
+          "id": "apple",
+          "count": 1
+        },
+        {
+          "id": "chickpeas",
+          "count": 1
+        },
+        {
+          "id": "caesarsalad",
+          "count": 1
+        }
       ],
       "availableInterventions": [
-        { "id": "heavyrun", "count": 1 },
-        { "id": "takeabreak", "count": 1 }
+        {
+          "id": "heavyrun",
+          "count": 1
+        },
+        {
+          "id": "takeabreak",
+          "count": 1
+        }
       ],
       "availableMedications": [],
       "preplacedFoods": [
-        { "shipId": "chocolatemuffin", "slotIndex": 1 }
+        {
+          "shipId": "chocolatemuffin",
+          "slotIndex": 1
+        }
       ],
-      "lockedSlots": [0, 1, 5, 6, 9, 10, 11],
+      "lockedSlots": [
+        0,
+        1,
+        5,
+        6,
+        9,
+        10,
+        11
+      ],
       "insulinProfile": {
         "mode": "cumulative",
-        "segments": [{ "from": 0, "to": 47, "rate": 1 }]
-      }
+        "segments": [
+          {
+            "from": 0,
+            "to": 47,
+            "rate": 1
+          }
+        ]
+      },
+      "startingBg": 100
     },
     {
       "day": 3,
       "kcalBudget": 2000,
       "wpBudget": 8,
       "availableFoods": [
-        { "id": "banana", "count": 1 },
-        { "id": "chicken", "count": 1 }
+        {
+          "id": "banana",
+          "count": 1
+        },
+        {
+          "id": "chicken",
+          "count": 1
+        }
       ],
       "availableInterventions": [
-        { "id": "lightwalk", "count": 1 },
-        { "id": "heavyrun", "count": 1 },
-        { "id": "takearest", "count": 1 }
+        {
+          "id": "lightwalk",
+          "count": 1
+        },
+        {
+          "id": "heavyrun",
+          "count": 1
+        },
+        {
+          "id": "takearest",
+          "count": 1
+        }
       ],
       "availableMedications": [],
       "preplacedFoods": [
-        { "shipId": "chocolatemuffin", "slotIndex": 0 },
-        { "shipId": "pizza", "slotIndex": 4 }
+        {
+          "shipId": "chocolatemuffin",
+          "slotIndex": 0
+        },
+        {
+          "shipId": "pizza",
+          "slotIndex": 4
+        }
       ],
-      "lockedSlots": [0, 1, 4, 5],
+      "lockedSlots": [
+        0,
+        1,
+        4,
+        5
+      ],
       "insulinProfile": {
         "mode": "cumulative",
-        "segments": [{ "from": 0, "to": 47, "rate": 1 }]
-      }
+        "segments": [
+          {
+            "from": 0,
+            "to": 47,
+            "rate": 1
+          }
+        ]
+      },
+      "startingBg": 100
     }
   ]
 }
