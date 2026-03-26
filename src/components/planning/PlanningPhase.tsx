@@ -619,7 +619,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               highlightMedEffect={tutorialStep?.highlightMedEffect ?? false}
               isMobile={isMobile}
               baselineRow={baselineRow}
-              hideBurnedInPlanning={(isPlanning || showResults) ? !showBurns : gamePhase === 'replaying' && revealPhase === 2}
+              hideBurnedInPlanning={(isPlanning || showResults) ? !showBurns : gamePhase === 'replaying' && ((revealPhase ?? 99) <= 2)}
               burnAnimMode={burnAnimMode}
               onPancreasBurnStart={handlePancreasBurnStart}
               slowMotionBurns={tutorialStep?.advanceOn === 'burn-anim-complete'}
