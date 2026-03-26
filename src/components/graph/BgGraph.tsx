@@ -119,7 +119,7 @@ interface BgGraphProps {
   medicationModifiers?: MedicationModifiers;
   showDangerZone?: boolean;          // show danger-zone colors + penalty overlays (replaces showPenaltyHighlight)
   showHatchFlash?: boolean;          // one-shot flash animation on 200 line + hatching bands
-  revealPhase?: number; // undefined = all visible, 0-4 = progressive layer reveal
+  showBurnLabels?: boolean;          // show burn source labels to the right (results state)
   previewShip?: Ship;        // food being dragged (for preview on graph)
   previewColumn?: number;    // target column for preview
   previewIntervention?: Intervention;   // intervention being dragged
@@ -137,7 +137,6 @@ interface BgGraphProps {
   onPancreasBurnStart?: () => void;      // called when ПЖ bomb animation begins (for blink trigger)
   slowMotionBurns?: boolean;             // tutorial: slow down meteor drop animation 3x
   onBurnAnimComplete?: () => void;       // called when all meteor drops finish
-  revealBombsTrigger?: number;           // increment to trigger bomb animation during reveal phase 2
   showHatchingOverride?: boolean;        // force zone hatching visible (results state)
 }
 
@@ -158,7 +157,7 @@ export function BgGraph({
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   showDangerZone = false,
   showHatchFlash = false,
-  revealPhase,
+  showBurnLabels = false,
   previewShip,
   previewColumn,
   previewIntervention,
@@ -176,9 +175,11 @@ export function BgGraph({
   onPancreasBurnStart,
   slowMotionBurns = false,
   onBurnAnimComplete,
-  revealBombsTrigger = 0,
   showHatchingOverride = false,
 }: BgGraphProps) {
+  // Phased reveal removed — revealPhase is always undefined (all layers shown immediately)
+  const revealPhase = undefined;
+
   // Mobile-responsive SVG layout: taller cells + smaller fonts for portrait screens
   const graphH = isMobile ? TOTAL_ROWS * 20 : GRAPH_H;  // 320 vs 192 — taller cells on mobile
 
@@ -776,90 +777,6 @@ export function BgGraph({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphRenderData.layers, placedInterventions, allInterventions]);
 
-  // Reveal-triggered bomb animation: fires when revealBombsTrigger increments (reveal phase 2)
-  useLayoutEffect(() => {
-    if (!revealBombsTrigger) return; // skip initial value (0)
-    if (graphRenderData.layers.length === 0) {
-      onBurnAnimComplete?.();
-      return;
-    }
-
-    const localCellH = graphH / graphRenderData.effectiveRows;
-    const TAN70 = Math.tan(70 * Math.PI / 180);
-    const drops: DropBomb[] = [];
-    const hitDelayMap = new Map<number, number>();
-    const colLastHitTime = new Map<number, number>();
-
-    for (let col = 0; col < TOTAL_COLUMNS; col++) {
-      const pancreasR = graphRenderData.pancreasDepths[col];
-      const boostR = graphRenderData.boostDepths[col];
-      const totalDrops = pancreasR + boostR;
-      if (totalDrops <= 0) continue;
-      if (graphRenderData.pancreasCaps[col] <= baselineRow) continue;
-
-      const cap = graphRenderData.columnCaps[col];
-      const burnColor = boostR > 0 ? '#f59e0b' : '#f97316';
-      const fallDuration = boostR > 0 ? 900 : 1000;
-      const hitPercent = 0.73;
-      const waveDelay = 400 + col * 12;
-      const targetXCenter = PAD_LEFT + col * CELL_SIZE + CELL_SIZE / 2;
-
-      for (let i = 0; i < totalDrops; i++) {
-        const targetRow = cap + i;
-        const targetYCenter = PAD_TOP + graphH - (targetRow + 0.5) * localCellH;
-        const dy = Math.max(2, targetYCenter - PAD_TOP);
-        const dx = dy / TAN70;
-        const cx = targetXCenter - dx;
-        const cy = PAD_TOP;
-        const delay = waveDelay + i * 60;
-
-        drops.push({ id: `reveal-drop-${col}-${i}`, col, dropIndex: i, cx, cy, dx, dy, burnColor, delay });
-        colLastHitTime.set(col, Math.round(delay + fallDuration * hitPercent));
-        if (i === 0) hitDelayMap.set(col, Math.round(delay + fallDuration * hitPercent));
-      }
-    }
-
-    if (drops.length === 0) {
-      onBurnAnimComplete?.();
-      return;
-    }
-
-    setBombHitDelays(hitDelayMap);
-    setBombDrops(drops);
-    onPancreasBurnStart?.();
-
-    setCascadeLevels([...graphRenderData.pancreasCaps]);
-    for (const t of cascadeTimersRef.current) clearTimeout(t);
-    cascadeTimersRef.current = [];
-    const cascadeCols = [...colLastHitTime.keys()].sort((a, b) => a - b);
-    for (const col of cascadeCols) {
-      const lastHitMs = colLastHitTime.get(col)!;
-      const ct = setTimeout(() => {
-        setCascadeLevels(prev => {
-          if (!prev) return prev;
-          const next = [...prev];
-          const newLevel = graphRenderData.columnCaps[col];
-          for (let c = col + 1; c < TOTAL_COLUMNS; c++) {
-            if (next[c] > newLevel) next[c] = newLevel;
-          }
-          return next;
-        });
-      }, lastHitMs + 40);
-      cascadeTimersRef.current.push(ct);
-    }
-
-    if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
-    const maxEnd = Math.max(...drops.map(d => d.delay + 1000));
-    animateBurnTimerRef.current = setTimeout(() => {
-      setBombDrops([]);
-      setBombHitDelays(null);
-      setCascadeLevels(null);
-      for (const t of cascadeTimersRef.current) clearTimeout(t);
-      cascadeTimersRef.current = [];
-      onBurnAnimComplete?.();
-    }, maxEnd + 300);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [revealBombsTrigger]);
 
   // Detect added interventions → fall animation
   useLayoutEffect(() => {
@@ -972,7 +889,46 @@ export function BgGraph({
 
 
 
+  // Burn source labels: computed when showBurnLabels=true (results state)
+  const burnLabels = useMemo(() => {
+    if (!showBurnLabels) return null;
+    const { columnCaps, pancreasCaps, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, glp1Depths, effectiveRows: effRows } = graphRenderData;
+    // Reference column: highest food height
+    let refCol = 0, maxCap = -1;
+    for (let c = 0; c < TOTAL_COLUMNS; c++) {
+      if (pancreasCaps[c] > maxCap) { maxCap = pancreasCaps[c]; refCol = c; }
+    }
+    if (maxCap <= baselineRow) return null;
+    const ch = graphH / effRows;
+    const padBottom = isMobile ? 30 : PAD_BOTTOM;
+    const svgH = PAD_TOP + graphH + padBottom;
+    // Center Y as percentage of SVG height: centerY_svg = PAD_TOP + graphH - (base + depth/2) * ch
+    const pct = (base: number, depth: number) =>
+      ((PAD_TOP + graphH - (base + depth / 2) * ch) / svgH) * 100;
+
+    const result: { key: string; name: string; color: string; pct: number }[] = [];
+    let base = columnCaps[refCol];
+    const walkD = interventionReductions.walk[refCol];
+    const runD = interventionReductions.run[refCol];
+    const pancreasD = pancreasDepths[refCol];
+    const boostD = boostDepths[refCol];
+    const metforminD = metforminDepths[refCol];
+    const sglt2D = sglt2Depths[refCol];
+    const glp1D = glp1Depths[refCol];
+
+    if (walkD > 0)     { result.push({ key: 'walk',     name: '🚶 Walk',     color: '#86efac', pct: pct(base, walkD) });     base += walkD; }
+    if (runD > 0)      { result.push({ key: 'run',      name: '🏃 Run',      color: '#22c55e', pct: pct(base, runD) });      base += runD; }
+    if (pancreasD > 0) { result.push({ key: 'pancreas', name: '🫀 Pancreas', color: '#f97316', pct: pct(base, pancreasD) }); base += pancreasD; }
+    if (boostD > 0)    { result.push({ key: 'boost',    name: '⚡ BOOST',    color: '#f59e0b', pct: pct(base, boostD) });    base += boostD; }
+    if (metforminD > 0){ result.push({ key: 'metformin',name: '💊 Metformin',color: '#f0abfc', pct: pct(base, metforminD) });base += metforminD; }
+    if (sglt2D > 0)    { result.push({ key: 'sglt2',    name: '🧪 SGLT2',    color: '#c084fc', pct: pct(base, sglt2D) });    base += sglt2D; }
+    if (glp1D > 0)     { result.push({ key: 'glp1',     name: '💉 GLP-1',    color: '#a78bfa', pct: pct(base, glp1D) }); }
+    return result.length > 0 ? result : null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showBurnLabels, graphRenderData, interventionReductions, baselineRow, isMobile, graphH]);
+
   return (
+    <div className="bg-graph__wrapper">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${localSvgH}`}
@@ -1437,54 +1393,6 @@ export function BgGraph({
         )}
 
 
-        {/* Intervention fall during reveal phase 3 */}
-        {revealPhase !== undefined && revealPhase >= 3 && placedInterventions.length > 0 && (() => {
-          const { columnCaps } = graphRenderData;
-          const fallCubes: React.ReactElement[] = [];
-
-          for (const placed of placedInterventions) {
-            const intervention = allInterventions.find(i => i.id === placed.interventionId);
-            if (!intervention || intervention.depth <= 0) continue;
-
-            const curve = calculateInterventionCurve(
-              intervention.depth, intervention.duration, placed.dropColumn,
-              intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
-            );
-            const color = intervention.id === 'lightwalk' ? '#86efac' : '#22c55e';
-
-            for (const c of curve) {
-              const col = placed.dropColumn + c.columnOffset;
-              if (col < 0 || col >= TOTAL_COLUMNS) continue;
-              const currentTop = columnCaps[col];
-              const effectiveRed = Math.min(c.cubeCount, currentTop + c.cubeCount);
-              if (effectiveRed <= 0) continue;
-              const fallDist = effectiveRed * cellHeight;
-              const waveDelay = Math.abs(col - placed.dropColumn) * 20;
-
-              for (let i = 0; i < effectiveRed; i++) {
-                fallCubes.push(
-                  <rect
-                    key={`reveal-ifall-${placed.id}-${col}-${i}`}
-                    x={colToX(col) + 0.5}
-                    y={rowToY(currentTop + effectiveRed + i) + 0.5}
-                    width={CELL_SIZE - 1}
-                    height={cellHeight - 1}
-                    fill={color}
-                    rx={2}
-                    className="bg-graph__cube--intervention-fall"
-                    style={{
-                      animationDelay: `${waveDelay}ms`,
-                      '--fall-dist': `${fallDist}px`,
-                    } as React.CSSProperties}
-                  />
-                );
-              }
-            }
-          }
-
-          if (fallCubes.length === 0) return null;
-          return <g pointerEvents="none">{fallCubes}</g>;
-        })()}
 
         {/* Meteor drop animation — insulin rain falling at 70° angle */}
         {bombDrops.length > 0 && (
@@ -1574,30 +1482,6 @@ export function BgGraph({
           />
         )}
 
-        {/* Reveal phase label overlay */}
-        {revealPhase !== undefined && revealPhase >= 1 && (() => {
-          const labels: Record<number, { emoji: string; text: string }> = {
-            1: { emoji: '🍽️', text: 'Food Cubes' },
-            2: { emoji: '🟠', text: 'Pancreas' },
-            3: { emoji: '🏃', text: 'Exercise' },
-            4: { emoji: '💊', text: 'Medications' },
-          };
-          const label = labels[revealPhase];
-          if (!label) return null;
-          return (
-            <foreignObject
-              x={PAD_LEFT + GRAPH_W - 175}
-              y={PAD_TOP + 6}
-              width={170}
-              height={36}
-            >
-              <div key={revealPhase} className="bg-graph__reveal-label">
-                <span className="reveal-label__emoji">{label.emoji}</span>
-                <span className="reveal-label__text">{label.text}</span>
-              </div>
-            </foreignObject>
-          );
-        })()}
 
         {/* Y axis labels — rendered last so they appear on top of all layers */}
         {(() => {
@@ -1626,6 +1510,20 @@ export function BgGraph({
         })()}
 
       </svg>
+      {burnLabels && (
+        <div className="bg-graph__burn-labels">
+          {burnLabels.map(l => (
+            <div
+              key={l.key}
+              className="bg-graph__burn-label"
+              style={{ top: `${l.pct}%`, color: l.color }}
+            >
+              {l.name}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

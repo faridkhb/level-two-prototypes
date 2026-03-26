@@ -30,13 +30,6 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import './PlanningPhase.css';
 
 // Reveal: hold time (ms) after showing each phase before advancing
-const REVEAL_INITIAL_DELAY = 300;
-const REVEAL_HOLD: Record<number, number> = {
-  1: 1500,  // food cubes (longer — wave animation spans full graph)
-  2: 1200,  // pancreas
-  3: 1200,  // exercise
-  4: 1200,  // medications
-};
 
 function InventoryDropZone({ children }: { children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'inventory-zone' });
@@ -111,9 +104,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [gamePhase, setGamePhase] = useState<GamePhase>('planning');
   const [penaltyResult, setPenaltyResult] = useState<PenaltyResult | null>(null);
   const [satietyResult, setSatietyResult] = useState<SatietyPenalty>(DEFAULT_SATIETY_PENALTY);
-  const [revealPhase, setRevealPhase] = useState<number | undefined>(undefined);
+  const [_revealPhase, setRevealPhase] = useState<number | undefined>(undefined);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const revealSequenceRef = useRef<number[]>([]);
 
   // Results reveal sub-sequence (after all burn phases)
   const [resultsRevealPhase, setResultsRevealPhase] = useState<number | undefined>(undefined);
@@ -131,8 +123,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [showBurns, setShowBurns] = useState(false);
   const pjBlinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reveal phase 2: bomb trigger + completion callback
-  const [revealBombsTrigger, setRevealBombsTrigger] = useState(0);
   const advanceRevealRef = useRef<(() => void) | null>(null);
 
   const handlePancreasBurnStart = useCallback(() => {
@@ -144,10 +134,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   // Keep tutorialStepRef current so advancePhase closure can read it without stale closure issues
   useEffect(() => { tutorialStepRef.current = tutorialStep; }, [tutorialStep]);
 
-  // Handles bomb animation completion: advances tutorial AND reveal phase 2
+  // Handles bomb animation completion: advances tutorial (L1D1 slow-mo step)
   const handleBurnAnimComplete = useCallback(() => {
-    notifyBurnAnimComplete();        // tutorial: L1D1 slow-mo step
-    advanceRevealRef.current?.();    // reveal: advance from phase 2 when bombs done
+    notifyBurnAnimComplete();
   }, [notifyBurnAnimComplete]);
 
   // Load configs on mount
@@ -448,95 +437,59 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setSatietyPenalty(currentDay, DEFAULT_SATIETY_PENALTY);
     setSatietyResult(DEFAULT_SATIETY_PENALTY);
 
-    // Build reveal sequence — only phases that have content
-    const phases: number[] = [1]; // food cubes always present
-    phases.push(2); // pancreas burn always shown
-    if (placedInterventions.length > 0) phases.push(3); // exercise
-    if (activeMedications.length > 0) phases.push(4); // medications
-    revealSequenceRef.current = phases;
-
     // Notify tutorial system before phase change
     notifyTutorialAction({ type: 'click-submit' });
 
-    // Start reveal — graph stays populated, revealPhase controls layer visibility
+    // Jump straight to results (no phased reveal animation)
     setGamePhase('replaying');
-    setRevealPhase(0);
     setPenaltyResult(null);
   }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, setSatietyPenalty, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
 
-  // === Reveal animation effect — progressive layer reveal (skips empty phases) ===
+  // === Submit: instantly show all burn layers, then start results reveal sub-sequence ===
   useEffect(() => {
     if (gamePhase !== 'replaying') return;
 
-    const sequence = revealSequenceRef.current;
-    let seqIndex = 0;
+    // Calculate penalty immediately — no phased reveal animation
+    const penalty = calculatePenaltyFromState(
+      placedFoods,
+      allShips,
+      placedInterventions,
+      allInterventions,
+      medicationModifiers,
+      0.5,
+      isBoostActive,
+      baselineRow,
+    );
 
-    function advancePhase() {
-      advanceRevealRef.current = null; // clear any waiting callback
-      if (seqIndex < sequence.length) {
-        const phase = sequence[seqIndex];
-        setRevealPhase(phase);
-        seqIndex++;
-
-        if (phase === 2) {
-          // Phase 2: trigger bomb animation, wait for onBurnAnimComplete to advance
-          setRevealBombsTrigger(v => v + 1);
-          advanceRevealRef.current = advancePhase;
-        } else {
-          const holdTime = REVEAL_HOLD[phase] ?? 1200;
-          revealTimerRef.current = setTimeout(advancePhase, holdTime);
-        }
-      } else {
-        // All phases done — calculate penalty and show results
-        const penalty = calculatePenaltyFromState(
-          placedFoods,
-          allShips,
-          placedInterventions,
-          allInterventions,
-          medicationModifiers,
-          0.5,
-          isBoostActive,
-          baselineRow,
-        );
-
-        // Last day: add WP penalty for unspent WP
-        const isLastDay = currentLevel && currentDay >= currentLevel.days;
-        if (isLastDay) {
-          const state = useGameStore.getState();
-          const submittedWp = state.submittedWpPerDay[currentDay];
-          if (submittedWp) {
-            const unspent = submittedWp.effectiveWpBudget - submittedWp.wpUsed;
-            if (unspent > 0) {
-              const wpPenaltyPoints = unspent * WP_PENALTY_WEIGHT;
-              penalty.totalPenalty = Math.round((penalty.totalPenalty + wpPenaltyPoints) * 10) / 10;
-              const { stars, label } = calculateStars(penalty.totalPenalty);
-              penalty.stars = stars;
-              penalty.label = label;
-            }
-          }
-        }
-
-        setPenaltyResult(penalty);
-        penaltyResultRef.current = penalty;
-        setRevealPhase(undefined);
-        setShowBurns(true); // show burns from results reveal start
-        setDisplayedPenalty(0);
-        setVisibleStars(0);
-        // If a tutorial step blocks the counting sequence, wait for it to be tapped first
-        if (isTutorial && tutorialStepRef.current?.blocksResultsReveal) {
-          pendingResultsRevealRef.current = true;
-        } else {
-          setResultsRevealPhase(0); // start results reveal sub-sequence
+    // Last day: add WP penalty for unspent WP
+    const isLastDay = currentLevel && currentDay >= currentLevel.days;
+    if (isLastDay) {
+      const state = useGameStore.getState();
+      const submittedWp = state.submittedWpPerDay[currentDay];
+      if (submittedWp) {
+        const unspent = submittedWp.effectiveWpBudget - submittedWp.wpUsed;
+        if (unspent > 0) {
+          const wpPenaltyPoints = unspent * WP_PENALTY_WEIGHT;
+          penalty.totalPenalty = Math.round((penalty.totalPenalty + wpPenaltyPoints) * 10) / 10;
+          const { stars, label } = calculateStars(penalty.totalPenalty);
+          penalty.stars = stars;
+          penalty.label = label;
         }
       }
     }
 
-    revealTimerRef.current = setTimeout(advancePhase, REVEAL_INITIAL_DELAY);
-
-    return () => {
-      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-      advanceRevealRef.current = null;
-    };
+    setPenaltyResult(penalty);
+    penaltyResultRef.current = penalty;
+    setRevealPhase(undefined);
+    setShowBurns(true);
+    setDisplayedPenalty(0);
+    setVisibleStars(0);
+    // If a tutorial step blocks the counting sequence, wait for it to be tapped first
+    if (isTutorial && tutorialStepRef.current?.blocksResultsReveal) {
+      pendingResultsRevealRef.current = true;
+    } else {
+      setResultsRevealPhase(0);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gamePhase]);
 
@@ -782,7 +735,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               medicationModifiers={medicationModifiers}
               showDangerZone={showDangerZone}
               showHatchFlash={showHatchFlash}
-              revealPhase={gamePhase === 'replaying' ? revealPhase : undefined}
               previewShip={activeShip && previewSlot !== null ? activeShip : undefined}
               previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}
               previewIntervention={activeIntervention && previewSlot !== null ? activeIntervention : undefined}
@@ -795,12 +747,12 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               highlightMedEffect={tutorialStep?.highlightMedEffect ?? false}
               isMobile={isMobile}
               baselineRow={baselineRow}
-              hideBurnedInPlanning={(isPlanning || showResults) ? !showBurns : gamePhase === 'replaying' && ((revealPhase ?? 99) <= 2)}
+              hideBurnedInPlanning={gamePhase !== 'replaying' ? !showBurns : false}
               burnAnimMode={burnAnimMode}
               onPancreasBurnStart={handlePancreasBurnStart}
               slowMotionBurns={tutorialStep?.advanceOn === 'burn-anim-complete'}
               onBurnAnimComplete={handleBurnAnimComplete}
-              revealBombsTrigger={revealBombsTrigger}
+              showBurnLabels={!isPlanning}
               showHatchingOverride={isResultsRevealing || showResults}
             />
             {isPlanning && showBoostButton && (
