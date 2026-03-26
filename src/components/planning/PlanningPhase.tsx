@@ -121,6 +121,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [burnAnimMode, _setBurnAnimMode] = useState<BurnAnimMode>('incremental');
   const [isPJBlinking, setIsPJBlinking] = useState(false);
   const [showBurns, setShowBurns] = useState(false);
+  // Incrementing key forces BgGraph remount (e.g., on Retry) so prevLayersRef resets
+  // and pre-placed foods are detected as "added" → bomb animation fires
+  const [bgGraphKey, setBgGraphKey] = useState(0);
   const pjBlinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const advanceRevealRef = useRef<(() => void) | null>(null);
@@ -628,6 +631,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setVisibleStars(0);
     setShowBurns(false);
     setPenaltyResult(null);
+    // Force BgGraph remount so prevLayersRef resets → pre-placed foods detected as "added"
+    // → bomb/plateau animation fires for pre-placed foods
+    setBgGraphKey(k => k + 1);
   }, [clearFoods, unlockBoostBars, currentDay]);
 
   const handleNextDay = useCallback(() => {
@@ -676,6 +682,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setResultsRevealPhase(undefined);
     setDisplayedPenalty(0);
     setVisibleStars(0);
+    setShowBurns(false);  // Reset so hideBurnedInPlanning=true when new level's foods are detected as "added"
     setPenaltyResult(null);
     onNextLevel(nextId);
   }, [tutorialLevelId, onNextLevel]);
@@ -725,6 +732,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               ☰
             </button>
             <BgGraph
+              key={bgGraphKey}
               placedFoods={placedFoods}
               allShips={allShips}
               placedInterventions={placedInterventions}
