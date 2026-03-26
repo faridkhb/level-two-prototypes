@@ -911,8 +911,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
         {activeIntervention && <InterventionCardOverlay intervention={activeIntervention} />}
       </DragOverlay>
 
-      {/* Tutorial overlay */}
-      {isTutorialActive && tutorialStep && (
+      {/* Tutorial overlay — hidden for pendingUntilResults steps until gamePhase='results' */}
+      {isTutorialActive && tutorialStep && !(tutorialStep.pendingUntilResults && gamePhase !== 'results') && (
         <TutorialOverlay
           step={tutorialStep}
           onAdvance={advanceTutorial}

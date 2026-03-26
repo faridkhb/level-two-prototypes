@@ -41,6 +41,7 @@ export interface TutorialStep {
   expectedAction?: ExpectedAction;
   highlightMedEffect?: boolean;  // tutorial: pulse animation on med-prevented cubes
   blocksResultsReveal?: boolean; // if true — PlanningPhase holds counting sequence until this step is tapped
+  pendingUntilResults?: boolean; // if true — TutorialOverlay hidden until gamePhase === 'results'
 }
 
 // ======= LEVEL 1 — First Steps =======
@@ -110,11 +111,21 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-8',
-    bubble: { type: 'dialogue', text: "Now let's count how much glucose crossed the 200\u00a0mg/dL line \u2014 that's our Excess Glucose score. Less is better!", expression: 'neutral', position: 'center' },
+    bubble: { type: 'dialogue', text: 'Look at that! Our pancreas kept the glucose from crossing the 200\u00a0mg/dL line \u2014 working with our body to stay in the safe zone!', expression: 'happy', position: 'center' },
     noBackdrop: true,
     blockInteraction: true,
     advanceOn: 'tap',
     blocksResultsReveal: true,
+  },
+  {
+    id: 'L1D1-9',
+    pendingUntilResults: true,
+    highlight: 'result-next-btn',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'result-next-btn' },
+    blockInteraction: false,
+    noBackdrop: true,
+    advanceOn: 'tap',
   },
 ];
 
@@ -155,8 +166,8 @@ const L1D2: TutorialStep[] = [
 const L1D3: TutorialStep[] = [
   {
     id: 'L1D3-1',
-    bubble: { type: 'dialogue', text: 'Day 3! Something came up this morning \u2014 a colleague brought cake, and you had a \ud83e\uddc1 Chocolate Muffin before you could think twice.', expression: 'neutral' },
-    highlight: 'slot:0',
+    bubble: { type: 'dialogue', text: 'Day 3! Something came up at lunch \u2014 a colleague ordered pizza, and you had a \ud83c\udf55 slice before you could think twice.', expression: 'neutral' },
+    highlight: 'slot:10',
     highlightType: 'spotlight',
     noBackdrop: true,
     advanceOn: 'tap',
@@ -164,7 +175,7 @@ const L1D3: TutorialStep[] = [
   },
   {
     id: 'L1D3-2',
-    bubble: { type: 'warning', text: 'That muffin pushed your glucose above 200\u00a0mg/dL \u2014 the danger zone. It happens. Some days aren\u2019t perfect.', expression: 'concerned', position: 'bottom' },
+    bubble: { type: 'warning', text: 'That pizza pushed our glucose above 200\u00a0mg/dL \u2014 the danger zone. It happens. Some days aren\u2019t perfect.', expression: 'concerned', position: 'bottom' },
     highlight: 'danger-zone',
     noBackdrop: true,
     advanceOn: 'tap',
