@@ -126,6 +126,7 @@ interface BgGraphProps {
   previewInterventionColumn?: number;   // target column for intervention preview
   stressSlots?: Set<number>;            // slot indices with stress (reduced insulin)
   highlightStressSlots?: boolean;        // tutorial: pulse animation on stress columns
+  highlightDangerZone?: boolean;         // tutorial: pulse animation on the glucose zone above 200 mg/dL
   highlightMedEffect?: boolean;          // reserved: tutorial pulse (med-prevented cubes removed)
   isMobile?: boolean;                    // mobile-responsive sizing
   baselineRow?: number;                  // row offset for starting BG (default 0 = 60 mg/dL)
@@ -162,6 +163,7 @@ export function BgGraph({
   previewInterventionColumn,
   stressSlots,
   highlightStressSlots = false,
+  highlightDangerZone = false,
   highlightMedEffect: _highlightMedEffect = false,
   isMobile = false,
   baselineRow = 0,
@@ -1017,6 +1019,22 @@ export function BgGraph({
             />
           );
         })}
+
+        {/* Tutorial: pulsing danger zone highlight above 200 mg/dL */}
+        {highlightDangerZone && (
+          <rect
+            x={PAD_LEFT}
+            y={PAD_TOP}
+            width={GRAPH_W}
+            height={Math.max(0, graphH - PENALTY_ORANGE_ROW * cellHeight)}
+            className="bg-graph__danger-zone-highlight"
+            fill="rgba(251, 146, 60, 0.08)"
+            stroke="#fb923c"
+            strokeWidth={1.5}
+            rx={2}
+            pointerEvents="none"
+          />
+        )}
 
         {/* Danger zone hatching above 200 mg/dL — orange 200-300, red 300+ */}
         {zoneRow(300) > 0 && (

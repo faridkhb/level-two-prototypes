@@ -255,6 +255,15 @@
   animation: stressPulse 1.2s ease-in-out infinite;
 }
 
+/* Tutorial: danger zone above 200 mg/dL pulsing highlight */
+@keyframes dangerZonePulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+.bg-graph__danger-zone-highlight {
+  animation: dangerZonePulse 1.4s ease-in-out infinite;
+}
+
 .med-effect-pulse {
   animation: medEffectPulse 1.2s ease-in-out infinite;
 }

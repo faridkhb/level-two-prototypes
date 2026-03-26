@@ -160,8 +160,8 @@ const L1D2: TutorialStep[] = [
 const L1D3: TutorialStep[] = [
   {
     id: 'L1D3-1',
-    bubble: { type: 'dialogue', text: 'Day 3! Notice the \ud83c\udf7f Popcorn is already on the graph. That\'s a pre-placed food \u2014 you can\'t remove it.', expression: 'neutral' },
-    highlight: 'slot:3',
+    bubble: { type: 'dialogue', text: 'Day 3! Something came up this morning \u2014 a colleague brought cake, and you had a \ud83e\uddc1 Chocolate Muffin before you could think twice.', expression: 'neutral' },
+    highlight: 'slot:0',
     highlightType: 'spotlight',
     noBackdrop: true,
     advanceOn: 'tap',
@@ -169,13 +169,21 @@ const L1D3: TutorialStep[] = [
   },
   {
     id: 'L1D3-2',
-    bubble: { type: 'warning', text: 'Pre-placed foods are part of the puzzle. You must plan around them!', expression: 'concerned' },
+    bubble: { type: 'warning', text: 'That muffin pushed your glucose above 200\u00a0mg/dL \u2014 the danger zone. It happens. Some days aren\u2019t perfect.', expression: 'concerned', position: 'bottom' },
+    highlight: 'danger-zone',
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'L1D3-3',
+    bubble: { type: 'dialogue', text: 'The good news: you can still plan the rest of your day wisely. Try to keep everything else below 200 and limit the damage!', expression: 'happy', position: 'center' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L1D3-4',
-    bubble: { type: 'dialogue', text: 'Place your food and submit!', expression: 'happy', position: 'inventory' },
+    bubble: { type: 'dialogue', text: 'Place your meals and submit when ready!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
