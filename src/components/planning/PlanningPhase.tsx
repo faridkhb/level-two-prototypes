@@ -277,8 +277,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const barsAvailable = PANCREAS_TOTAL_BARS + bonusBoostBars - totalLockedBars;
   const pancreasEffectiveness = currentLevel?.dayConfigs?.find(dc => dc.day === currentDay)?.pancreasEffectiveness;
   // T3/T4 (old T2 Exercises / T3 Willpower) hide PancreasButton entirely; T1/T2 show indicator only (no charges)
-  const showPancreasButton = !['tutorial-03', 'tutorial-04'].includes(currentLevel?.id ?? '');
-  const showBoostCharges = showPancreasButton && !['tutorial-01', 'tutorial-02'].includes(currentLevel?.id ?? '');
+  const showPancreasButton = !['tutorial-04'].includes(currentLevel?.id ?? '');
+  const showBoostCharges = showPancreasButton && !['tutorial-01', 'tutorial-02', 'tutorial-03'].includes(currentLevel?.id ?? '');
 
   // Submit button enabled when kcal >= 60% (Optimal zone) and in planning phase
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier);

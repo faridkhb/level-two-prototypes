@@ -123,6 +123,7 @@ interface RawInterventionConfig {
   boostExtra?: number;
   isBreak?: boolean;
   slotSize?: number;
+  maxDuration?: number;
 }
 
 function transformIntervention(raw: RawInterventionConfig): Intervention {
@@ -137,6 +138,7 @@ function transformIntervention(raw: RawInterventionConfig): Intervention {
     boostExtra: raw.boostExtra,
     isBreak: raw.isBreak,
     slotSize: raw.slotSize,
+    maxDuration: raw.maxDuration,
   };
 }
 
