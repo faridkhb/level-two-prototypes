@@ -24,15 +24,15 @@ const GRAPH_W = TOTAL_COLUMNS * CELL_SIZE;
 const GRAPH_H = TOTAL_ROWS * CELL_HEIGHT;
 const SVG_W = PAD_LEFT + GRAPH_W + PAD_RIGHT;
 
-// Distinct blue palette: alternating light/dark shades for maximum contrast between neighbors
+// Distinct blue palette: strong light/dark alternation for clear boundaries between stacked foods
 const FOOD_PALETTE = [
-  '#7dd3fc', // sky-300 — lightest
-  '#0369a1', // sky-700 — dark
-  '#38bdf8', // sky-400 — light
-  '#075985', // sky-800 — darker
-  '#0ea5e9', // sky-500 — medium
-  '#0c4a6e', // sky-900 — darkest
-  '#0284c7', // sky-600 — medium-dark
+  '#bae6fd', // sky-200 — very pale
+  '#0c4a6e', // sky-900 — very dark
+  '#7dd3fc', // sky-300 — light
+  '#1e3a8a', // blue-900 — deep navy
+  '#38bdf8', // sky-400 — medium-light
+  '#1e40af', // blue-800 — cobalt
+  '#0ea5e9', // sky-500 — standard
 ];
 
 function getFoodColor(index: number): string {
