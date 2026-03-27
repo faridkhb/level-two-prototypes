@@ -216,7 +216,9 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-3',
-    bubble: { type: 'dialogue', text: 'Physical activity helps deal with excess glucose. Let\u2019s set up a Light Walk right after the pizza!', expression: 'thinking', position: 'inventory' },
+    bubble: { type: 'dialogue', text: 'Let\u2019s fix that peak! Place a \ud83d\udeb6 Light Walk right after the pizza to bring the glucose down.', expression: 'thinking', position: 'inventory' },
+    highlight: 'slot:3',
+    highlightType: 'pulse',
     noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
