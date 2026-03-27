@@ -1,151 +1,39 @@
 {
-  "id": "tutorial-03",
-  "name": "Willpower Management",
-  "description": "Master WP budgeting, breaks, and the consequences of overeating.",
+  "id": "tutorial-02",
+  "name": "Exercises",
+  "description": "Exercise interventions: burn cubes to control glucose peaks.",
   "days": 3,
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 1750,
-      "wpBudget": 7,
-      "availableFoods": [
-        {
-          "id": "burger",
-          "count": 1
-        },
-        {
-          "id": "nutsmixed",
-          "count": 1
-        },
-        {
-          "id": "cookie",
-          "count": 1
-        }
-      ],
-      "availableInterventions": [
-        {
-          "id": "takeabreak",
-          "count": 1
-        }
-      ],
-      "availableMedications": [],
-      "preplacedFoods": [],
-      "preplacedInterventions": [
-        {
-          "interventionId": "lightwalk",
-          "slotIndex": 8
-        }
-      ],
-      "lockedSlots": [
-        0,
-        1,
-        4,
-        5,
-        8,
-        10,
-        11
-      ],
-      "insulinProfile": {
-        "mode": "cumulative",
-        "segments": [
-          {
-            "from": 0,
-            "to": 47,
-            "rate": 1
-          }
-        ]
-      },
-      "startingBg": 100
-    },
-    {
-      "day": 2,
-      "kcalBudget": 1400,
-      "wpBudget": 8,
-      "availableFoods": [
-        {
-          "id": "burger",
-          "count": 1
-        },
-        {
-          "id": "chocolatemuffin",
-          "count": 1
-        },
-        {
-          "id": "pizza",
-          "count": 1
-        },
-        {
-          "id": "banana",
-          "count": 1
-        }
-      ],
-      "availableInterventions": [
-        {
-          "id": "lightwalk",
-          "count": 1
-        }
-      ],
-      "availableMedications": [],
-      "preplacedFoods": [],
-      "lockedSlots": [
-        0,
-        1,
-        4,
-        5,
-        8,
-        9,
-        10,
-        11
-      ],
-      "insulinProfile": {
-        "mode": "cumulative",
-        "segments": [
-          {
-            "from": 0,
-            "to": 47,
-            "rate": 1
-          }
-        ]
-      },
-      "startingBg": 100
-    },
-    {
-      "day": 3,
-      "kcalBudget": 1600,
+      "kcalBudget": 1000,
       "wpBudget": 9,
       "availableFoods": [
         {
-          "id": "oatmeal",
-          "count": 1
-        },
-        {
-          "id": "banana",
+          "id": "chickpeas",
           "count": 1
         }
       ],
       "availableInterventions": [
         {
           "id": "lightwalk",
-          "count": 1
-        },
-        {
-          "id": "takearest",
           "count": 1
         }
       ],
       "availableMedications": [],
       "preplacedFoods": [
         {
-          "shipId": "burger",
-          "slotIndex": 0
+          "shipId": "pizza",
+          "slotIndex": 2
         }
       ],
       "lockedSlots": [
         0,
+        1,
+        2,
         4,
-        5,
+        7,
         8,
-        9,
         10,
         11
       ],
@@ -159,6 +47,100 @@
           },
           {
             "from": 24,
+            "to": 47,
+            "rate": 1
+          }
+        ]
+      },
+      "startingBg": 100
+    },
+    {
+      "day": 2,
+      "kcalBudget": 1800,
+      "wpBudget": 14,
+      "availableFoods": [
+        {
+          "id": "banana",
+          "count": 1
+        },
+        {
+          "id": "cookie",
+          "count": 1
+        },
+        {
+          "id": "greekyogurt",
+          "count": 1
+        },
+        {
+          "id": "popcorn",
+          "count": 1
+        }
+      ],
+      "availableInterventions": [
+        {
+          "id": "heavyrun",
+          "count": 1
+        },
+        {
+          "id": "lightwalk",
+          "count": 1
+        }
+      ],
+      "availableMedications": [],
+      "preplacedFoods": [
+        {
+          "shipId": "burger",
+          "slotIndex": 7
+        }
+      ],
+      "lockedSlots": [1, 6, 10],
+      "startingBg": 100
+    },
+    {
+      "day": 3,
+      "kcalBudget": 1600,
+      "wpBudget": 10,
+      "availableFoods": [
+        {
+          "id": "banana",
+          "count": 1
+        },
+        {
+          "id": "nutsmixed",
+          "count": 1
+        }
+      ],
+      "availableInterventions": [
+        {
+          "id": "heavyrun",
+          "count": 1
+        }
+      ],
+      "availableMedications": [],
+      "preplacedFoods": [
+        {
+          "shipId": "chocolatemuffin",
+          "slotIndex": 1
+        }
+      ],
+      "lockedSlots": [
+        0,
+        1,
+        4,
+        8,
+        10,
+        11
+      ],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          {
+            "from": 0,
+            "to": 31,
+            "rate": 1
+          },
+          {
+            "from": 32,
             "to": 47,
             "rate": 1
           }

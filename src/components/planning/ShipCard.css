@@ -211,3 +211,16 @@
     min-width: 16px;
   }
 }
+
+/* ── Kcal reveal animation (first shown in tutorial-02 D1) ── */
+@keyframes kcalReveal {
+  0%, 100% { color: inherit; text-shadow: none; }
+  30%       { color: #f6993f; text-shadow: 0 0 6px rgba(246, 153, 63, 0.8); }
+  60%       { color: inherit; text-shadow: none; }
+  80%       { color: #f6993f; text-shadow: 0 0 4px rgba(246, 153, 63, 0.6); }
+}
+
+.ship-card__info--kcal-reveal {
+  animation: kcalReveal 1.6s ease-in-out 2;
+}
+

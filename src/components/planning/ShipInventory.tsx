@@ -8,6 +8,8 @@ interface ShipInventoryProps {
   availableFoods: AvailableFood[];
   placedFoods: PlacedFood[];
   wpRemaining: number;
+  hideKcal?: boolean;
+  kcalJustRevealed?: boolean;
 }
 
 interface InventoryItem {
@@ -21,6 +23,8 @@ export function ShipInventory({
   availableFoods,
   placedFoods,
   wpRemaining,
+  hideKcal = false,
+  kcalJustRevealed = false,
 }: ShipInventoryProps) {
   const placedCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -62,6 +66,8 @@ export function ShipInventory({
               ship={ship}
               instanceId={`inventory-${ship.id}-${index}`}
               wpDisabled={wpDisabled}
+              hideKcal={hideKcal}
+              kcalJustRevealed={kcalJustRevealed}
             />
           );
         })

@@ -11,14 +11,15 @@ interface TutorialLevel {
 
 const TUTORIAL_LEVELS: TutorialLevel[] = [
   { id: 'tutorial-01', name: 'First Steps',      days: 3, emoji: '\ud83c\udf4c', gradient: 'linear-gradient(135deg, #60a5fa, #2563eb)' },
-  { id: 'tutorial-02', name: 'Exercises',         days: 3, emoji: '\ud83d\udeb6', gradient: 'linear-gradient(135deg, #4ade80, #16a34a)' },
-  { id: 'tutorial-03', name: 'Willpower Mgmt',    days: 3, emoji: '\u2615',       gradient: 'linear-gradient(135deg, #fbbf24, #d97706)' },
-  { id: 'tutorial-04', name: 'Insulin Rhythm',    days: 2, emoji: '\ud83d\udcca', gradient: 'linear-gradient(135deg, #fb923c, #ea580c)' },
-  { id: 'tutorial-05', name: 'Under Stress',      days: 3, emoji: '\ud83e\uddd8', gradient: 'linear-gradient(135deg, #2dd4bf, #0f766e)' },
-  { id: 'tutorial-06', name: 'First Medication',  days: 2, emoji: '\ud83d\udc8a', gradient: 'linear-gradient(135deg, #a78bfa, #7c3aed)' },
-  { id: 'tutorial-07', name: 'Threshold Drain',   days: 2, emoji: '\ud83e\uddea', gradient: 'linear-gradient(135deg, #f472b6, #db2777)' },
-  { id: 'tutorial-08', name: 'GLP-1',             days: 2, emoji: '\ud83d\udc89', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
-  { id: 'tutorial-09', name: 'Final Exam',        days: 3, emoji: '\ud83c\udfc6', gradient: 'linear-gradient(135deg, #f87171, #dc2626)' },
+  { id: 'tutorial-02', name: 'Energy Balance',   days: 3, emoji: '\ud83e\udd57', gradient: 'linear-gradient(135deg, #34d399, #059669)' },
+  { id: 'tutorial-03', name: 'Exercises',         days: 3, emoji: '\ud83d\udeb6', gradient: 'linear-gradient(135deg, #4ade80, #16a34a)' },
+  { id: 'tutorial-04', name: 'Willpower Mgmt',    days: 3, emoji: '\u2615',       gradient: 'linear-gradient(135deg, #fbbf24, #d97706)' },
+  { id: 'tutorial-05', name: 'Insulin Rhythm',    days: 2, emoji: '\ud83d\udcca', gradient: 'linear-gradient(135deg, #fb923c, #ea580c)' },
+  { id: 'tutorial-06', name: 'Under Stress',      days: 3, emoji: '\ud83e\uddd8', gradient: 'linear-gradient(135deg, #2dd4bf, #0f766e)' },
+  { id: 'tutorial-07', name: 'First Medication',  days: 2, emoji: '\ud83d\udc8a', gradient: 'linear-gradient(135deg, #a78bfa, #7c3aed)' },
+  { id: 'tutorial-08', name: 'Threshold Drain',   days: 2, emoji: '\ud83e\uddea', gradient: 'linear-gradient(135deg, #f472b6, #db2777)' },
+  { id: 'tutorial-09', name: 'GLP-1',             days: 2, emoji: '\ud83d\udc89', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+  { id: 'tutorial-10', name: 'Final Exam',        days: 3, emoji: '\ud83c\udfc6', gradient: 'linear-gradient(135deg, #f87171, #dc2626)' },
   { id: 'test-level',  name: 'Test Level',        days: 1, emoji: '\ud83c\udfae', gradient: 'linear-gradient(135deg, #94a3b8, #334155)', daysLabel: 'Free play' },
 ];
 

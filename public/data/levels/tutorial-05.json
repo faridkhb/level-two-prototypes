@@ -1,13 +1,13 @@
 {
-  "id": "tutorial-05",
-  "name": "Under Stress",
-  "description": "Stress slots weaken insulin — food placed there spikes higher and decays slower.",
+  "id": "tutorial-04",
+  "name": "Pancreas Boost",
+  "description": "BOOST supercharges insulin above 200 mg/dL — powerful but limited.",
   "days": 3,
   "dayConfigs": [
     {
       "day": 1,
       "kcalBudget": 1600,
-      "wpBudget": 6,
+      "wpBudget": 4,
       "availableFoods": [
         {
           "id": "banana",
@@ -15,6 +15,61 @@
         },
         {
           "id": "cookie",
+          "count": 1
+        }
+      ],
+      "availableInterventions": [
+        {
+          "id": "takeabreak",
+          "count": 1
+        },
+        {
+          "id": "lightwalk",
+          "count": 1
+        }
+      ],
+      "availableMedications": [],
+      "preplacedFoods": [
+        {
+          "shipId": "chocolatemuffin",
+          "slotIndex": 1
+        }
+      ],
+      "lockedSlots": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [
+          {
+            "from": 0,
+            "to": 47,
+            "rate": 1
+          }
+        ]
+      },
+      "startingBg": 100
+    },
+    {
+      "day": 2,
+      "kcalBudget": 1800,
+      "wpBudget": 9,
+      "bonusBoostBars": 1,
+      "availableFoods": [
+        {
+          "id": "apple",
+          "count": 1
+        },
+        {
+          "id": "chickpeas",
+          "count": 1
+        },
+        {
+          "id": "caesarsalad",
           "count": 1
         }
       ],
@@ -37,10 +92,12 @@
       ],
       "lockedSlots": [
         0,
-        1
-      ],
-      "stressSlots": [
-        4
+        1,
+        5,
+        6,
+        9,
+        10,
+        11
       ],
       "insulinProfile": {
         "mode": "cumulative",
@@ -48,37 +105,33 @@
           {
             "from": 0,
             "to": 47,
-            "rate": 2
+            "rate": 1
           }
         ]
       },
       "startingBg": 100
     },
     {
-      "day": 2,
-      "kcalBudget": 1800,
-      "wpBudget": 10,
+      "day": 3,
+      "kcalBudget": 2000,
+      "wpBudget": 8,
       "availableFoods": [
         {
           "id": "banana",
           "count": 1
         },
         {
-          "id": "chickpeas",
-          "count": 1
-        },
-        {
-          "id": "cookie",
+          "id": "chicken",
           "count": 1
         }
       ],
       "availableInterventions": [
         {
-          "id": "heavyrun",
+          "id": "lightwalk",
           "count": 1
         },
         {
-          "id": "lightwalk",
+          "id": "heavyrun",
           "count": 1
         },
         {
@@ -91,17 +144,17 @@
         {
           "shipId": "chocolatemuffin",
           "slotIndex": 0
+        },
+        {
+          "shipId": "pizza",
+          "slotIndex": 4
         }
       ],
       "lockedSlots": [
         0,
-        7,
-        11
-      ],
-      "stressSlots": [
+        1,
         4,
-        5,
-        6
+        5
       ],
       "insulinProfile": {
         "mode": "cumulative",
@@ -109,73 +162,7 @@
           {
             "from": 0,
             "to": 47,
-            "rate": 2
-          }
-        ]
-      },
-      "startingBg": 100
-    },
-    {
-      "day": 3,
-      "kcalBudget": 2000,
-      "wpBudget": 12,
-      "availableFoods": [
-        {
-          "id": "cookie",
-          "count": 1
-        },
-        {
-          "id": "chickpeas",
-          "count": 1
-        },
-        {
-          "id": "greekyogurt",
-          "count": 1
-        },
-        {
-          "id": "oatmeal",
-          "count": 1
-        }
-      ],
-      "availableInterventions": [
-        {
-          "id": "lightwalk",
-          "count": 1
-        },
-        {
-          "id": "takearest",
-          "count": 1
-        }
-      ],
-      "availableMedications": [],
-      "preplacedFoods": [
-        {
-          "shipId": "berriesmixed",
-          "slotIndex": 3
-        },
-        {
-          "shipId": "popcorn",
-          "slotIndex": 7
-        }
-      ],
-      "lockedSlots": [
-        0,
-        3,
-        7,
-        11
-      ],
-      "stressSlots": [
-        2,
-        3,
-        7
-      ],
-      "insulinProfile": {
-        "mode": "cumulative",
-        "segments": [
-          {
-            "from": 0,
-            "to": 47,
-            "rate": 2
+            "rate": 1
           }
         ]
       },

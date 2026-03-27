@@ -1,14 +1,18 @@
 {
-  "id": "tutorial-05",
-  "name": "Under Stress",
-  "description": "Stress slots weaken insulin — food placed there spikes higher and decays slower.",
+  "id": "tutorial-09",
+  "name": "Final Exam",
+  "description": "Everything combined — the ultimate BG Planner challenge with BOOST.",
   "days": 3,
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 1600,
-      "wpBudget": 6,
+      "kcalBudget": 1800,
+      "wpBudget": 10,
       "availableFoods": [
+        {
+          "id": "sandwich",
+          "count": 1
+        },
         {
           "id": "banana",
           "count": 1
@@ -16,39 +20,61 @@
         {
           "id": "cookie",
           "count": 1
+        },
+        {
+          "id": "milk",
+          "count": 1
         }
       ],
       "availableInterventions": [
         {
-          "id": "heavyrun",
-          "count": 1
+          "id": "lightwalk",
+          "count": 2
         },
         {
           "id": "takeabreak",
           "count": 1
         }
       ],
-      "availableMedications": [],
+      "availableMedications": [
+        "metformin"
+      ],
       "preplacedFoods": [
         {
-          "shipId": "chocolatemuffin",
-          "slotIndex": 1
+          "shipId": "burger",
+          "slotIndex": 0
+        },
+        {
+          "shipId": "oatmeal",
+          "slotIndex": 5
         }
       ],
       "lockedSlots": [
         0,
-        1
-      ],
-      "stressSlots": [
-        4
+        1,
+        4,
+        5,
+        8,
+        9,
+        11
       ],
       "insulinProfile": {
         "mode": "cumulative",
         "segments": [
           {
             "from": 0,
+            "to": 15,
+            "rate": 1
+          },
+          {
+            "from": 16,
+            "to": 31,
+            "rate": 1
+          },
+          {
+            "from": 32,
             "to": 47,
-            "rate": 2
+            "rate": 1
           }
         ]
       },
@@ -56,50 +82,55 @@
     },
     {
       "day": 2,
-      "kcalBudget": 1800,
+      "kcalBudget": 1600,
       "wpBudget": 10,
       "availableFoods": [
-        {
-          "id": "banana",
-          "count": 1
-        },
         {
           "id": "chickpeas",
           "count": 1
         },
         {
-          "id": "cookie",
+          "id": "banana",
+          "count": 1
+        },
+        {
+          "id": "apple",
           "count": 1
         }
       ],
       "availableInterventions": [
         {
-          "id": "heavyrun",
-          "count": 1
-        },
-        {
           "id": "lightwalk",
           "count": 1
         },
         {
-          "id": "takearest",
+          "id": "heavyrun",
           "count": 1
         }
       ],
-      "availableMedications": [],
+      "availableMedications": [
+        "metformin",
+        "sglt2"
+      ],
       "preplacedFoods": [
         {
           "shipId": "chocolatemuffin",
-          "slotIndex": 0
+          "slotIndex": 2
+        },
+        {
+          "shipId": "pizza",
+          "slotIndex": 7
         }
       ],
       "lockedSlots": [
         0,
+        2,
         7,
+        8,
+        10,
         11
       ],
       "stressSlots": [
-        4,
         5,
         6
       ],
@@ -108,8 +139,18 @@
         "segments": [
           {
             "from": 0,
+            "to": 15,
+            "rate": 1
+          },
+          {
+            "from": 16,
+            "to": 31,
+            "rate": 1
+          },
+          {
+            "from": 32,
             "to": 47,
-            "rate": 2
+            "rate": 1
           }
         ]
       },
@@ -118,22 +159,22 @@
     {
       "day": 3,
       "kcalBudget": 2000,
-      "wpBudget": 12,
+      "wpBudget": 10,
       "availableFoods": [
+        {
+          "id": "sandwich",
+          "count": 1
+        },
         {
           "id": "cookie",
           "count": 1
         },
         {
-          "id": "chickpeas",
+          "id": "banana",
           "count": 1
         },
         {
-          "id": "greekyogurt",
-          "count": 1
-        },
-        {
-          "id": "oatmeal",
+          "id": "milk",
           "count": 1
         }
       ],
@@ -143,39 +184,56 @@
           "count": 1
         },
         {
-          "id": "takearest",
-          "count": 1
+          "id": "takeabreak",
+          "count": 2
         }
       ],
-      "availableMedications": [],
+      "availableMedications": [
+        "metformin",
+        "sglt2",
+        "glp1"
+      ],
       "preplacedFoods": [
         {
-          "shipId": "berriesmixed",
-          "slotIndex": 3
+          "shipId": "burger",
+          "slotIndex": 0
         },
         {
-          "shipId": "popcorn",
-          "slotIndex": 7
+          "shipId": "chocolatemuffin",
+          "slotIndex": 2
+        },
+        {
+          "shipId": "rice",
+          "slotIndex": 5
         }
       ],
       "lockedSlots": [
         0,
-        3,
-        7,
-        11
-      ],
-      "stressSlots": [
         2,
         3,
-        7
+        5,
+        6,
+        8,
+        9,
+        11
       ],
       "insulinProfile": {
         "mode": "cumulative",
         "segments": [
           {
             "from": 0,
-            "to": 47,
+            "to": 15,
             "rate": 2
+          },
+          {
+            "from": 16,
+            "to": 31,
+            "rate": 1
+          },
+          {
+            "from": 32,
+            "to": 47,
+            "rate": 1
           }
         ]
       },

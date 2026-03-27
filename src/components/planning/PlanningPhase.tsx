@@ -121,6 +121,13 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [burnAnimMode, _setBurnAnimMode] = useState<BurnAnimMode>('incremental');
   const [isPJBlinking, setIsPJBlinking] = useState(false);
   const [showBurns, setShowBurns] = useState(false);
+
+  // Kcal visibility: hidden in T1 and T2 until revealKcal tutorial step fires
+  const [kcalRevealed, setKcalRevealed] = useState(false);
+  const [kcalJustRevealed, setKcalJustRevealed] = useState(false);
+  const kcalCardsVisible = !isTutorial
+    || !['tutorial-01', 'tutorial-02'].includes(tutorialLevelId ?? '')
+    || kcalRevealed;
   // Incrementing key forces BgGraph remount (e.g., on Retry) so prevLayersRef resets
   // and pre-placed foods are detected as "added" → bomb animation fires
   const [bgGraphKey, setBgGraphKey] = useState(0);
@@ -134,6 +141,16 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
 
   // Keep tutorialStepRef current so advancePhase closure can read it without stale closure issues
   useEffect(() => { tutorialStepRef.current = tutorialStep; }, [tutorialStep]);
+
+  // Reveal kcal on food cards when tutorial step has revealKcal flag
+  useEffect(() => {
+    if (tutorialStep?.revealKcal && !kcalRevealed) {
+      setKcalRevealed(true);
+      setKcalJustRevealed(true);
+      const t = setTimeout(() => setKcalJustRevealed(false), 3500);
+      return () => clearTimeout(t);
+    }
+  }, [tutorialStep, kcalRevealed]);
 
   // Handles bomb animation completion: stops blink, advances tutorial (L1D1 slow-mo step)
   const handleBurnAnimComplete = useCallback(() => {
@@ -233,9 +250,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   }, [currentLevel, currentDay]);
   const barsAvailable = PANCREAS_TOTAL_BARS + bonusBoostBars - totalLockedBars;
   const pancreasEffectiveness = currentLevel?.dayConfigs?.find(dc => dc.day === currentDay)?.pancreasEffectiveness;
-  // Hide BOOST button for T2/T3 (introduced in tutorial-04); T1 shows indicator only (no charges)
-  const showPancreasButton = !['tutorial-02', 'tutorial-03'].includes(currentLevel?.id ?? '');
-  const showBoostCharges = showPancreasButton && currentLevel?.id !== 'tutorial-01';
+  // T3/T4 (old T2 Exercises / T3 Willpower) hide PancreasButton entirely; T1/T2 show indicator only (no charges)
+  const showPancreasButton = !['tutorial-03', 'tutorial-04'].includes(currentLevel?.id ?? '');
+  const showBoostCharges = showPancreasButton && !['tutorial-01', 'tutorial-02'].includes(currentLevel?.id ?? '');
 
   // Submit button enabled when kcal >= 50% (Optimal zone) and in planning phase
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier);
@@ -789,7 +806,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               medicationModifiers={medicationModifiers}
               submitEnabled={submitEnabled}
               onSubmit={handleSubmit}
-              hidden={isTutorial && tutorialLevelId === 'tutorial-01' && currentDay === 1}
+              hidden={isTutorial && tutorialLevelId === 'tutorial-01'}
               tutorialActive={isTutorial}
             />
           )}
@@ -821,6 +838,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                 availableMedicationIds={dayConfig?.availableMedications ?? []}
                 activeMedications={activeMedications}
                 onMedicationToggle={handleMedicationToggle}
+                hideKcal={!kcalCardsVisible}
+                kcalJustRevealed={kcalJustRevealed}
               />
             </InventoryDropZone>
           )}

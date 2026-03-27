@@ -42,6 +42,7 @@ export interface TutorialStep {
   highlightMedEffect?: boolean;  // tutorial: pulse animation on med-prevented cubes
   blocksResultsReveal?: boolean; // if true — PlanningPhase holds counting sequence until this step is tapped
   pendingUntilResults?: boolean; // if true — TutorialOverlay hidden until gamePhase === 'results'
+  revealKcal?: boolean;          // if true — kcal indicator revealed on food cards from this step forward
 }
 
 // ======= LEVEL 1 — First Steps =======
@@ -134,14 +135,6 @@ const L1D2: TutorialStep[] = [
     id: 'L1D2-1',
     bubble: { type: 'dialogue', text: 'This ☀️ is Willpower — spend it to schedule food and actions. Fast food costs less, healthy options cost more.', expression: 'neutral', position: 'center' },
     highlight: 'wp-counter',
-    highlightType: 'glow',
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L1D2-2',
-    bubble: { type: 'dialogue', text: 'The kcal bar shows how much you\'ve eaten. Stay in the green zone \u2014 not too little, not too much!', expression: 'neutral', position: 'center' },
-    highlight: 'kcal-bar',
     highlightType: 'glow',
     advanceOn: 'tap',
     blockInteraction: true,
@@ -1008,18 +1001,151 @@ const L_STRESS_D2: TutorialStep[] = [
   },
 ];
 
+// ======= LEVEL 2 — Energy Balance (kcal tutorial) =======
+
+const L_KCAL_D1: TutorialStep[] = [
+  {
+    id: 'LK-D1-1',
+    bubble: { type: 'dialogue', text: 'Did you know your body needs energy to work? We measure that energy in calories \u2014 kcal!', expression: 'happy', position: 'center' },
+    advanceOn: 'tap',
+    blockInteraction: true,
+    revealKcal: true,
+  },
+  {
+    id: 'LK-D1-2',
+    bubble: { type: 'dialogue', text: 'See the kcal on each card? Now look at the bar below the graph \u2014 it tracks how much you\u2019ve eaten today.', expression: 'neutral', position: 'center' },
+    highlight: 'kcal-bar',
+    highlightType: 'glow',
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LK-D1-3',
+    bubble: { type: 'hint', text: 'The green zone means just the right amount of energy for your body. Aim to fill it up!', expression: 'happy', position: 'center' },
+    highlight: 'kcal-bar',
+    highlightType: 'pulse',
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LK-D1-4',
+    bubble: { type: 'dialogue', text: 'Place your meals to reach the green zone, then submit!', expression: 'happy', position: 'inventory' },
+    highlight: 'ship-inventory',
+    highlightType: 'glow',
+    advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
+  },
+  {
+    id: 'LK-D1-5',
+    bubble: { type: 'success', text: 'Perfect! Your body has enough energy to stay healthy today. Balance is key!', expression: 'celebrating', position: 'center' },
+    noBackdrop: true,
+    blockInteraction: true,
+    advanceOn: 'tap',
+    blocksResultsReveal: true,
+  },
+  {
+    id: 'LK-D1-6',
+    pendingUntilResults: true,
+    highlight: 'result-next-btn',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'result-next-btn' },
+    noBackdrop: true,
+    advanceOn: 'tap',
+  },
+];
+
+const L_KCAL_D2: TutorialStep[] = [
+  {
+    id: 'LK-D2-1',
+    bubble: { type: 'warning', text: 'It\u2019s your colleague\u2019s birthday \u2014 there\u2019s cake in the office, and lunch ran late. Some days are harder to plan!', expression: 'concerned', position: 'center' },
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LK-D2-2',
+    bubble: { type: 'dialogue', text: 'You still need to eat. Place the rest of your meals \u2014 but keep an eye on the kcal bar!', expression: 'neutral', position: 'inventory' },
+    highlight: 'ship-inventory',
+    highlightType: 'glow',
+    advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
+  },
+  {
+    id: 'LK-D2-3',
+    bubble: { type: 'warning', text: 'We went over our energy limit today. Our pancreas had to work extra hard\u2026 This may affect us tomorrow!', expression: 'concerned', position: 'center' },
+    highlight: 'kcal-bar',
+    highlightType: 'pulse',
+    noBackdrop: true,
+    blockInteraction: true,
+    advanceOn: 'tap',
+    blocksResultsReveal: true,
+  },
+  {
+    id: 'LK-D2-4',
+    pendingUntilResults: true,
+    highlight: 'result-next-btn',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'result-next-btn' },
+    noBackdrop: true,
+    advanceOn: 'tap',
+  },
+];
+
+const L_KCAL_D3: TutorialStep[] = [
+  {
+    id: 'LK-D3-1',
+    bubble: { type: 'warning', text: 'Because we overate yesterday, today is tougher. Look at our Willpower \u2014 overeating put strain on our body!', expression: 'concerned', position: 'center' },
+    highlight: 'wp-counter',
+    highlightType: 'pulse',
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LK-D3-2',
+    bubble: { type: 'hint', text: 'Overeating penalties: less Willpower, a bigger kcal goal to hit, and extra cravings (free \ud83c\udf66). Plan smart to avoid this cycle!', expression: 'thinking', position: 'center' },
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LK-D3-3',
+    bubble: { type: 'dialogue', text: 'The good news: today we can get back on track! Place your meals and aim for the green zone.', expression: 'happy', position: 'inventory' },
+    highlight: 'ship-inventory',
+    highlightType: 'glow',
+    advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
+  },
+  {
+    id: 'LK-D3-4',
+    bubble: { type: 'success', text: 'Great balance! Getting back on track feels good. Remember: steady energy keeps your body \u2014 and pancreas \u2014 happy!', expression: 'celebrating', position: 'center' },
+    noBackdrop: true,
+    blockInteraction: true,
+    advanceOn: 'tap',
+    blocksResultsReveal: true,
+  },
+  {
+    id: 'LK-D3-5',
+    pendingUntilResults: true,
+    highlight: 'result-next-btn',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'result-next-btn' },
+    noBackdrop: true,
+    advanceOn: 'tap',
+  },
+];
+
 // ======= STEP LOOKUP =======
 
 const TUTORIAL_STEPS: Record<string, Record<number, TutorialStep[]>> = {
   'tutorial-01': { 1: L1D1, 2: L1D2, 3: L1D3 },
-  'tutorial-02': { 1: L2D1, 2: L2D2, 3: L2D3 },
-  'tutorial-03': { 1: L3D1, 2: L3D2, 3: L3D3 },
-  'tutorial-04': { 1: L4D1, 2: L4D2, 3: L4D3 },
-  'tutorial-05': { 1: L_STRESS_D1, 2: L_STRESS_D2, 3: [] },
-  'tutorial-06': { 1: L5D1, 2: L5D2 },
-  'tutorial-07': { 1: L6D1, 2: L6D2 },
-  'tutorial-08': { 1: L7D1, 2: L7D2 },
-  'tutorial-09': { 1: L8D1, 2: L8D2, 3: L8D3 },
+  'tutorial-02': { 1: L_KCAL_D1, 2: L_KCAL_D2, 3: L_KCAL_D3 },
+  'tutorial-03': { 1: L2D1, 2: L2D2, 3: L2D3 },
+  'tutorial-04': { 1: L3D1, 2: L3D2, 3: L3D3 },
+  'tutorial-05': { 1: L4D1, 2: L4D2, 3: L4D3 },
+  'tutorial-06': { 1: L_STRESS_D1, 2: L_STRESS_D2, 3: [] },
+  'tutorial-07': { 1: L5D1, 2: L5D2 },
+  'tutorial-08': { 1: L6D1, 2: L6D2 },
+  'tutorial-09': { 1: L7D1, 2: L7D2 },
+  'tutorial-10': { 1: L8D1, 2: L8D2, 3: L8D3 },
 };
 
 export function getTutorialSteps(levelId: string | null, day: number): TutorialStep[] | null {
