@@ -1172,13 +1172,6 @@ const L_KCAL_D2: TutorialStep[] = [
     expectedAction: { type: 'click-submit' },
   },
   {
-    id: 'LK-D2-7',
-    bubble: { type: 'success', text: 'Well done! Staying in the optimal zone keeps your pancreas healthy and strong.', expression: 'celebrating', position: 'center' },
-    blocksResultsReveal: true,
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
     id: 'LK-D2-8',
     pendingUntilResults: true,
     highlight: 'result-next-btn',
