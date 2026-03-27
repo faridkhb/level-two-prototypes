@@ -1057,16 +1057,16 @@ const L_KCAL_D1: TutorialStep[] = [
 const L_KCAL_D2: TutorialStep[] = [
   {
     id: 'LK-D2-1',
-    bubble: { type: 'warning', text: 'It\u2019s your colleague\u2019s birthday \u2014 there\u2019s cake in the office, and lunch ran late. Some days are harder to plan!', expression: 'concerned', position: 'center' },
+    bubble: { type: 'warning', text: "It\u2019s your colleague\u2019s birthday! The office had pizza, a big burger, and Caesar salad. What a feast!", expression: 'concerned', position: 'center' },
     noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'LK-D2-2',
-    bubble: { type: 'dialogue', text: 'You still need to eat. Place the rest of your meals \u2014 but keep an eye on the kcal bar!', expression: 'neutral', position: 'inventory' },
-    highlight: 'ship-inventory',
-    highlightType: 'glow',
+    bubble: { type: 'dialogue', text: 'Look at the kcal bar \u2014 the birthday lunch already pushed us into overeating! You have a banana left. Place it if you like, then submit.', expression: 'concerned', position: 'inventory' },
+    highlight: 'kcal-bar',
+    highlightType: 'pulse',
     advanceOn: 'action',
     expectedAction: { type: 'click-submit' },
   },
