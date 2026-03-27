@@ -216,16 +216,7 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-3',
-    bubble: { type: 'dialogue', text: 'Let\u2019s fix that peak! Place a \ud83d\udeb6 Light Walk right after the pizza to bring the glucose down.', expression: 'thinking', position: 'inventory' },
-    highlight: 'slot:3',
-    highlightType: 'pulse',
-    noBackdrop: true,
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L2D1-4',
-    bubble: { type: 'dialogue', text: 'The \ud83d\udeb6 Light Walk burns glucose from the top. Drag it next to the pizza peak!', expression: 'thinking', position: 'inventory' },
+    bubble: { type: 'dialogue', text: 'Let\u2019s fix that peak! Drag the \ud83d\udeb6 Light Walk into the schedule right after the pizza.', expression: 'thinking', position: 'inventory' },
     highlight: ['intervention:lightwalk', 'slot:3'],
     highlightType: 'pulse',
     cta: { type: 'drag-arrow', source: 'intervention:lightwalk', dest: 'slot:3' },
