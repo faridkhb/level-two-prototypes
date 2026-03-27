@@ -24,6 +24,7 @@ interface ShipCardProps {
   wpDisabled?: boolean;
   hideKcal?: boolean;
   kcalJustRevealed?: boolean;
+  clearedIn?: boolean;
 }
 
 export function ShipCard({
@@ -35,6 +36,7 @@ export function ShipCard({
   wpDisabled = false,
   hideKcal = false,
   kcalJustRevealed = false,
+  clearedIn = false,
 }: ShipCardProps) {
   const draggableId = instanceId ?? `inventory-${ship.id}`;
   const disabled = wpDisabled || isLocked;
@@ -66,6 +68,7 @@ export function ShipCard({
         isDragging && 'ship-card--dragging',
         wpDisabled && 'ship-card--disabled',
         isLocked && 'ship-card--locked',
+        clearedIn && 'ship-card--cleared-in',
       ]
         .filter(Boolean)
         .join(' ')}

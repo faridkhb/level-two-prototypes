@@ -138,6 +138,7 @@ interface BgGraphProps {
   slowMotionBurns?: boolean;             // tutorial: slow down meteor drop animation 3x
   onBurnAnimComplete?: () => void;       // called when all meteor drops finish
   showHatchingOverride?: boolean;        // force zone hatching visible (results state)
+  preplacedFading?: boolean;             // tutorial: fade out pre-placed foods from graph
 }
 
 // Convert column to SVG x
@@ -176,6 +177,7 @@ export function BgGraph({
   slowMotionBurns = false,
   onBurnAnimComplete,
   showHatchingOverride = false,
+  preplacedFading = false,
 }: BgGraphProps) {
   // Phased reveal removed — revealPhase is always undefined (all layers shown immediately)
   const revealPhase = undefined;
@@ -1506,6 +1508,7 @@ export function BgGraph({
 
 
       </svg>
+      {preplacedFading && <div className="bg-graph__clearing-overlay" />}
     </div>
   );
 }

@@ -25,7 +25,8 @@
       "wpBudget": 12,
       "startingBg": 100,
       "availableFoods": [
-        { "id": "banana", "count": 1 }
+        { "id": "banana", "count": 1 },
+        { "id": "apple",  "count": 1 }
       ],
       "availableInterventions": [],
       "preplacedFoods": [

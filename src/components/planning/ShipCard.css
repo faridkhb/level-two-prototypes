@@ -224,3 +224,13 @@
   animation: kcalReveal 1.6s ease-in-out 2;
 }
 
+/* Cleared pre-placed food bounce-in animation */
+@keyframes clearedIn {
+  0%   { transform: scale(0.7); opacity: 0; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.7); }
+  60%  { transform: scale(1.05); opacity: 1; box-shadow: 0 0 8px 4px rgba(56, 189, 248, 0.4); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+.ship-card--cleared-in {
+  animation: clearedIn 0.5s ease-out both;
+}
+

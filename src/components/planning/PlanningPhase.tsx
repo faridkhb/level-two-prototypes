@@ -11,7 +11,7 @@ import {
   closestCenter,
 } from '@dnd-kit/core';
 import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BurnAnimMode } from '../../core/types';
-import { TOTAL_SLOTS, slotToColumn, getBaselineRow } from '../../core/types';
+import { TOTAL_SLOTS, slotToColumn, getBaselineRow, getKcalAssessment } from '../../core/types';
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
@@ -83,6 +83,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     satietyPenaltyPerDay,
     setSatietyPenalty,
     tutorialLevelId,
+    removePreplacedFoods,
   } = useGameStore();
 
   // Tutorial overlay system
@@ -128,6 +129,12 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const kcalCardsVisible = !isTutorial
     || !['tutorial-01', 'tutorial-02'].includes(tutorialLevelId ?? '')
     || kcalRevealed;
+
+  // clearPreplaced mechanic: pre-placed foods removed from graph and moved to available inventory
+  const [preplacedCleared, setPreplacedCleared] = useState(false);
+  const [clearedShipIds, setClearedShipIds] = useState<string[]>([]);
+  const [clearingAnimation, setClearingAnimation] = useState(false);
+  const [clearedHighlight, setClearedHighlight] = useState(false);
   // Incrementing key forces BgGraph remount (e.g., on Retry) so prevLayersRef resets
   // and pre-placed foods are detected as "added" → bomb animation fires
   const [bgGraphKey, setBgGraphKey] = useState(0);
@@ -151,6 +158,26 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       return () => clearTimeout(t);
     }
   }, [tutorialStep, kcalRevealed]);
+
+  // clearPreplaced: when tutorial step has clearPreplaced flag, remove pre-placed foods from graph
+  // and move them to available inventory with a brief animation
+  useEffect(() => {
+    if (!tutorialStep?.clearPreplaced || preplacedCleared) return;
+    setClearingAnimation(true);
+    const ids = placedFoods
+      .filter(f => f.id.startsWith('preplaced-'))
+      .map(f => f.shipId);
+    const timer = setTimeout(() => {
+      removePreplacedFoods();
+      setClearedShipIds(ids);
+      setPreplacedCleared(true);
+      setClearingAnimation(false);
+      setClearedHighlight(true);
+      setTimeout(() => setClearedHighlight(false), 2500);
+    }, 700);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep?.id]);
 
   // Handles bomb animation completion: stops blink, advances tutorial (L1D1 slow-mo step)
   const handleBurnAnimComplete = useCallback(() => {
@@ -196,15 +223,18 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const baselineRow = useMemo(() => getBaselineRow(dayConfig?.startingBg), [dayConfig]);
 
   // Compute effective locked slots (pre-placed items + explicitly locked)
+  // When preplacedCleared, pre-placed food slots are freed for the player to use
   const effectiveLockedSlots = useMemo(() => {
     const slots = new Set<number>(dayConfig?.lockedSlots ?? []);
-    for (const pf of dayConfig?.preplacedFoods ?? []) slots.add(pf.slotIndex);
+    if (!preplacedCleared) {
+      for (const pf of dayConfig?.preplacedFoods ?? []) slots.add(pf.slotIndex);
+    }
     for (const pi of dayConfig?.preplacedInterventions ?? []) {
       const size = pi.slotSize ?? 1;
       for (let s = pi.slotIndex; s < pi.slotIndex + size; s++) slots.add(s);
     }
     return slots;
-  }, [dayConfig]);
+  }, [dayConfig, preplacedCleared]);
 
   // Compute medication modifiers from active medications
   const medicationModifiers = useMemo(
@@ -254,27 +284,43 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const showPancreasButton = !['tutorial-03', 'tutorial-04'].includes(currentLevel?.id ?? '');
   const showBoostCharges = showPancreasButton && !['tutorial-01', 'tutorial-02'].includes(currentLevel?.id ?? '');
 
-  // Submit button enabled when kcal >= 50% (Optimal zone) and in planning phase
+  // Submit button enabled when kcal >= 60% (Optimal zone) and in planning phase
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier);
   const kcalPct = effectiveKcalBudget > 0 ? (kcalUsed / effectiveKcalBudget) * 100 : 0;
-  const submitEnabled = gamePhase === 'planning' && kcalPct >= 50 && placedFoods.length > 0;
+  const kcalZone = getKcalAssessment(kcalUsed, effectiveKcalBudget).zone;
+  const requiresOptimal = tutorialStep?.requiresOptimalSubmit ?? false;
+  const submitEnabled = gamePhase === 'planning'
+    && kcalPct >= 60
+    && placedFoods.length > 0
+    && (!requiresOptimal || kcalZone === 'optimal');
 
-  // Effective available foods: base + satiety penalty foods (0 WP cost)
+  // Effective available foods: base + satiety penalty foods + cleared pre-placed foods
   const effectiveAvailableFoods = useMemo(() => {
     const base = dayConfig?.availableFoods || [];
     const freeCount = satietyPenalty.freeFood;
-    if (freeCount <= 0) return base;
-    // Add penalty food copies
-    const existing = base.find(f => f.id === SATIETY_PENALTY_FOOD_ID);
-    if (existing) {
-      return base.map(f =>
-        f.id === SATIETY_PENALTY_FOOD_ID
-          ? { ...f, count: f.count + freeCount }
-          : f
-      );
+    // Build base + penalty foods
+    let result: typeof base;
+    if (freeCount <= 0) {
+      result = base;
+    } else {
+      const existing = base.find(f => f.id === SATIETY_PENALTY_FOOD_ID);
+      if (existing) {
+        result = base.map(f =>
+          f.id === SATIETY_PENALTY_FOOD_ID
+            ? { ...f, count: f.count + freeCount }
+            : f
+        );
+      } else {
+        result = [...base, { id: SATIETY_PENALTY_FOOD_ID, count: freeCount }];
+      }
     }
-    return [...base, { id: SATIETY_PENALTY_FOOD_ID, count: freeCount }];
-  }, [dayConfig, satietyPenalty.freeFood]);
+    // Add cleared pre-placed foods (each as count:1 entry)
+    if (clearedShipIds.length > 0) {
+      const cleared = clearedShipIds.map(id => ({ id, count: 1 }));
+      result = [...result, ...cleared];
+    }
+    return result;
+  }, [dayConfig, satietyPenalty.freeFood, clearedShipIds]);
 
   // Tutorial-aware medication toggle wrapper
   const handleMedicationToggle = useCallback((medId: string) => {
@@ -648,6 +694,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setVisibleStars(0);
     setShowBurns(false);
     setPenaltyResult(null);
+    setPreplacedCleared(false);
+    setClearedShipIds([]);
+    setClearingAnimation(false);
     // Force BgGraph remount so prevLayersRef resets → pre-placed foods detected as "added"
     // → bomb/plateau animation fires for pre-placed foods
     setBgGraphKey(k => k + 1);
@@ -667,6 +716,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setVisibleStars(0);
     setShowBurns(false);
     setPenaltyResult(null);
+    setPreplacedCleared(false);
+    setClearedShipIds([]);
+    setClearingAnimation(false);
   }, [startNextDay]);
 
   // Reset phase when day changes (e.g., via cheat buttons)
@@ -683,6 +735,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setVisibleStars(0);
     setShowBurns(false);
     setPenaltyResult(null);
+    setPreplacedCleared(false);
+    setClearedShipIds([]);
+    setClearingAnimation(false);
   }, [goToDay]);
 
   // Tutorial: next level handler
@@ -701,6 +756,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     setVisibleStars(0);
     setShowBurns(false);  // Reset so hideBurnedInPlanning=true when new level's foods are detected as "added"
     setPenaltyResult(null);
+    setPreplacedCleared(false);
+    setClearedShipIds([]);
+    setClearingAnimation(false);
     onNextLevel(nextId);
   }, [tutorialLevelId, onNextLevel]);
 
@@ -773,6 +831,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               highlightBaselineCubes={tutorialStep?.highlight === 'baseline-cubes'}
               highlightDangerLine={tutorialStep?.highlight === 'danger-line'}
               highlightMedEffect={tutorialStep?.highlightMedEffect ?? false}
+              preplacedFading={clearingAnimation}
               isMobile={isMobile}
               baselineRow={baselineRow}
               hideBurnedInPlanning={gamePhase !== 'replaying' ? !showBurns : false}
@@ -840,6 +899,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                 onMedicationToggle={handleMedicationToggle}
                 hideKcal={!kcalCardsVisible}
                 kcalJustRevealed={kcalJustRevealed}
+                clearedFoodsHighlight={clearedHighlight}
+                clearedShipIds={clearedShipIds}
               />
             </InventoryDropZone>
           )}

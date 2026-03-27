@@ -104,6 +104,8 @@ interface TabbedInventoryProps {
   onMedicationToggle?: (medicationId: string) => void;
   hideKcal?: boolean;
   kcalJustRevealed?: boolean;
+  clearedFoodsHighlight?: boolean;
+  clearedShipIds?: string[];
 }
 
 export function TabbedInventory({
@@ -120,6 +122,8 @@ export function TabbedInventory({
   onMedicationToggle,
   hideKcal = false,
   kcalJustRevealed = false,
+  clearedFoodsHighlight = false,
+  clearedShipIds = [],
 }: TabbedInventoryProps) {
   const foodItems = useMemo(() => {
     const placed = new Map<string, number>();
@@ -166,6 +170,7 @@ export function TabbedInventory({
               wpDisabled={(ship.wpCost ?? 0) > wpRemaining}
               hideKcal={hideKcal}
               kcalJustRevealed={kcalJustRevealed}
+              clearedIn={clearedFoodsHighlight && clearedShipIds.includes(ship.id)}
             />
           ))
         )}
