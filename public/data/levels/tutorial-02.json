@@ -56,8 +56,8 @@
     },
     {
       "day": 2,
-      "kcalBudget": 1400,
-      "wpBudget": 9,
+      "kcalBudget": 1800,
+      "wpBudget": 14,
       "availableFoods": [
         {
           "id": "banana",
@@ -70,11 +70,19 @@
         {
           "id": "greekyogurt",
           "count": 1
+        },
+        {
+          "id": "popcorn",
+          "count": 1
         }
       ],
       "availableInterventions": [
         {
           "id": "heavyrun",
+          "count": 1
+        },
+        {
+          "id": "lightwalk",
           "count": 1
         }
       ],
