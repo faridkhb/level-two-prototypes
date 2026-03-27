@@ -43,6 +43,8 @@ export interface TutorialStep {
   blocksResultsReveal?: boolean; // if true — PlanningPhase holds counting sequence until this step is tapped
   pendingUntilResults?: boolean; // if true — TutorialOverlay hidden until gamePhase === 'results'
   revealKcal?: boolean;          // if true — kcal indicator revealed on food cards from this step forward
+  clearPreplaced?: boolean;      // if true — all pre-placed foods moved to available inventory when step activates
+  requiresOptimalSubmit?: boolean; // if true — submit button only active when kcal zone === 'optimal'
 }
 
 // ======= LEVEL 1 — First Steps =======
@@ -1057,73 +1059,46 @@ const L_KCAL_D1: TutorialStep[] = [
 const L_KCAL_D2: TutorialStep[] = [
   {
     id: 'LK-D2-1',
-    bubble: { type: 'warning', text: "You started with cheese for breakfast, then came the birthday lunch: burger, pizza, and Caesar salad. What a day!", expression: 'concerned', position: 'center' },
+    bubble: { type: 'warning', text: 'Overeating puts excessive strain on the pancreas, accelerating disease progression. Notice the calorie bar.', expression: 'concerned', position: 'inventory' },
+    highlight: 'kcal-bar',
+    highlightType: 'pulse',
     noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'LK-D2-2',
-    bubble: { type: 'dialogue', text: 'Look at the kcal bar \u2014 the birthday lunch already pushed us into overeating! You have a banana left. Place it if you like, then submit.', expression: 'concerned', position: 'inventory' },
-    highlight: 'kcal-bar',
-    highlightType: 'pulse',
-    advanceOn: 'action',
-    expectedAction: { type: 'click-submit' },
+    bubble: { type: 'dialogue', text: 'In this game, overeating means your pancreas starts the next day with reduced effectiveness.', expression: 'concerned', position: 'inventory' },
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
   },
   {
     id: 'LK-D2-3',
-    bubble: { type: 'warning', text: 'We went over our energy limit today. Our pancreas had to work extra hard\u2026 This may affect us tomorrow!', expression: 'concerned', position: 'center' },
-    highlight: 'kcal-bar',
-    highlightType: 'pulse',
+    bubble: { type: 'hint', text: "Let\u2019s replan this day better!", expression: 'thinking', position: 'inventory' },
+    clearPreplaced: true,
     noBackdrop: true,
-    blockInteraction: true,
     advanceOn: 'tap',
-    blocksResultsReveal: true,
+    blockInteraction: true,
   },
   {
     id: 'LK-D2-4',
-    pendingUntilResults: true,
-    highlight: 'result-next-btn',
-    highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'result-next-btn' },
-    noBackdrop: true,
-    advanceOn: 'tap',
-  },
-];
-
-const L_KCAL_D3: TutorialStep[] = [
-  {
-    id: 'LK-D3-1',
-    bubble: { type: 'warning', text: 'Because we overate yesterday, today is tougher. Look at our Willpower \u2014 overeating put strain on our body!', expression: 'concerned', position: 'center' },
-    highlight: 'wp-counter',
-    highlightType: 'pulse',
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'LK-D3-2',
-    bubble: { type: 'hint', text: 'Overeating penalties: less Willpower, a bigger kcal goal to hit, and extra cravings (free \ud83c\udf66). Plan smart to avoid this cycle!', expression: 'thinking', position: 'center' },
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'LK-D3-3',
-    bubble: { type: 'dialogue', text: 'The good news: today we can get back on track! Place your meals and aim for the green zone.', expression: 'happy', position: 'inventory' },
-    highlight: 'ship-inventory',
+    bubble: { type: 'dialogue', text: 'Plan your meals to reach the green zone, then submit.', expression: 'happy', position: 'inventory' },
+    highlight: 'kcal-bar',
     highlightType: 'glow',
+    requiresOptimalSubmit: true,
     advanceOn: 'action',
     expectedAction: { type: 'click-submit' },
   },
   {
-    id: 'LK-D3-4',
-    bubble: { type: 'success', text: 'Great balance! Getting back on track feels good. Remember: steady energy keeps your body \u2014 and pancreas \u2014 happy!', expression: 'celebrating', position: 'center' },
-    noBackdrop: true,
-    blockInteraction: true,
-    advanceOn: 'tap',
+    id: 'LK-D2-5',
+    bubble: { type: 'success', text: 'Well done! Staying in the optimal zone keeps your pancreas healthy and strong.', expression: 'celebrating', position: 'center' },
     blocksResultsReveal: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
   },
   {
-    id: 'LK-D3-5',
+    id: 'LK-D2-6',
     pendingUntilResults: true,
     highlight: 'result-next-btn',
     highlightType: 'pulse',
@@ -1137,7 +1112,7 @@ const L_KCAL_D3: TutorialStep[] = [
 
 const TUTORIAL_STEPS: Record<string, Record<number, TutorialStep[]>> = {
   'tutorial-01': { 1: L1D1, 2: L1D2, 3: L1D3 },
-  'tutorial-02': { 1: L_KCAL_D1, 2: L_KCAL_D2, 3: L_KCAL_D3 },
+  'tutorial-02': { 1: L_KCAL_D1, 2: L_KCAL_D2 },
   'tutorial-03': { 1: L2D1, 2: L2D2, 3: L2D3 },
   'tutorial-04': { 1: L3D1, 2: L3D2, 3: L3D3 },
   'tutorial-05': { 1: L4D1, 2: L4D2, 3: L4D3 },
