@@ -206,10 +206,11 @@ const L_PF_D2: TutorialStep[] = [
   },
   {
     id: 'LPF-D2-7',
-    bubble: { type: 'success', text: "The peak dropped! Those fuchsia cells show the glucose Metformin prevented. The more food — the bigger the effect!", expression: 'happy', position: 'bottom' },
+    bubble: { type: 'success', text: "Wow! That was substantial! The purple layer shows the glucose Metformin prevented — the more carbs, the bigger the effect!", expression: 'happy', position: 'bottom' },
     highlight: 'graph',
     highlightType: 'glow',
     noBackdrop: true,
+    showBurnsLayer: true,
     highlightMedEffect: true,
     advanceOn: 'tap',
   },

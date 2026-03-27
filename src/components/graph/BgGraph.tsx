@@ -171,7 +171,7 @@ export function BgGraph({
   highlightDangerZone = false,
   highlightBaselineCubes = false,
   highlightDangerLine = false,
-  highlightMedEffect: _highlightMedEffect = false,
+  highlightMedEffect = false,
   isMobile = false,
   baselineRow = 0,
   hideBurnedInPlanning = false,
@@ -1323,6 +1323,7 @@ export function BgGraph({
                 : isDangerRevealCube ? cube.col * 50  // absolute column sweep
                 : waveDelay;
               const isPancreasBurnedCube = cube.status === 'burned' && cube.burnColor === '#f97316';
+              const isMetforminBurnedCube = cube.status === 'burned' && cube.burnColor === '#f0abfc';
               const cubeClass = isPlateauBurnCube
                 ? 'bg-graph__cube'
                 : isPreBurnCube
@@ -1334,7 +1335,11 @@ export function BgGraph({
                     : isAnimatingBurn
                       ? 'bg-graph__cube--digest-appear-burn'
                       : cube.status === 'burned'
-                        ? (highlightBurns && isPancreasBurnedCube ? 'bg-graph__cube--burned bg-graph__cube--pancreas-blink' : 'bg-graph__cube--burned')
+                        ? [
+                            'bg-graph__cube--burned',
+                            highlightBurns && isPancreasBurnedCube ? 'bg-graph__cube--pancreas-blink' : '',
+                            highlightMedEffect && isMetforminBurnedCube ? 'bg-graph__cube--pancreas-blink' : '',
+                          ].filter(Boolean).join(' ')
                         : 'bg-graph__cube';
               let cubeFill: string;
               if (isPlateauBurnCube || isPreBurnCube || isRevealPreBurn) {
