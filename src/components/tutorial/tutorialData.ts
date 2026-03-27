@@ -79,11 +79,8 @@ const L_PF_D1: TutorialStep[] = [
   },
   {
     id: 'LPF-D1-4',
-    bubble: { type: 'dialogue', text: "Place a banana and watch how the pancreas handles the glucose spike at full strength.", expression: 'neutral', position: 'inventory' },
-    highlight: ['food:banana', 'slot:2'],
-    highlightType: 'glow',
+    bubble: { type: 'dialogue', text: "Place any food card and watch how the pancreas handles the glucose spike at full strength.", expression: 'neutral', position: 'inventory' },
     pancreasEffectivenessOverride: 5,
-    cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:2' },
     advanceOn: 'action',
     expectedAction: { type: 'place-food' },
   },
