@@ -34,7 +34,7 @@ export function TutorialLevelSelect({ onSelectLevel }: TutorialLevelSelectProps)
 
       <div className="tutorial-select__grid">
         {TUTORIAL_LEVELS.map((level, index) => {
-          const tileStatus = index === 4 ? 'wip' : index >= 5 && index <= 9 ? 'outdated' : null;
+          const tileStatus = index >= 5 && index <= 9 ? 'outdated' : null;
           return (
             <button
               key={level.id}
@@ -52,7 +52,7 @@ export function TutorialLevelSelect({ onSelectLevel }: TutorialLevelSelectProps)
               </div>
               {tileStatus && (
                 <span className={`tutorial-tile__status-badge tutorial-tile__status-badge--${tileStatus}`}>
-                  {tileStatus === 'wip' ? 'WIP' : 'Outdated'}
+                  Outdated
                 </span>
               )}
             </button>

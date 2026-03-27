@@ -239,7 +239,7 @@ export function BgGraph({
 
       const curve = calculateInterventionCurve(
         intervention.depth, intervention.duration, placed.dropColumn,
-        intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+        intervention.boostCols ?? 0, intervention.boostExtra ?? 0, intervention.maxDuration,
       );
       const target = intervention.id === 'lightwalk' ? walk : run;
       for (const col of curve) {
@@ -589,7 +589,7 @@ export function BgGraph({
     const dropCol = previewInterventionColumn;
     const curve = calculateInterventionCurve(
       previewIntervention.depth, previewIntervention.duration, dropCol,
-      previewIntervention.boostCols ?? 0, previewIntervention.boostExtra ?? 0,
+      previewIntervention.boostCols ?? 0, previewIntervention.boostExtra ?? 0, previewIntervention.maxDuration,
     );
 
     const previewReduction = new Array(TOTAL_COLUMNS).fill(0);
@@ -665,7 +665,7 @@ export function BgGraph({
 
         const curve = calculateInterventionCurve(
           intervention.depth, intervention.duration, placed.dropColumn,
-          intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+          intervention.boostCols ?? 0, intervention.boostExtra ?? 0, intervention.maxDuration,
         );
         const reduction = new Array(TOTAL_COLUMNS).fill(0);
         let hasOverlap = false;
@@ -919,7 +919,7 @@ export function BgGraph({
 
         const curve = calculateInterventionCurve(
           intervention.depth, intervention.duration, placed.dropColumn,
-          intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+          intervention.boostCols ?? 0, intervention.boostExtra ?? 0, intervention.maxDuration,
         );
         const reduction = new Array(TOTAL_COLUMNS).fill(0);
         for (const c of curve) {
