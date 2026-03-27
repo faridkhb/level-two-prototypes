@@ -2,7 +2,7 @@
   "id": "tutorial-05",
   "name": "Willpower Management",
   "description": "Master WP budgeting, breaks, and the consequences of overeating.",
-  "days": 3,
+  "days": 2,
   "dayConfigs": [
     {
       "day": 1,
@@ -30,28 +30,6 @@
     },
     {
       "day": 2,
-      "kcalBudget": 1400,
-      "wpBudget": 8,
-      "availableFoods": [
-        { "id": "burger",           "count": 1 },
-        { "id": "chocolatemuffin",  "count": 1 },
-        { "id": "pizza",            "count": 1 },
-        { "id": "banana",           "count": 1 }
-      ],
-      "availableInterventions": [
-        { "id": "lightwalk", "count": 1 }
-      ],
-      "availableMedications": [],
-      "preplacedFoods": [],
-      "lockedSlots": [0, 1, 4, 5, 8, 9, 10, 11],
-      "insulinProfile": {
-        "mode": "cumulative",
-        "segments": [{ "from": 0, "to": 47, "rate": 1 }]
-      },
-      "startingBg": 100
-    },
-    {
-      "day": 3,
       "kcalBudget": 1600,
       "wpBudget": 9,
       "availableFoods": [

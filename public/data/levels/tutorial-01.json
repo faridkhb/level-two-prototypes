@@ -112,11 +112,11 @@
       "preplacedFoods": [
         {
           "shipId": "pizza",
-          "slotIndex": 10
+          "slotIndex": 7
         }
       ],
       "lockedSlots": [
-        10
+        7
       ],
       "startingBg": 100
     }

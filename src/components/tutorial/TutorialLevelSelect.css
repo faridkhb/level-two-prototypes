@@ -106,3 +106,35 @@
   padding: 2px 8px;
   border-radius: 8px;
 }
+
+.tutorial-tile--wip {
+  filter: grayscale(35%) brightness(0.82);
+}
+
+.tutorial-tile--outdated {
+  filter: grayscale(60%) brightness(0.72);
+}
+
+.tutorial-tile__status-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tutorial-tile__status-badge--wip {
+  background: rgba(251, 191, 36, 0.85);
+  color: #1a1a1a;
+}
+
+.tutorial-tile__status-badge--outdated {
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.75);
+}

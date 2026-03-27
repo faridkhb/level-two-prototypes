@@ -18,7 +18,7 @@
       ],
       "availableMedications": [],
       "preplacedFoods": [
-        { "shipId": "chocolatemuffin", "slotIndex": 1 }
+        { "shipId": "pizza", "slotIndex": 1 }
       ],
       "lockedSlots": [0, 1],
       "stressSlots": [4],

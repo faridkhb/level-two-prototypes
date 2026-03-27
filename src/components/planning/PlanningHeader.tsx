@@ -19,7 +19,7 @@ export function PlanningHeader({
   const wpOver = wpRemaining < 0;
 
   const wpSection = (
-    <div className="planning-header__wp">
+    <div className="planning-header__wp wp-counter">
       <span className="planning-header__wp-icon">{'\u2600\uFE0F'}</span>
       <span className={`planning-header__wp-value ${wpOver ? 'planning-header__wp-value--over' : ''}`}>
         {wpRemaining}

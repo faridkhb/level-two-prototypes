@@ -348,8 +348,8 @@ const L1D2: TutorialStep[] = [
 const L1D3: TutorialStep[] = [
   {
     id: 'L1D3-1',
-    bubble: { type: 'dialogue', text: 'Day 3! Something came up at lunch \u2014 a colleague ordered pizza, and you had a \ud83c\udf55 slice before you could think twice.', expression: 'neutral' },
-    highlight: 'slot:10',
+    bubble: { type: 'dialogue', text: 'Day 3! A friend shared a slice of \ud83c\udf55 pizza during your lunch break \u2014 you ate it without thinking twice.', expression: 'neutral' },
+    highlight: 'slot:7',
     highlightType: 'spotlight',
     noBackdrop: true,
     advanceOn: 'tap',
@@ -501,33 +501,6 @@ const L3D1: TutorialStep[] = [
     highlight: 'submit-btn',
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'submit-btn' },
-    advanceOn: 'action',
-    expectedAction: { type: 'click-submit' },
-  },
-];
-
-const L3D2: TutorialStep[] = [
-  {
-    id: 'L3D2-1',
-    bubble: { type: 'dialogue', text: 'Watch the kcal bar today! The budget is 1400 kcal \u2014 looks comfortable, but the \ud83c\udf54 Burger and \ud83e\uddc1 Muffin together can easily push you over!', expression: 'concerned' },
-    highlight: 'kcal-bar',
-    highlightType: 'glow',
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L3D2-2',
-    bubble: { type: 'warning', text: 'Overeating (>80% kcal) penalizes the next day: \u22121 WP and +100 kcal budget.', expression: 'concerned' },
-    highlight: 'kcal-bar',
-    highlightType: 'glow',
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L3D2-3',
-    bubble: { type: 'dialogue', text: 'Think twice before piling everything in! Can you stay in the green zone?', expression: 'thinking', position: 'inventory' },
-    highlight: 'ship-inventory',
-    highlightType: 'glow',
     advanceOn: 'action',
     expectedAction: { type: 'click-submit' },
   },
@@ -1032,7 +1005,7 @@ const L_STRESS_D1: TutorialStep[] = [
   },
   {
     id: 'LS-D1-4',
-    bubble: { type: 'dialogue', text: 'The muffin is already placed. Your job: put banana and cookie OUTSIDE the red zone.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'The pizza is already placed. Your job: put banana and cookie OUTSIDE the red zone.', expression: 'neutral' },
     highlight: 'stress-slots',
     highlightType: 'pulse',
     advanceOn: 'tap',
@@ -1223,7 +1196,7 @@ const TUTORIAL_STEPS: Record<string, Record<number, TutorialStep[]>> = {
   'tutorial-02': { 1: L_KCAL_D1, 2: L_KCAL_D2 },
   'tutorial-03': { 1: L2D1, 2: L2D3, 3: L2D2 },
   'tutorial-04': { 1: L_PF_D1, 2: L_PF_D2 },            // Pancreas Fatigue (NEW)
-  'tutorial-05': { 1: L3D1, 2: L3D2, 3: L3D3 },         // Willpower Management (← old T4)
+  'tutorial-05': { 1: L3D1, 2: L3D3 },                   // Willpower Management (← old T4)
   'tutorial-06': { 1: L4D1, 2: L4D2, 3: L4D3 },         // Pancreas Boost (← old T5)
   'tutorial-07': { 1: L_STRESS_D1, 2: L_STRESS_D2, 3: [] }, // Under Stress (← old T6)
   'tutorial-08': { 1: L6D1, 2: L6D2 },

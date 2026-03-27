@@ -64,6 +64,7 @@ export function PancreasButton({
     >
       <div className="pancreas-btn__top">
         <span className="pancreas-btn__emoji">{'\uD83E\uDEC1'}</span>
+        <span className="pancreas-btn__label">PANCREAS</span>
         {!hideCharges && (
           <span className={`pancreas-btn__charges${usesRemaining === 0 ? ' pancreas-btn__charges--empty' : ''}`}>
             {usesRemaining}
