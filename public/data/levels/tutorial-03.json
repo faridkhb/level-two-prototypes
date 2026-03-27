@@ -53,48 +53,6 @@
     },
     {
       "day": 2,
-      "kcalBudget": 1800,
-      "wpBudget": 14,
-      "availableFoods": [
-        {
-          "id": "banana",
-          "count": 1
-        },
-        {
-          "id": "cookie",
-          "count": 1
-        },
-        {
-          "id": "greekyogurt",
-          "count": 1
-        },
-        {
-          "id": "popcorn",
-          "count": 1
-        }
-      ],
-      "availableInterventions": [
-        {
-          "id": "heavyrun",
-          "count": 1
-        },
-        {
-          "id": "lightwalk",
-          "count": 1
-        }
-      ],
-      "availableMedications": [],
-      "preplacedFoods": [
-        {
-          "shipId": "burger",
-          "slotIndex": 7
-        }
-      ],
-      "lockedSlots": [1, 6, 10],
-      "startingBg": 100
-    },
-    {
-      "day": 3,
       "kcalBudget": 1600,
       "wpBudget": 10,
       "availableFoods": [
@@ -143,6 +101,48 @@
           }
         ]
       },
+      "startingBg": 100
+    },
+    {
+      "day": 3,
+      "kcalBudget": 1800,
+      "wpBudget": 14,
+      "availableFoods": [
+        {
+          "id": "banana",
+          "count": 1
+        },
+        {
+          "id": "cookie",
+          "count": 1
+        },
+        {
+          "id": "greekyogurt",
+          "count": 1
+        },
+        {
+          "id": "popcorn",
+          "count": 1
+        }
+      ],
+      "availableInterventions": [
+        {
+          "id": "heavyrun",
+          "count": 1
+        },
+        {
+          "id": "lightwalk",
+          "count": 1
+        }
+      ],
+      "availableMedications": [],
+      "preplacedFoods": [
+        {
+          "shipId": "burger",
+          "slotIndex": 7
+        }
+      ],
+      "lockedSlots": [1, 6, 10],
       "startingBg": 100
     }
   ]
