@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.55.0 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, GLP-1 peak reduction, burns visibility toggle (👁️), PancreasButton L-shape redesign, Variant B phased reveal (per-food bomb animations, burn layers persist), animated results reveal (danger sweep, Excess Glucose counter, star-by-star, label bounce-in, tap-to-skip), main menu, config screen, dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, 8 tutorial levels, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
+| `main` | BG Planner | v0.55.19 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, GLP-1 peak reduction, burns visibility toggle (👁️), PancreasButton L-shape redesign, Variant B phased reveal (per-food bomb animations, burn layers persist), animated results reveal (danger sweep, Excess Glucose counter, star-by-star, label bounce-in, tap-to-skip), starts on level select screen, Test Level tile (free play), 9 tutorial levels, intervention tail duration cap (maxDuration), T2 redesigned (Exercises), dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
 
 Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
@@ -89,39 +89,34 @@ What counts as "significant":
 ### Game Flow
 
 ```
-Main Menu → TEST MODE / STORY MODE (coming soon) / CONFIG
-TEST MODE:
-  Single screen: BG Graph (top) + Food Inventory + Actions panel (bottom)
-  → Drag food card onto graph → cubes appear with wave animation
-  → Drag intervention onto graph → top cubes fade out with wave animation
-  → Toggle medications (ON/OFF) in Actions panel
-  → Track WP budget (food + interventions share same pool)
-  → Track kcal with assessment labels
-  → Click cubes to remove placed food/intervention
-  → Submit → phased layer reveal animation → penalty → results
-CONFIG:
-  Editable tables for food, pancreas tiers, interventions, medications
-  → Overrides persist in localStorage
+Level Select (root screen) — 9 tutorial levels + Test Level tile
+  → Tutorial Level: loads level config, enters tutorial mode with guided steps
+  → Test Level (🎮): free-play PlanningPhase, no tutorial overlay
+    Single screen: BG Graph (top) + Food Inventory + Actions panel (bottom)
+    → Drag food card onto graph → cubes appear with wave animation
+    → Drag intervention onto graph → top cubes fade out with wave animation
+    → Toggle medications (ON/OFF) in Actions panel
+    → Track WP budget (food + interventions share same pool)
+    → Track kcal with assessment labels
+    → Click cubes to remove placed food/intervention
+    → Submit → phased layer reveal animation → penalty → results
+  ← Back button returns to Level Select from any mode
 ```
 
 ### Key Files
 
 #### Core Engine
-- `src/version.ts` — version number (v0.55.0)
+- `src/version.ts` — version number (v0.55.19)
 - `src/core/types.ts` — type definitions (Ship, PlacedFood, Intervention, PlacedIntervention, GameSettings, GRAPH_CONFIG, overeating penalties)
 - `src/core/cubeEngine.ts` — ramp+decay curve algorithm, intervention reduction, graph state calculation
 
 #### App Navigation
-- `src/App.tsx` — screen routing (menu / testMode / config) with back button
-- `src/App.css` — app layout styles, back button
+- `src/App.tsx` — screen routing (tutorialSelect / testMode / tutorialPlay); starts on tutorialSelect
+- `src/App.css` — app layout styles
 
-#### Main Menu (`src/components/menu/`)
-- `MainMenu.tsx` — 3 buttons: TEST MODE, STORY MODE (disabled), CONFIG
-- `MainMenu.css` — menu button styles
-
-#### Config Screen (`src/components/config/`)
-- `ConfigScreen.tsx` — 3-tab editor (Food / Pancreas / Interventions+Medications)
-- `ConfigScreen.css` — table, input, medication card styles
+#### Tutorial Level Select (`src/components/tutorial/`)
+- `TutorialLevelSelect.tsx` — 10-tile grid (9 tutorials + Test Level); root screen of the app
+- `TutorialLevelSelect.css` — tile card styles
 
 #### Graph Component (`src/components/graph/`)
 - `BgGraph.tsx` — SVG-based BG graph with grid, cubes, zones, intervention burn rendering, wave animations, drag-and-drop target, reveal phase animation
@@ -157,20 +152,30 @@ CONFIG:
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.55.0) — Animated Results Reveal, Excess Glucose Counter, Star-by-Star
+### Current State (v0.55.19) — Level Select Root Screen, Test Level, T2 Redesign, Intervention Tail Cap
 
-- **Main Menu** ✅
-  - 3 buttons: TEST MODE (active), STORY MODE (disabled/coming soon), CONFIG
-  - Back button on all sub-screens returns to menu
+- **Level Select Screen** ✅ (v0.55.19, root screen — no main menu)
+  - 10-tile grid: 9 tutorial levels + Test Level (🎮, "Free play")
+  - Tutorials open in guided mode; Test Level opens free-play PlanningPhase
+  - Back button in PlanningPhase returns to Level Select
+  - No main menu, no config screen
 
-- **Config Screen** ✅
-  - 3 tabs: Food, Pancreas, Interventions (+ Medications)
-  - Food tab: table of 24 foods with all numeric fields editable
-  - Pancreas tab: 4 tiers (OFF/I/II/III) with decayRate and cost
-  - Interventions tab: 2 interventions + 3 medications with type-specific params
-  - Config overrides persist in localStorage (`bg-config-overrides`)
-  - Reset Defaults / Apply & Back buttons
-  - Dynamic medication tooltips reflect actual parameter values
+- **Tutorial 2 — Exercises** ✅ (v0.55.17–18)
+  - Renamed from "Keep Moving" to "Exercises" (both level name and select tile)
+  - D1 reworked: danger-zone coloring on pizza dialog (cubes above 200 turn orange/red), merged drag step
+  - D2 redesigned: burger@3PM, heavy run in inventory, wpBudget=14, kcalBudget=1800, lockedSlots=[1,6,10]
+  - D2/D3: no tutorial dialogs (free-play puzzles)
+
+- **Danger Zone Tutorial Highlight** ✅ (v0.55.17)
+  - `highlight: 'danger-zone'` in tutorial step triggers `showDangerZone` (cube coloring) without penalty overlays
+  - New `showPenaltyOverlay` prop on BgGraph separates pulsing penalty rects from zone coloring
+  - Penalty overlays only appear during actual results reveal, not during tutorial dialogs
+
+- **Intervention Tail Duration Cap** ✅ (v0.55.17)
+  - `maxDuration?: number` field on Intervention type and JSON
+  - `calculateInterventionCurve` caps total cols to `round(maxDuration / cellWidthMin)`
+  - Light Walk: `maxDuration: 120` → total 4 cols (2 main + 2 tail)
+  - Heavy Run: `maxDuration: 360` → total 12 cols (6 main + 6 tail)
 
 - **Combined Actions Panel** ✅
   - Medications and interventions merged into single "Actions" section
@@ -569,16 +574,16 @@ Based on USDA FoodData Central, GI databases. `glucose = carbs × 10`, duration 
 | 23 | Avocado | 🥑 | 7g | 2g | 15g | 240 | 3 | 150m | 1 | 5 |
 | 24 | Mixed Nuts | 🥜 | 10g | 5g | 16g | 310 | 2 | 150m | 2 | 5 |
 
-**Derived:** Cubes = round(glucose / 50) (cellHeightMgDl=50, glucose = carbs × 10), Cols = round(duration / 30) (cellWidthMin=30). Sources: USDA FoodData Central, glycemic-index.net
+**Derived:** Cubes = round(glucose / 25) (cellHeightMgDl=25, glucose = carbs × 10), Cols = round(duration / 30) (cellWidthMin=30). Sources: USDA FoodData Central, glycemic-index.net
 
 ### Intervention Parameters
 
-| Intervention | Emoji | Depth | Duration | WP | Tail | SlotSize | Effect |
-|-------------|-------|------:|---------:|---:|-----:|---------:|--------|
-| Light Walk | 🚶 | 3 cubes | 60m (4 cols) | 2 | 1 cube | 1 | Main: 3 cubes for 4 cols, tail: 1 cube to end |
-| Heavy Run | 🏃 | 5 cubes | 180m (12 cols) | 4 | 2 cubes | 2 | Main: 5 cubes for 12 cols, tail: 2 cubes to end |
-| Take a Break | ☕ | 0 | 30m (2 cols) | −1 | 0 | 1 | Refunds 1 WP, no cube effect |
-| Take a Rest | 😴 | 0 | 120m (8 cols) | −2 | 0 | 2 | Refunds 2 WP, no cube effect |
+| Intervention | Emoji | Depth | Duration | WP | maxDuration | SlotSize | Effect |
+|-------------|-------|------:|---------:|---:|------------:|---------:|--------|
+| Light Walk | 🚶 | 2 cubes | 60m (2 main cols) | 2 | 120m (4 cols total) | 1 | Main: 2 cubes for 2 cols, tail: 2 cubes for 2 more cols |
+| Heavy Run | 🏃 | 4 cubes | 180m (6 main cols) | 4 | 360m (12 cols total) | 2 | Main: 4 cubes for 6 cols, tail: 2 cubes for 6 more cols |
+| Take a Break | ☕ | 0 | 30m (1 col) | −1 | — | 1 | Refunds 1 WP, no cube effect |
+| Take a Rest | 😴 | 0 | 120m (4 cols) | −2 | — | 2 | Refunds 2 WP, no cube effect |
 
 ### Level Config Structure
 ```json
@@ -631,16 +636,15 @@ Key puzzle solutions:
 | startHour | 8 (8 AM) | `types.ts` GRAPH_CONFIG |
 | endHour | 20 (8 PM) | `types.ts` GRAPH_CONFIG |
 | cellWidthMin | 30 min | `types.ts` GRAPH_CONFIG |
-| cellHeightMgDl | 50 mg/dL | `types.ts` GRAPH_CONFIG |
+| cellHeightMgDl | 25 mg/dL | `types.ts` GRAPH_CONFIG |
 | bgMin | 50 mg/dL | `types.ts` GRAPH_CONFIG |
 | bgMax | 450 mg/dL | `types.ts` GRAPH_CONFIG |
 | TOTAL_COLUMNS | 24 | `types.ts` derived |
-| TOTAL_ROWS | 8 | `types.ts` derived |
+| TOTAL_ROWS | 16 | `types.ts` derived (400 / 25) |
 | CELL_SIZE | 18px (SVG) | `BgGraph.tsx` |
-| GRAPH_H | 144px | `BgGraph.tsx` (TOTAL_ROWS × CELL_SIZE) |
-| INSULIN_FLOOR_ROW | 1 | `BgGraph.tsx` (100 mg/dL = (100-50)/50) |
-| PENALTY_ORANGE_ROW | 3 | `types.ts` (200 mg/dL = (200-50)/50) |
-| PENALTY_RED_ROW | 5 | `types.ts` (300 mg/dL = (300-50)/50) |
+| GRAPH_H | 144px | `BgGraph.tsx` |
+| PENALTY_ORANGE_ROW | 6 | `types.ts` (200 mg/dL = (200-50)/25) |
+| PENALTY_RED_ROW | 10 | `types.ts` (300 mg/dL = (300-50)/25) |
 | PAD_LEFT/TOP/RIGHT | 4 | `BgGraph.tsx` |
 | PAD_BOTTOM | 1 | `BgGraph.tsx` |
 | PANCREAS_TOTAL_BARS | 1 | `types.ts` — BOOST uses per level |
@@ -649,7 +653,7 @@ Key puzzle solutions:
 ### Cube Engine Details
 
 #### Ramp + Decay Algorithm (v0.50.0)
-1. `peakCubes = Math.round(glucose / cellHeightMgDl)` (glucose in mg/dL units, cellHeightMgDl=50)
+1. `peakCubes = Math.round(glucose / cellHeightMgDl)` (glucose in mg/dL units, cellHeightMgDl=25)
 2. `riseCols = Math.round(duration / cellWidthMin)` (cellWidthMin=30)
 3. Rise phase (cols 0..riseCols-1): `height = round(peakCubes × (i+1)/riseCols)` — linear ramp
 4. Post-peak: decay via `decayRate = 0.5` (legacy formula — ~1 cube per 30 min)
@@ -661,11 +665,11 @@ Key puzzle solutions:
 - `columnCaps[col] = max(baselineRow, pancreasCaps[col] − interventionRed − pancreasD − boostD − metforminD − sglt2D − glp1D)`
 - SGLT2 floor: `sglt2D = min(rawSglt2D, max(0, heightBeforeSglt2 − floorRow))`
 
-#### Intervention Algorithm (v0.40.0)
+#### Intervention Algorithm (v0.55.17)
 1. `depth` = cubes to remove during main phase
-2. `mainCols = Math.round(duration / 15)` = main phase length
+2. `mainCols = Math.round(duration / cellWidthMin)` = main phase length (cellWidthMin=30)
 3. Main phase: flat at `depth` for `mainCols` columns (no ramp)
-4. Tail phase: flat at `boostExtra` from mainCols to right edge of graph
+4. Tail phase: flat at `boostExtra`; capped by `maxDuration` if set: `maxTotalCols = round(maxDuration / 30)`
 5. Multiple interventions stack (reductions add up)
 6. Cubes removed from top — bottom cubes stay visible
 
@@ -710,6 +714,9 @@ Progressive blue palette by placement order: 7-color Tailwind sky shades from `#
 - *(v0.54.1)* — Fix: `hideBurnedInPlanning` extended to phases 0-2 (was phase 2 only) — no pre-burned state flash at start of results
 - *(v0.54.2)* — Fix: show full glucose stack (pre-burn layer) during reveal phase 1 via `isRevealPreBurn` flag; pancreas/boost cube filter changed to `revealPhase >= 1`
 - `alpha-14-stable` (v0.55.0) — Animated results reveal: danger flash → cubes sweep + Excess Glucose counter → stars one-by-one → label bounce-in; `showDangerZone` prop fixes danger-coloring bug during burn phases; tap-to-skip
+- *(v0.55.17)* — T2 renamed "Exercises"; L2D1 dialogs reworked (danger-zone coloring, merged drag step, fixed pizza peak 250 mg/dL); `showPenaltyOverlay` prop decouples penalty rects from zone coloring; intervention `maxDuration` field caps tail phase (walk 2h, run 6h)
+- *(v0.55.18)* — T2D2 puzzle redesign: burger@3PM, heavyrun in inventory, wpBudget=14, kcalBudget=1800, lockedSlots=[1,6,10]; T2D2/D3 dialogs removed; L2D3-2 "New: Heavy Run!" removed
+- *(v0.55.19)* — Remove main menu and config screen; app starts on Level Select; Test Level tile added as 10th tile (🎮 Free play); `TutorialLevelSelect` is now the root screen
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
