@@ -2,7 +2,7 @@
   "id": "tutorial-04",
   "name": "Pancreas Fatigue",
   "description": "Learn how type 2 diabetes progressively affects the pancreas — and how medication helps compensate.",
-  "days": 2,
+  "days": 3,
   "dayConfigs": [
     {
       "day": 1,
@@ -39,6 +39,29 @@
         { "shipId": "chocolatemuffin", "slotIndex": 3 }
       ],
       "lockedSlots": [0, 3, 6, 8, 11]
+    },
+    {
+      "day": 3,
+      "kcalBudget": 1700,
+      "wpBudget": 15,
+      "pancreasEffectiveness": 4,
+      "startingBg": 100,
+      "availableFoods": [
+        { "id": "banana", "count": 1 },
+        { "id": "cookie", "count": 1 },
+        { "id": "sandwich", "count": 1 },
+        { "id": "oatmeal", "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 },
+        { "id": "heavyrun", "count": 1 }
+      ],
+      "availableMedications": ["metformin"],
+      "preplacedFoods": [
+        { "shipId": "pizza", "slotIndex": 3 },
+        { "shipId": "burger", "slotIndex": 5 }
+      ],
+      "lockedSlots": [0, 3, 5, 11]
     }
   ]
 }

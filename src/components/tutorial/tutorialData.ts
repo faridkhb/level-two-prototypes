@@ -223,12 +223,6 @@ const L_PF_D2: TutorialStep[] = [
     expectedAction: { type: 'click-submit' },
   },
   {
-    id: 'LPF-D2-9',
-    bubble: { type: 'success', text: "Well done! You've seen how Metformin can compensate for pancreas fatigue.", expression: 'celebrating', position: 'center' },
-    advanceOn: 'tap',
-    blocksResultsReveal: true,
-  },
-  {
     id: 'LPF-D2-10',
     pendingUntilResults: true,
     highlight: 'result-next-btn',
