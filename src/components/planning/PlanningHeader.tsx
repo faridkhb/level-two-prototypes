@@ -96,17 +96,9 @@ export function KcalBar({
   const fillPct = Math.min(pct / barMaxPct * 100, 100);
 
   const livePenalty = getSatietyPenalty(kcalUsed, effectiveKcalBudget);
-  let forecastBadge = '';
-  if (livePenalty.zone === 'optimal') {
-    forecastBadge = '+1 ☀️';
-  } else if (livePenalty.zone === 'overeating') {
-    forecastBadge = `−1 ☀️`;
-  } else if (livePenalty.zone === 'malnourished' && kcalUsed > 0) {
-    forecastBadge = '−1 ☀️';
-  }
-
   const satietyLabel = kcalUsed > 0 ? assessment.label : '';
-  const satietyText = satietyLabel + (forecastBadge ? ` ${forecastBadge}` : '');
+  const pancreasFatigue = livePenalty.zone === 'overeating';
+  const satietyText = satietyLabel + (pancreasFatigue ? ' +Pancreas Fatigue' : '');
 
   return (
     <div className="planning-header__kcal-bar-wrap">
