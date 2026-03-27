@@ -1131,7 +1131,7 @@ const L_KCAL_D2: TutorialStep[] = [
 const TUTORIAL_STEPS: Record<string, Record<number, TutorialStep[]>> = {
   'tutorial-01': { 1: L1D1, 2: L1D2, 3: L1D3 },
   'tutorial-02': { 1: L_KCAL_D1, 2: L_KCAL_D2 },
-  'tutorial-03': { 1: L2D1, 2: L2D2, 3: L2D3 },
+  'tutorial-03': { 1: L2D1, 2: L2D3, 3: L2D2 },
   'tutorial-04': { 1: L3D1, 2: L3D2, 3: L3D3 },
   'tutorial-05': { 1: L4D1, 2: L4D2, 3: L4D3 },
   'tutorial-06': { 1: L_STRESS_D1, 2: L_STRESS_D2, 3: [] },
