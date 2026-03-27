@@ -1021,7 +1021,7 @@ const L_KCAL_D1: TutorialStep[] = [
   },
   {
     id: 'LK-D1-3',
-    bubble: { type: 'hint', text: 'The green zone means just the right amount of energy for your body. Aim to fill it up!', expression: 'happy', position: 'center' },
+    bubble: { type: 'hint', text: 'This is the optimal calories zone \u2014 staying in it means just the right amount of energy for your body. Aim to fill it up!', expression: 'happy', position: 'center' },
     highlight: 'kcal-green-zone',
     highlightType: 'pulse-green',
     advanceOn: 'tap',
