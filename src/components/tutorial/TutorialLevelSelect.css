@@ -108,7 +108,6 @@
 }
 
 .tutorial-tile--wip {
-  filter: grayscale(55%) brightness(0.60);
 }
 
 .tutorial-tile--outdated {
