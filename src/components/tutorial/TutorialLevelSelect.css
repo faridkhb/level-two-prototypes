@@ -99,12 +99,7 @@
 }
 
 .tutorial-select__card-days {
-  font-size: 11px;
-  opacity: 0.7;
-  align-self: center;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 2px 8px;
-  border-radius: 8px;
+  display: none;
 }
 
 .tutorial-tile--wip {
