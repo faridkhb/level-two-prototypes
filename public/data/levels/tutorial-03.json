@@ -6,13 +6,12 @@
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 1000,
+      "kcalBudget": 1600,
       "wpBudget": 9,
       "availableFoods": [
-        {
-          "id": "chickpeas",
-          "count": 1
-        }
+        { "id": "chickpeas", "count": 1 },
+        { "id": "banana",    "count": 1 },
+        { "id": "cookie",    "count": 1 }
       ],
       "availableInterventions": [
         {
@@ -31,9 +30,7 @@
         0,
         1,
         2,
-        4,
         7,
-        8,
         10,
         11
       ],
