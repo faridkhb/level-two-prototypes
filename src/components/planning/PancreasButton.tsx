@@ -7,6 +7,7 @@ interface PancreasButtonProps {
   disabled?: boolean;
   isBlinking?: boolean;
   pancreasEffectiveness?: number; // 1-5, default 5 (fully healthy)
+  hideCharges?: boolean; // hide BOOST charges row (indicator-only mode for T1)
 }
 
 const BASE_SECTIONS = 5;
@@ -40,9 +41,10 @@ export function PancreasButton({
   disabled = false,
   isBlinking = false,
   pancreasEffectiveness = 5,
+  hideCharges = false,
 }: PancreasButtonProps) {
   const canAffordBoost = !isBoostActive && usesRemaining >= 1;
-  const showHint = usesRemaining > 0;
+  const showHint = !hideCharges && usesRemaining > 0;
   const segs = buildSegments(pancreasEffectiveness, isBoostActive);
 
   const classes = [
@@ -62,9 +64,11 @@ export function PancreasButton({
     >
       <div className="pancreas-btn__top">
         <span className="pancreas-btn__emoji">{'\uD83E\uDEC1'}</span>
-        <span className={`pancreas-btn__charges${usesRemaining === 0 ? ' pancreas-btn__charges--empty' : ''}`}>
-          {usesRemaining}
-        </span>
+        {!hideCharges && (
+          <span className={`pancreas-btn__charges${usesRemaining === 0 ? ' pancreas-btn__charges--empty' : ''}`}>
+            {usesRemaining}
+          </span>
+        )}
         {showHint && (
           <span className="pancreas-btn__hint">
             {isBoostActive ? 'BOOSTED' : 'TAP TO BOOST'}

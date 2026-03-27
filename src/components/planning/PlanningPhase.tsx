@@ -124,21 +124,20 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   // Incrementing key forces BgGraph remount (e.g., on Retry) so prevLayersRef resets
   // and pre-placed foods are detected as "added" → bomb animation fires
   const [bgGraphKey, setBgGraphKey] = useState(0);
-  const pjBlinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const advanceRevealRef = useRef<(() => void) | null>(null);
 
   const handlePancreasBurnStart = useCallback(() => {
     setIsPJBlinking(true);
-    if (pjBlinkTimerRef.current) clearTimeout(pjBlinkTimerRef.current);
-    pjBlinkTimerRef.current = setTimeout(() => setIsPJBlinking(false), 1200);
+    // blink stops in handleBurnAnimComplete when all bombs finish
   }, []);
 
   // Keep tutorialStepRef current so advancePhase closure can read it without stale closure issues
   useEffect(() => { tutorialStepRef.current = tutorialStep; }, [tutorialStep]);
 
-  // Handles bomb animation completion: advances tutorial (L1D1 slow-mo step)
+  // Handles bomb animation completion: stops blink, advances tutorial (L1D1 slow-mo step)
   const handleBurnAnimComplete = useCallback(() => {
+    setIsPJBlinking(false);
     notifyBurnAnimComplete();
   }, [notifyBurnAnimComplete]);
 
@@ -234,8 +233,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   }, [currentLevel, currentDay]);
   const barsAvailable = PANCREAS_TOTAL_BARS + bonusBoostBars - totalLockedBars;
   const pancreasEffectiveness = currentLevel?.dayConfigs?.find(dc => dc.day === currentDay)?.pancreasEffectiveness;
-  // Hide BOOST button for tutorials before T4 (introduced in tutorial-04)
-  const showBoostButton = !['tutorial-01', 'tutorial-02', 'tutorial-03'].includes(currentLevel?.id ?? '');
+  // Hide BOOST button for T2/T3 (introduced in tutorial-04); T1 shows indicator only (no charges)
+  const showPancreasButton = !['tutorial-02', 'tutorial-03'].includes(currentLevel?.id ?? '');
+  const showBoostCharges = showPancreasButton && currentLevel?.id !== 'tutorial-01';
 
   // Submit button enabled when kcal >= 50% (Optimal zone) and in planning phase
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier);
@@ -765,15 +765,16 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               onBurnAnimComplete={handleBurnAnimComplete}
               showHatchingOverride={isResultsRevealing || showResults}
             />
-            {isPlanning && showBoostButton && (
+            {isPlanning && showPancreasButton && (
               <div className="planning-phase__pancreas-overlay">
                 <PancreasButton
                   isBoostActive={isBoostActive}
                   usesRemaining={barsAvailable}
                   onToggle={handleToggleBoost}
-                  disabled={gamePhase !== 'planning'}
+                  disabled={gamePhase !== 'planning' || !showBoostCharges}
                   isBlinking={isPJBlinking}
                   pancreasEffectiveness={pancreasEffectiveness}
+                  hideCharges={!showBoostCharges}
                 />
               </div>
             )}
