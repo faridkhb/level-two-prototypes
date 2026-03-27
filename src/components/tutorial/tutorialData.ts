@@ -328,7 +328,7 @@ const L3D2: TutorialStep[] = [
   },
   {
     id: 'L3D2-2',
-    bubble: { type: 'warning', text: 'Overeating (>120% kcal) penalizes the next day: \u22121 WP and +100 kcal budget.', expression: 'concerned' },
+    bubble: { type: 'warning', text: 'Overeating (>80% kcal) penalizes the next day: \u22121 WP and +100 kcal budget.', expression: 'concerned' },
     highlight: 'kcal-bar',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -1057,7 +1057,7 @@ const L_KCAL_D1: TutorialStep[] = [
 const L_KCAL_D2: TutorialStep[] = [
   {
     id: 'LK-D2-1',
-    bubble: { type: 'warning', text: "It\u2019s your colleague\u2019s birthday! The office had pizza, a big burger, and Caesar salad. What a feast!", expression: 'concerned', position: 'center' },
+    bubble: { type: 'warning', text: "You started with cheese for breakfast, then came the birthday lunch: burger, pizza, and Caesar salad. What a day!", expression: 'concerned', position: 'center' },
     noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,

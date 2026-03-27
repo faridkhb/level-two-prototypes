@@ -3,8 +3,8 @@ import { getKcalAssessment, getSatietyPenalty, DEFAULT_MEDICATION_MODIFIERS } fr
 import './PlanningHeader.css';
 
 const KCAL_TICKS = [
-  { pct: 50, label: 'Malnourished' },
-  { pct: 100, label: 'Optimal' },
+  { pct: 60, label: 'Malnourished' },
+  { pct: 80, label: 'Optimal' },
 ];
 
 interface PlanningHeaderProps {
@@ -133,9 +133,9 @@ export function KcalBar({
             className="planning-header__kcal-bar-fill"
             style={{ width: `${fillPct}%`, background: assessment.color }}
           />
-          <div className="planning-header__kcal-zone planning-header__kcal-zone--red" style={{ left: '0%', width: `${(50 / barMaxPct) * 100}%` }} />
-          <div className="planning-header__kcal-zone planning-header__kcal-zone--green" style={{ left: `${(50 / barMaxPct) * 100}%`, width: `${(50 / barMaxPct) * 100}%` }} />
-          <div className="planning-header__kcal-zone planning-header__kcal-zone--orange" style={{ left: `${(100 / barMaxPct) * 100}%`, width: `${(50 / barMaxPct) * 100}%` }} />
+          <div className="planning-header__kcal-zone planning-header__kcal-zone--red" style={{ left: '0%', width: `${(60 / barMaxPct) * 100}%` }} />
+          <div className="planning-header__kcal-zone planning-header__kcal-zone--green" style={{ left: `${(60 / barMaxPct) * 100}%`, width: `${(20 / barMaxPct) * 100}%` }} />
+          <div className="planning-header__kcal-zone planning-header__kcal-zone--orange" style={{ left: `${(80 / barMaxPct) * 100}%`, width: `${(70 / barMaxPct) * 100}%` }} />
           {KCAL_TICKS.map(tick => {
             const xPct = (tick.pct / barMaxPct) * 100;
             return (

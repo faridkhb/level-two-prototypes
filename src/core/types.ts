@@ -204,8 +204,8 @@ export interface KcalAssessment {
 export function getKcalAssessment(kcalUsed: number, kcalBudget: number): KcalAssessment {
   if (kcalBudget === 0) return { label: 'Malnourished', color: '#e53e3e', zone: 'malnourished' };
   const pct = (kcalUsed / kcalBudget) * 100;
-  if (pct < 50) return { label: 'Malnourished', color: '#e53e3e', zone: 'malnourished' };
-  if (pct <= 100) return { label: 'Optimal', color: '#48bb78', zone: 'optimal' };
+  if (pct < 60) return { label: 'Malnourished', color: '#e53e3e', zone: 'malnourished' };
+  if (pct <= 80) return { label: 'Optimal', color: '#48bb78', zone: 'optimal' };
   return { label: 'Overeating', color: '#ed8936', zone: 'overeating' };
 }
 
