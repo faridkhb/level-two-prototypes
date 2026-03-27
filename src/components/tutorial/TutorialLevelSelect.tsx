@@ -10,7 +10,7 @@ interface TutorialLevel {
 
 const TUTORIAL_LEVELS: TutorialLevel[] = [
   { id: 'tutorial-01', name: 'First Steps', days: 3, emoji: '\ud83c\udf4c', gradient: 'linear-gradient(135deg, #60a5fa, #2563eb)' },
-  { id: 'tutorial-02', name: 'Keep Moving', days: 3, emoji: '\ud83d\udeb6', gradient: 'linear-gradient(135deg, #4ade80, #16a34a)' },
+  { id: 'tutorial-02', name: 'Exercises', days: 3, emoji: '\ud83d\udeb6', gradient: 'linear-gradient(135deg, #4ade80, #16a34a)' },
   { id: 'tutorial-03', name: 'Willpower Mgmt', days: 3, emoji: '\u2615', gradient: 'linear-gradient(135deg, #fbbf24, #d97706)' },
   { id: 'tutorial-04', name: 'Insulin Rhythm', days: 2, emoji: '\ud83d\udcca', gradient: 'linear-gradient(135deg, #fb923c, #ea580c)' },
   { id: 'tutorial-05', name: 'Under Stress', days: 3, emoji: '\ud83e\uddd8', gradient: 'linear-gradient(135deg, #2dd4bf, #0f766e)' },

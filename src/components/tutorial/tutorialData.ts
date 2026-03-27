@@ -197,7 +197,7 @@ const L1D3: TutorialStep[] = [
   },
 ];
 
-// ======= LEVEL 2 — Keep Moving =======
+// ======= LEVEL 2 — Exercises =======
 
 const L2D1: TutorialStep[] = [
   {
