@@ -145,19 +145,14 @@ const L_PF_D1: TutorialStep[] = [
     expectedAction: { type: 'click-submit' },
   },
   {
-    id: 'LPF-D1-8',
-    bubble: { type: 'success', text: "Good work! Tomorrow we'll see what tools help manage the load.", expression: 'happy', position: 'center' },
-    advanceOn: 'tap',
-    blocksResultsReveal: true,
-  },
-  {
     id: 'LPF-D1-9',
+    bubble: { type: 'dialogue', text: "That's a lot of excess sugar. Tomorrow I'll show you what helps reduce the load on the pancreas.", expression: 'concerned', position: 'inventory' },
     pendingUntilResults: true,
     highlight: 'result-next-btn',
     highlightType: 'pulse',
     cta: { type: 'tap-pulse', target: 'result-next-btn' },
-    blockInteraction: false,
     noBackdrop: true,
+    blockInteraction: false,
     advanceOn: 'tap',
   },
 ];
