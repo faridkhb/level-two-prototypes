@@ -892,9 +892,15 @@ export function BgGraph({
   useEffect(() => () => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     for (const timer of burningIntTimersRef.current.values()) clearTimeout(timer);
-    if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
+    if (animateBurnTimerRef.current) {
+      clearTimeout(animateBurnTimerRef.current);
+      animateBurnTimerRef.current = null;
+    }
     for (const t of burnedColTimersRef.current) clearTimeout(t);
     for (const t of cascadeTimersRef.current) clearTimeout(t);
+    // Reset so next mount (StrictMode remount or key-forced remount) detects all
+    // current foods as "added" → bomb/plateau animation fires on initial load
+    prevLayersRef.current = [];
   }, []);
 
   // Dynamic zone clip bands (Y-positions from mg/dL thresholds)
