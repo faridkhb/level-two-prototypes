@@ -3,7 +3,7 @@
 
 export type BubbleType = 'dialogue' | 'hint' | 'warning' | 'success';
 export type Expression = 'neutral' | 'happy' | 'concerned' | 'thinking' | 'celebrating';
-export type HighlightType = 'spotlight' | 'pulse' | 'glow' | 'arrow';
+export type HighlightType = 'spotlight' | 'pulse' | 'pulse-green' | 'glow' | 'arrow';
 export type CTAType = 'drag-arrow' | 'tap-pulse' | 'glow-border' | 'bounce';
 export type AdvanceOn = 'tap' | 'action' | 'auto' | 'burn-anim-complete';
 
@@ -1023,7 +1023,7 @@ const L_KCAL_D1: TutorialStep[] = [
     id: 'LK-D1-3',
     bubble: { type: 'hint', text: 'The green zone means just the right amount of energy for your body. Aim to fill it up!', expression: 'happy', position: 'center' },
     highlight: 'kcal-green-zone',
-    highlightType: 'pulse',
+    highlightType: 'pulse-green',
     advanceOn: 'tap',
     blockInteraction: true,
   },

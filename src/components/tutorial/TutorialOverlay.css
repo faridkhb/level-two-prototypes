@@ -37,6 +37,11 @@
   box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.6);
 }
 
+.tutorial-overlay__spotlight--pulse-green {
+  animation: tutorialPulseGreen 1.5s ease-in-out infinite;
+  box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.7);
+}
+
 .tutorial-overlay__spotlight--glow {
   box-shadow: 0 0 20px 4px rgba(56, 189, 248, 0.4);
 }
@@ -53,6 +58,17 @@
   50% {
     box-shadow: 0 0 12px 6px rgba(56, 189, 248, 0.3);
     transform: scale(1.02);
+  }
+}
+
+@keyframes tutorialPulseGreen {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 14px 7px rgba(74, 222, 128, 0.35);
+    transform: scale(1.03);
   }
 }
 
