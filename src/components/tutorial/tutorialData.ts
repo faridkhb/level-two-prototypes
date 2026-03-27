@@ -46,7 +46,165 @@ export interface TutorialStep {
   clearPreplaced?: boolean;      // if true — all pre-placed foods moved to available inventory when step activates
   requiresOptimalSubmit?: boolean; // if true — submit button only active when kcal zone === 'optimal'
   kcalBlink?: boolean;           // if true — kcal numbers on all food cards pulse while step is active
+  pancreasEffectivenessOverride?: number; // if set — overrides dayConfig.pancreasEffectiveness on PancreasButton (triggers blink when < config value)
 }
+
+// ======= PANCREAS FATIGUE (T4) =======
+
+const L_PF_D1: TutorialStep[] = [
+  {
+    id: 'LPF-D1-1',
+    bubble: { type: 'warning', text: "Unfortunately, type 2 diabetes is a progressive disease — especially without careful diet and lifestyle management.", expression: 'concerned', position: 'center' },
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LPF-D1-2',
+    bubble: { type: 'dialogue', text: "Over time this leads to increased insulin resistance and greater burden on the pancreas, causing it to fatigue.", expression: 'neutral' },
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LPF-D1-3',
+    bubble: { type: 'hint', text: "You can monitor pancreas performance right here. Right now it's working at full strength — 5 out of 5.", expression: 'neutral', position: 'inventory' },
+    highlight: 'pancreas-btn',
+    highlightType: 'pulse',
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LPF-D1-4',
+    bubble: { type: 'dialogue', text: "Place a food card and watch how the pancreas handles the glucose spike.", expression: 'neutral' },
+    highlight: ['food:banana', 'slot:2'],
+    highlightType: 'glow',
+    cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:2' },
+    advanceOn: 'action',
+    expectedAction: { type: 'place-food' },
+  },
+  {
+    id: 'LPF-D1-5',
+    bubble: { type: 'hint', text: "Now let's see what happens when the pancreas is slightly fatigued...", expression: 'thinking', position: 'inventory' },
+    highlight: 'pancreas-btn',
+    highlightType: 'pulse',
+    pancreasEffectivenessOverride: 4,
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LPF-D1-6',
+    bubble: { type: 'dialogue', text: "As you can see, the pancreas handles glucose less effectively. Unfortunately this process is irreversible — so it's vital to manage blood sugar and avoid overeating.", expression: 'concerned' },
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LPF-D1-7',
+    bubble: { type: 'dialogue', text: "Finish planning for today — I'll explain how we can support the pancreas.", expression: 'neutral', position: 'inventory' },
+    highlight: 'ship-inventory',
+    highlightType: 'glow',
+    advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
+  },
+  {
+    id: 'LPF-D1-8',
+    bubble: { type: 'success', text: "Good work! Tomorrow we'll see what tools help manage the load.", expression: 'happy', position: 'center' },
+    advanceOn: 'tap',
+    blocksResultsReveal: true,
+  },
+  {
+    id: 'LPF-D1-9',
+    pendingUntilResults: true,
+    highlight: 'result-next-btn',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'result-next-btn' },
+    blockInteraction: false,
+    noBackdrop: true,
+    advanceOn: 'tap',
+  },
+];
+
+const L_PF_D2: TutorialStep[] = [
+  {
+    id: 'LPF-D2-1',
+    bubble: { type: 'dialogue', text: "The muffin is causing a dangerous spike. And today the pancreas is already at 4/5 — it's working harder to compensate.", expression: 'concerned' },
+    highlight: 'graph',
+    highlightType: 'spotlight',
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LPF-D2-2',
+    bubble: { type: 'hint', text: "Even intense physical activity won't flatten this peak alone — but let's try it. Place Heavy Run right after the muffin.", expression: 'thinking', position: 'inventory' },
+    highlight: ['intervention:heavyrun', 'slot:4'],
+    highlightType: 'spotlight',
+    cta: { type: 'drag-arrow', source: 'intervention:heavyrun', dest: 'slot:4' },
+    advanceOn: 'action',
+    expectedAction: { type: 'place-intervention', interventionId: 'heavyrun' },
+  },
+  {
+    id: 'LPF-D2-3',
+    bubble: { type: 'dialogue', text: "Heavy Run reduces the peak — but it's still in the danger zone. We need another approach.", expression: 'thinking' },
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LPF-D2-4',
+    bubble: { type: 'dialogue', text: "\ud83d\udc8a Metformin! It reduces ALL food glucose by 20% — for the entire day.", expression: 'neutral' },
+    highlight: 'medication:metformin',
+    highlightType: 'spotlight',
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LPF-D2-5',
+    bubble: { type: 'hint', text: "No WP cost. Just tap once — it stays active all day.", expression: 'thinking' },
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LPF-D2-6',
+    bubble: { type: 'dialogue', text: "Tap Metformin ON and watch the peak change!", expression: 'neutral' },
+    highlight: 'medication:metformin',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'medication:metformin' },
+    advanceOn: 'action',
+    expectedAction: { type: 'toggle-medication', medicationId: 'metformin' },
+  },
+  {
+    id: 'LPF-D2-7',
+    bubble: { type: 'success', text: "The peak dropped! Those fuchsia cells show the glucose Metformin prevented. The more food — the bigger the effect!", expression: 'happy', position: 'bottom' },
+    highlight: 'graph',
+    highlightType: 'glow',
+    noBackdrop: true,
+    highlightMedEffect: true,
+    advanceOn: 'tap',
+  },
+  {
+    id: 'LPF-D2-8',
+    bubble: { type: 'dialogue', text: "Place your remaining food and submit!", expression: 'neutral', position: 'inventory' },
+    highlight: 'ship-inventory',
+    highlightType: 'glow',
+    advanceOn: 'action',
+    expectedAction: { type: 'click-submit' },
+  },
+  {
+    id: 'LPF-D2-9',
+    bubble: { type: 'success', text: "Well done! You've seen how Metformin can compensate for pancreas fatigue.", expression: 'celebrating', position: 'center' },
+    advanceOn: 'tap',
+    blocksResultsReveal: true,
+  },
+  {
+    id: 'LPF-D2-10',
+    pendingUntilResults: true,
+    highlight: 'result-next-btn',
+    highlightType: 'pulse',
+    cta: { type: 'tap-pulse', target: 'result-next-btn' },
+    blockInteraction: false,
+    noBackdrop: true,
+    advanceOn: 'tap',
+  },
+];
 
 // ======= LEVEL 1 — First Steps =======
 
@@ -484,102 +642,6 @@ const L4D3: TutorialStep[] = [
 ];
 
 // ======= LEVEL 5 — First Medication =======
-
-const L5D1: TutorialStep[] = [
-  {
-    id: 'L5D1-1',
-    bubble: { type: 'dialogue', text: 'Look at that muffin peak! 35g carbs \u2014 straight into the danger zone.', expression: 'concerned' },
-    highlight: 'graph',
-    highlightType: 'spotlight',
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L5D1-2',
-    bubble: { type: 'hint', text: 'Heavy Run costs all 4 WP \u2014 nothing left for food. Not a great trade today.', expression: 'thinking' },
-    highlight: 'wp-counter',
-    highlightType: 'glow',
-    noBackdrop: true,
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L5D1-3',
-    bubble: { type: 'hint', text: 'You could use BOOST to flatten it... but BOOST has only 1 charge this level. Spending it on Day 1 is a risk.', expression: 'thinking' },
-    highlight: 'boost-btn',
-    highlightType: 'glow',
-    noBackdrop: true,
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L5D1-5',
-    bubble: { type: 'dialogue', text: '\ud83d\udc8a Metformin! It reduces ALL food glucose by 20% \u2014 for the entire day.', expression: 'neutral' },
-    highlight: 'medication:metformin',
-    highlightType: 'spotlight',
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L5D1-6',
-    bubble: { type: 'hint', text: 'No WP cost. Just tap once \u2014 it stays active all day.', expression: 'thinking' },
-    advanceOn: 'tap',
-  },
-  {
-    id: 'L5D1-7',
-    bubble: { type: 'dialogue', text: 'Tap Metformin ON and watch the peak change!', expression: 'neutral' },
-    highlight: 'medication:metformin',
-    highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'medication:metformin' },
-    advanceOn: 'action',
-    expectedAction: { type: 'toggle-medication', medicationId: 'metformin' },
-  },
-  {
-    id: 'L5D1-8',
-    bubble: { type: 'success', text: 'The peak dropped! Those fuchsia cells show the glucose Metformin prevented. The more food \u2014 the bigger the effect!', expression: 'happy', position: 'bottom' },
-    highlight: 'graph',
-    highlightType: 'glow',
-    noBackdrop: true,
-    highlightMedEffect: true,
-    advanceOn: 'tap',
-  },
-  {
-    id: 'L5D1-9',
-    bubble: { type: 'dialogue', text: 'Place your remaining foods and submit!', expression: 'neutral', position: 'inventory' },
-    highlight: 'ship-inventory',
-    highlightType: 'glow',
-    advanceOn: 'action',
-    expectedAction: { type: 'click-submit' },
-  },
-];
-
-const L5D2: TutorialStep[] = [
-  {
-    id: 'L5D2-1',
-    bubble: { type: 'dialogue', text: 'Two big pre-placed foods today! You\'ll need everything: Metformin AND exercise.', expression: 'neutral' },
-    highlight: 'graph',
-    highlightType: 'spotlight',
-    noBackdrop: true,
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L5D2-2',
-    bubble: { type: 'dialogue', text: 'Toggle Metformin ON first \u2014 it reduces both peaks by 20%.', expression: 'neutral' },
-    highlight: 'medication:metformin',
-    highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'medication:metformin' },
-    advanceOn: 'tap',
-  },
-  {
-    id: 'L5D2-3',
-    bubble: { type: 'dialogue', text: 'Place a \ud83d\udeb6 Walk near each peak. Fill in your food and submit!', expression: 'neutral', position: 'inventory' },
-    highlight: 'ship-inventory',
-    highlightType: 'glow',
-    advanceOn: 'action',
-    expectedAction: { type: 'click-submit' },
-  },
-];
 
 // ======= LEVEL 6 — Threshold Drain =======
 
@@ -1132,10 +1194,10 @@ const TUTORIAL_STEPS: Record<string, Record<number, TutorialStep[]>> = {
   'tutorial-01': { 1: L1D1, 2: L1D2, 3: L1D3 },
   'tutorial-02': { 1: L_KCAL_D1, 2: L_KCAL_D2 },
   'tutorial-03': { 1: L2D1, 2: L2D3, 3: L2D2 },
-  'tutorial-04': { 1: L3D1, 2: L3D2, 3: L3D3 },
-  'tutorial-05': { 1: L4D1, 2: L4D2, 3: L4D3 },
-  'tutorial-06': { 1: L_STRESS_D1, 2: L_STRESS_D2, 3: [] },
-  'tutorial-07': { 1: L5D1, 2: L5D2 },
+  'tutorial-04': { 1: L_PF_D1, 2: L_PF_D2 },            // Pancreas Fatigue (NEW)
+  'tutorial-05': { 1: L3D1, 2: L3D2, 3: L3D3 },         // Willpower Management (← old T4)
+  'tutorial-06': { 1: L4D1, 2: L4D2, 3: L4D3 },         // Pancreas Boost (← old T5)
+  'tutorial-07': { 1: L_STRESS_D1, 2: L_STRESS_D2, 3: [] }, // Under Stress (← old T6)
   'tutorial-08': { 1: L6D1, 2: L6D2 },
   'tutorial-09': { 1: L7D1, 2: L7D2 },
   'tutorial-10': { 1: L8D1, 2: L8D2, 3: L8D3 },

@@ -275,10 +275,15 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       .reduce((sum, dc) => sum + (dc.bonusBoostBars ?? 0), 0);
   }, [currentLevel, currentDay]);
   const barsAvailable = PANCREAS_TOTAL_BARS + bonusBoostBars - totalLockedBars;
-  const pancreasEffectiveness = currentLevel?.dayConfigs?.find(dc => dc.day === currentDay)?.pancreasEffectiveness;
-  // T3/T4 (old T2 Exercises / T3 Willpower) hide PancreasButton entirely; T1/T2 show indicator only (no charges)
-  const showPancreasButton = !['tutorial-04'].includes(currentLevel?.id ?? '');
-  const showBoostCharges = showPancreasButton && !['tutorial-01', 'tutorial-02', 'tutorial-03'].includes(currentLevel?.id ?? '');
+  const configEffectiveness = currentLevel?.dayConfigs?.find(dc => dc.day === currentDay)?.pancreasEffectiveness;
+  const stepEffectivenessOverride = tutorialStep?.pancreasEffectivenessOverride;
+  const pancreasEffectiveness = stepEffectivenessOverride ?? configEffectiveness;
+  const isPancreasBlinkingFromStep = stepEffectivenessOverride !== undefined
+    && configEffectiveness !== undefined
+    && stepEffectivenessOverride < configEffectiveness;
+  // T1–T5: show PancreasButton but hide BOOST charges; T4 (Pancreas Fatigue) shows indicator prominently
+  const showPancreasButton = true;
+  const showBoostCharges = !['tutorial-01', 'tutorial-02', 'tutorial-03', 'tutorial-04', 'tutorial-05'].includes(currentLevel?.id ?? '');
 
   // Submit button enabled when kcal >= 60% (Optimal zone) and in planning phase
   const effectiveKcalBudget = Math.round(kcalBudget * medicationModifiers.kcalMultiplier);
@@ -820,7 +825,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                   usesRemaining={barsAvailable}
                   onToggle={handleToggleBoost}
                   disabled={gamePhase !== 'planning' || !showBoostCharges}
-                  isBlinking={isPJBlinking}
+                  isBlinking={isPJBlinking || isPancreasBlinkingFromStep}
                   pancreasEffectiveness={pancreasEffectiveness}
                   hideCharges={!showBoostCharges}
                 />

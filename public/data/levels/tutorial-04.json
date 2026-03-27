@@ -1,170 +1,44 @@
 {
-  "id": "tutorial-03",
-  "name": "Willpower Management",
-  "description": "Master WP budgeting, breaks, and the consequences of overeating.",
-  "days": 3,
+  "id": "tutorial-04",
+  "name": "Pancreas Fatigue",
+  "description": "Learn how type 2 diabetes progressively affects the pancreas — and how medication helps compensate.",
+  "days": 2,
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 1750,
-      "wpBudget": 7,
+      "kcalBudget": 1500,
+      "wpBudget": 4,
+      "pancreasEffectiveness": 5,
+      "startingBg": 100,
       "availableFoods": [
-        {
-          "id": "burger",
-          "count": 1
-        },
-        {
-          "id": "nutsmixed",
-          "count": 1
-        },
-        {
-          "id": "cookie",
-          "count": 1
-        }
+        { "id": "banana", "count": 1 },
+        { "id": "cookie", "count": 1 }
       ],
-      "availableInterventions": [
-        {
-          "id": "takeabreak",
-          "count": 1
-        }
-      ],
+      "availableInterventions": [],
       "availableMedications": [],
-      "preplacedFoods": [],
-      "preplacedInterventions": [
-        {
-          "interventionId": "lightwalk",
-          "slotIndex": 8
-        }
+      "preplacedFoods": [
+        { "shipId": "chocolatemuffin", "slotIndex": 1 }
       ],
-      "lockedSlots": [
-        0,
-        1,
-        4,
-        5,
-        8,
-        10,
-        11
-      ],
-      "insulinProfile": {
-        "mode": "cumulative",
-        "segments": [
-          {
-            "from": 0,
-            "to": 47,
-            "rate": 1
-          }
-        ]
-      },
-      "startingBg": 100
+      "lockedSlots": [0, 1, 5, 6, 7, 8, 9]
     },
     {
       "day": 2,
-      "kcalBudget": 1400,
+      "kcalBudget": 1500,
       "wpBudget": 8,
+      "pancreasEffectiveness": 4,
+      "startingBg": 100,
       "availableFoods": [
-        {
-          "id": "burger",
-          "count": 1
-        },
-        {
-          "id": "chocolatemuffin",
-          "count": 1
-        },
-        {
-          "id": "pizza",
-          "count": 1
-        },
-        {
-          "id": "banana",
-          "count": 1
-        }
+        { "id": "banana", "count": 1 },
+        { "id": "cookie", "count": 1 }
       ],
       "availableInterventions": [
-        {
-          "id": "lightwalk",
-          "count": 1
-        }
+        { "id": "heavyrun", "count": 1 }
       ],
-      "availableMedications": [],
-      "preplacedFoods": [],
-      "lockedSlots": [
-        0,
-        1,
-        4,
-        5,
-        8,
-        9,
-        10,
-        11
-      ],
-      "insulinProfile": {
-        "mode": "cumulative",
-        "segments": [
-          {
-            "from": 0,
-            "to": 47,
-            "rate": 1
-          }
-        ]
-      },
-      "startingBg": 100
-    },
-    {
-      "day": 3,
-      "kcalBudget": 1600,
-      "wpBudget": 9,
-      "availableFoods": [
-        {
-          "id": "oatmeal",
-          "count": 1
-        },
-        {
-          "id": "banana",
-          "count": 1
-        }
-      ],
-      "availableInterventions": [
-        {
-          "id": "lightwalk",
-          "count": 1
-        },
-        {
-          "id": "takearest",
-          "count": 1
-        }
-      ],
-      "availableMedications": [],
+      "availableMedications": ["metformin"],
       "preplacedFoods": [
-        {
-          "shipId": "burger",
-          "slotIndex": 0
-        }
+        { "shipId": "chocolatemuffin", "slotIndex": 3 }
       ],
-      "lockedSlots": [
-        0,
-        4,
-        5,
-        8,
-        9,
-        10,
-        11
-      ],
-      "insulinProfile": {
-        "mode": "cumulative",
-        "segments": [
-          {
-            "from": 0,
-            "to": 23,
-            "rate": 1
-          },
-          {
-            "from": 24,
-            "to": 47,
-            "rate": 1
-          }
-        ]
-      },
-      "startingBg": 100
+      "lockedSlots": [0, 3, 6, 8, 11]
     }
   ]
 }

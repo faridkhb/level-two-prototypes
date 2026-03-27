@@ -1,117 +1,83 @@
 {
-  "id": "tutorial-06",
-  "name": "First Medication",
-  "description": "Metformin — passive glucose reduction for all foods.",
-  "days": 2,
+  "id": "tutorial-07",
+  "name": "Under Stress",
+  "description": "Stress slots weaken insulin — food placed there spikes higher and decays slower.",
+  "days": 3,
   "dayConfigs": [
     {
       "day": 1,
       "kcalBudget": 1500,
-      "wpBudget": 4,
+      "wpBudget": 6,
       "availableFoods": [
-        {
-          "id": "banana",
-          "count": 1
-        },
-        {
-          "id": "cookie",
-          "count": 1
-        }
+        { "id": "banana", "count": 1 },
+        { "id": "cookie", "count": 1 }
       ],
       "availableInterventions": [
-        {
-          "id": "heavyrun",
-          "count": 1
-        }
+        { "id": "heavyrun",   "count": 1 },
+        { "id": "takeabreak", "count": 1 }
       ],
-      "availableMedications": [
-        "metformin"
-      ],
+      "availableMedications": [],
       "preplacedFoods": [
-        {
-          "shipId": "chocolatemuffin",
-          "slotIndex": 3
-        }
+        { "shipId": "chocolatemuffin", "slotIndex": 1 }
       ],
-      "lockedSlots": [
-        0,
-        3,
-        6,
-        8,
-        11
-      ],
+      "lockedSlots": [0, 1],
+      "stressSlots": [4],
       "insulinProfile": {
         "mode": "cumulative",
-        "segments": [
-          {
-            "from": 0,
-            "to": 31,
-            "rate": 1
-          },
-          {
-            "from": 32,
-            "to": 47,
-            "rate": 1
-          }
-        ]
+        "segments": [{ "from": 0, "to": 47, "rate": 2 }]
       },
       "startingBg": 100
     },
     {
       "day": 2,
-      "kcalBudget": 1400,
+      "kcalBudget": 1800,
       "wpBudget": 10,
       "availableFoods": [
-        {
-          "id": "chickpeas",
-          "count": 1
-        },
-        {
-          "id": "banana",
-          "count": 1
-        }
+        { "id": "banana",   "count": 1 },
+        { "id": "chickpeas","count": 1 },
+        { "id": "cookie",   "count": 1 }
       ],
       "availableInterventions": [
-        {
-          "id": "lightwalk",
-          "count": 2
-        }
+        { "id": "heavyrun",  "count": 1 },
+        { "id": "lightwalk", "count": 1 },
+        { "id": "takearest", "count": 1 }
       ],
-      "availableMedications": [
-        "metformin"
-      ],
+      "availableMedications": [],
       "preplacedFoods": [
-        {
-          "shipId": "burger",
-          "slotIndex": 0
-        },
-        {
-          "shipId": "chocolatemuffin",
-          "slotIndex": 5
-        }
+        { "shipId": "chocolatemuffin", "slotIndex": 0 }
       ],
-      "lockedSlots": [
-        0,
-        1,
-        5,
-        8,
-        10,
-        11
-      ],
+      "lockedSlots": [0, 7, 11],
+      "stressSlots": [4, 5, 6],
       "insulinProfile": {
         "mode": "cumulative",
-        "segments": [
-          {
-            "from": 0,
-            "to": 23,
-            "rate": 1
-          },
-          {
-            "from": 24,
-            "to": 47,
-            "rate": 1
-          }
-        ]
+        "segments": [{ "from": 0, "to": 47, "rate": 2 }]
+      },
+      "startingBg": 100
+    },
+    {
+      "day": 3,
+      "kcalBudget": 2000,
+      "wpBudget": 12,
+      "availableFoods": [
+        { "id": "cookie",     "count": 1 },
+        { "id": "chickpeas",  "count": 1 },
+        { "id": "greekyogurt","count": 1 },
+        { "id": "oatmeal",    "count": 1 }
+      ],
+      "availableInterventions": [
+        { "id": "lightwalk", "count": 1 },
+        { "id": "takearest", "count": 1 }
+      ],
+      "availableMedications": [],
+      "preplacedFoods": [
+        { "shipId": "berriesmixed", "slotIndex": 3 },
+        { "shipId": "popcorn",      "slotIndex": 7 }
+      ],
+      "lockedSlots": [0, 3, 7, 11],
+      "stressSlots": [2, 3, 7],
+      "insulinProfile": {
+        "mode": "cumulative",
+        "segments": [{ "from": 0, "to": 47, "rate": 2 }]
       },
       "startingBg": 100
     }
