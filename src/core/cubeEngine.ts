@@ -131,12 +131,16 @@ export function calculateInterventionCurve(
   dropColumn: number,
   _boostCols: number = 0,
   boostExtra: number = 0,
+  maxDuration?: number,
 ): CubeColumn[] {
   const mainCols = Math.max(1, Math.round(durationMinutes / GRAPH_CONFIG.cellWidthMin));
   if (depth <= 0) return [];
 
   const result: CubeColumn[] = [];
-  const totalCols = TOTAL_COLUMNS - dropColumn;
+  const maxTotalCols = maxDuration
+    ? Math.max(mainCols, Math.round(maxDuration / GRAPH_CONFIG.cellWidthMin))
+    : TOTAL_COLUMNS;
+  const totalCols = Math.min(TOTAL_COLUMNS - dropColumn, maxTotalCols);
 
   for (let i = 0; i < totalCols; i++) {
     const height = i < mainCols ? depth : boostExtra;
@@ -162,7 +166,7 @@ export function calculateInterventionReduction(
 
     const curve = calculateInterventionCurve(
       intervention.depth, intervention.duration, placed.dropColumn,
-      intervention.boostCols ?? 0, intervention.boostExtra ?? 0,
+      intervention.boostCols ?? 0, intervention.boostExtra ?? 0, intervention.maxDuration,
     );
     for (const col of curve) {
       const graphCol = placed.dropColumn + col.columnOffset;

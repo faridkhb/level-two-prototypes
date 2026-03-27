@@ -101,6 +101,7 @@ export interface Intervention {
   wpCost: number;
   boostCols?: number;     // First N columns get extra depth (burst zone)
   boostExtra?: number;    // Extra cubes removed in burst zone
+  maxDuration?: number;   // Total effect duration cap in minutes (main + tail combined)
   isBreak?: boolean;      // Blocks time, gives WP instead of costing
   slotSize?: number;         // Number of meal slots occupied (default 1)
 }

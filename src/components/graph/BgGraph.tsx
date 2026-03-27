@@ -117,7 +117,8 @@ interface BgGraphProps {
   decayRate: number;
   boostActive?: boolean;
   medicationModifiers?: MedicationModifiers;
-  showDangerZone?: boolean;          // show danger-zone colors + penalty overlays (replaces showPenaltyHighlight)
+  showDangerZone?: boolean;          // show danger-zone cube colors (orange/red above 200)
+  showPenaltyOverlay?: boolean;      // show pulsing penalty overlays (defaults to showDangerZone if omitted)
   showHatchFlash?: boolean;          // one-shot flash animation on 200 line + hatching bands
   previewShip?: Ship;        // food being dragged (for preview on graph)
   previewColumn?: number;    // target column for preview
@@ -155,6 +156,7 @@ export function BgGraph({
   boostActive = false,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
   showDangerZone = false,
+  showPenaltyOverlay,
   showHatchFlash = false,
   previewShip,
   previewColumn,
@@ -1436,7 +1438,7 @@ export function BgGraph({
         {/* BG skyline — disabled */}
 
         {/* Penalty highlight overlays (after submit) */}
-        {showDangerZone && graphRenderData.layers.map(layer =>
+        {(showPenaltyOverlay ?? showDangerZone) && graphRenderData.layers.map(layer =>
           layer.cubes
             .filter(cube => cube.status === 'normal')
             .map(cube => {

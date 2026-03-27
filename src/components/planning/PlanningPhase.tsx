@@ -703,8 +703,10 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const isPlanning = gamePhase === 'planning';
   const showResults = gamePhase === 'results';
   const isResultsRevealing = resultsRevealPhase !== undefined;
-  // showDangerZone: true from counting phase (1) through full results
-  const showDangerZone = showResults || (isResultsRevealing && resultsRevealPhase >= 1);
+  // showDangerZone: true from counting phase (1) through full results, or when tutorial highlights danger zone
+  const showDangerZone = showResults || (isResultsRevealing && resultsRevealPhase >= 1) || tutorialStep?.highlight === 'danger-zone';
+  // showPenaltyOverlay: pulsing penalty rects only during actual results (not during tutorial)
+  const showPenaltyOverlay = showResults || (isResultsRevealing && resultsRevealPhase >= 1);
   // showHatchFlash: true only during danger-flash phase (0) — one-shot
   const showHatchFlash = isResultsRevealing && resultsRevealPhase === 0;
   // ResultPanel shown from counting phase (1) onwards
@@ -742,6 +744,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               boostActive={isBoostActive}
               medicationModifiers={medicationModifiers}
               showDangerZone={showDangerZone}
+              showPenaltyOverlay={showPenaltyOverlay}
               showHatchFlash={showHatchFlash}
               previewShip={activeShip && previewSlot !== null ? activeShip : undefined}
               previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}

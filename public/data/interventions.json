@@ -8,7 +8,8 @@
       "duration": 60,
       "wpCost": 2,
       "boostCols": 3,
-      "boostExtra": 2
+      "boostExtra": 2,
+      "maxDuration": 120
     },
     {
       "id": "heavyrun",
@@ -19,7 +20,8 @@
       "wpCost": 4,
       "boostCols": 5,
       "boostExtra": 2,
-      "slotSize": 2
+      "slotSize": 2,
+      "maxDuration": 360
     },
     {
       "id": "takeabreak",
