@@ -134,7 +134,7 @@
 }
 
 .pancreas-btn--blinking {
-  animation: pancreasBlink 0.5s ease-in-out 2;
+  animation: pancreasBlink 0.5s ease-in-out infinite;
 }
 
 /* ── Mobile portrait ── */
