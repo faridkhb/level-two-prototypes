@@ -108,11 +108,11 @@
 }
 
 .tutorial-tile--wip {
-  filter: grayscale(35%) brightness(0.82);
+  filter: grayscale(55%) brightness(0.60);
 }
 
 .tutorial-tile--outdated {
-  filter: grayscale(60%) brightness(0.72);
+  filter: grayscale(70%) brightness(0.50);
 }
 
 .tutorial-tile__status-badge {
