@@ -130,7 +130,7 @@ const L_PF_D1: TutorialStep[] = [
   {
     // Show tier-4 burned layer and explain the difference
     id: 'LPF-D1-6',
-    bubble: { type: 'dialogue', text: "Tier 4: the top row burns every interval, but the second row only every other — less glucose cleared. Notice the bar dropped to 4/5.", expression: 'concerned', position: 'inventory' },
+    bubble: { type: 'dialogue', text: "Not as sharp as before. The second burn row now skips every other interval — so some glucose slips through. That's what tier 4 looks like.", expression: 'concerned', position: 'inventory' },
     pancreasEffectivenessOverride: 4,
     showBurnsLayer: true,
     highlightBurns: true,
