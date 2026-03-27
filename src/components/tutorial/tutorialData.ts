@@ -60,7 +60,7 @@ const L_PF_D1: TutorialStep[] = [
   },
   {
     id: 'LPF-D1-2',
-    bubble: { type: 'dialogue', text: "Over time this leads to increased insulin resistance and greater burden on the pancreas, causing it to fatigue.", expression: 'neutral' },
+    bubble: { type: 'dialogue', text: "Over time this leads to increased insulin resistance and greater burden on the pancreas, causing it to fatigue.", expression: 'neutral', position: 'inventory' },
     advanceOn: 'tap',
     blockInteraction: true,
   },

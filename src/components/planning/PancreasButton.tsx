@@ -75,13 +75,11 @@ export function PancreasButton({
           </span>
         )}
       </div>
-      {!hideCharges && (
-        <div className="pancreas-btn__bar">
-          {segs.map((type, i) => (
-            <span key={i} className={`pancreas-btn__seg pancreas-btn__seg--${type}`} />
-          ))}
-        </div>
-      )}
+      <div className="pancreas-btn__bar">
+        {segs.map((type, i) => (
+          <span key={i} className={`pancreas-btn__seg pancreas-btn__seg--${type}`} />
+        ))}
+      </div>
     </button>
   );
 }
