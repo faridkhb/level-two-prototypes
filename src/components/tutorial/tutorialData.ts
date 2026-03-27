@@ -45,6 +45,7 @@ export interface TutorialStep {
   revealKcal?: boolean;          // if true — kcal indicator revealed on food cards from this step forward
   clearPreplaced?: boolean;      // if true — all pre-placed foods moved to available inventory when step activates
   requiresOptimalSubmit?: boolean; // if true — submit button only active when kcal zone === 'optimal'
+  kcalBlink?: boolean;           // if true — kcal numbers on all food cards pulse while step is active
 }
 
 // ======= LEVEL 1 — First Steps =======
@@ -1083,22 +1084,39 @@ const L_KCAL_D2: TutorialStep[] = [
   },
   {
     id: 'LK-D2-4',
-    bubble: { type: 'dialogue', text: 'Plan your meals to reach the green zone, then submit.', expression: 'happy', position: 'inventory' },
+    bubble: { type: 'hint', text: "Aim for the green zone \u2014 that\u2019s your optimal calorie target!", expression: 'thinking', position: 'inventory' },
     highlight: 'kcal-bar',
+    highlightType: 'pulse',
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LK-D2-5',
+    bubble: { type: 'dialogue', text: 'Each food card shows its calorie content \u2014 use this to plan your intake.', expression: 'happy', position: 'inventory' },
+    highlight: 'ship-inventory',
     highlightType: 'glow',
+    kcalBlink: true,
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'LK-D2-6',
+    bubble: { type: 'dialogue', text: 'Place your meals to reach the optimal zone, then submit.', expression: 'happy', position: 'inventory' },
     requiresOptimalSubmit: true,
     advanceOn: 'action',
     expectedAction: { type: 'click-submit' },
   },
   {
-    id: 'LK-D2-5',
+    id: 'LK-D2-7',
     bubble: { type: 'success', text: 'Well done! Staying in the optimal zone keeps your pancreas healthy and strong.', expression: 'celebrating', position: 'center' },
     blocksResultsReveal: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
-    id: 'LK-D2-6',
+    id: 'LK-D2-8',
     pendingUntilResults: true,
     highlight: 'result-next-btn',
     highlightType: 'pulse',

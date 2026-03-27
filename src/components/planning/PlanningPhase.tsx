@@ -898,7 +898,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                 activeMedications={activeMedications}
                 onMedicationToggle={handleMedicationToggle}
                 hideKcal={!kcalCardsVisible}
-                kcalJustRevealed={kcalJustRevealed}
+                kcalJustRevealed={kcalJustRevealed || (tutorialStep?.kcalBlink ?? false)}
                 clearedFoodsHighlight={clearedHighlight}
                 clearedShipIds={clearedShipIds}
               />
