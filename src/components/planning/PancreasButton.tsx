@@ -50,8 +50,8 @@ export function PancreasButton({
   const classes = [
     'pancreas-btn',
     isBoostActive ? 'pancreas-btn--boost' : '',
-    !canAffordBoost && !isBoostActive ? 'pancreas-btn--locked' : '',
-    disabled ? 'pancreas-btn--disabled' : '',
+    !hideCharges && !canAffordBoost && !isBoostActive ? 'pancreas-btn--locked' : '',
+    !hideCharges && disabled ? 'pancreas-btn--disabled' : '',
     isBlinking ? 'pancreas-btn--blinking' : '',
   ].filter(Boolean).join(' ');
 
@@ -75,11 +75,13 @@ export function PancreasButton({
           </span>
         )}
       </div>
-      <div className="pancreas-btn__bar">
-        {segs.map((type, i) => (
-          <span key={i} className={`pancreas-btn__seg pancreas-btn__seg--${type}`} />
-        ))}
-      </div>
+      {!hideCharges && (
+        <div className="pancreas-btn__bar">
+          {segs.map((type, i) => (
+            <span key={i} className={`pancreas-btn__seg pancreas-btn__seg--${type}`} />
+          ))}
+        </div>
+      )}
     </button>
   );
 }
