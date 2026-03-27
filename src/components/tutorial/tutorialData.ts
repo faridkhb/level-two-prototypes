@@ -47,6 +47,9 @@ export interface TutorialStep {
   requiresOptimalSubmit?: boolean; // if true — submit button only active when kcal zone === 'optimal'
   kcalBlink?: boolean;           // if true — kcal numbers on all food cards pulse while step is active
   pancreasEffectivenessOverride?: number; // if set — overrides dayConfig.pancreasEffectiveness on PancreasButton (triggers blink when < config value)
+  showBurnsLayer?: boolean;    // tutorial: force show burned layer (hideBurnedInPlanning=false)
+  highlightBurns?: boolean;    // tutorial: pulse-blink pancreas-burned (orange) cubes
+  triggerReburn?: boolean;     // tutorial: trigger bomb animation replay for all food columns
 }
 
 // ======= PANCREAS FATIGUE (T4) =======
@@ -69,38 +72,76 @@ const L_PF_D1: TutorialStep[] = [
     bubble: { type: 'hint', text: "You can monitor pancreas performance right here. Right now it's working at full strength — 5 out of 5.", expression: 'neutral', position: 'inventory' },
     highlight: 'pancreas-btn',
     highlightType: 'pulse',
+    pancreasEffectivenessOverride: 5,
     noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'LPF-D1-4',
-    bubble: { type: 'dialogue', text: "Place a food card and watch how the pancreas handles the glucose spike.", expression: 'neutral' },
+    bubble: { type: 'dialogue', text: "Place a banana and watch how the pancreas handles the glucose spike at full strength.", expression: 'neutral', position: 'inventory' },
     highlight: ['food:banana', 'slot:2'],
     highlightType: 'glow',
+    pancreasEffectivenessOverride: 5,
     cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:2' },
     advanceOn: 'action',
     expectedAction: { type: 'place-food' },
   },
   {
-    id: 'LPF-D1-5',
-    bubble: { type: 'hint', text: "Now let's see what happens when the pancreas is slightly fatigued...", expression: 'thinking', position: 'inventory' },
-    highlight: 'pancreas-btn',
-    highlightType: 'pulse',
-    pancreasEffectivenessOverride: 4,
+    // Silent step: wait for tier-5 bomb animation to complete
+    id: 'LPF-D1-4b',
+    pancreasEffectivenessOverride: 5,
+    highlight: 'graph',
+    highlightType: 'spotlight',
+    noBackdrop: true,
+    blockInteraction: true,
+    advanceOn: 'burn-anim-complete',
+  },
+  {
+    // Show burned layer (tier-5 pattern) and explain it
+    id: 'LPF-D1-4c',
+    bubble: { type: 'hint', text: "At full strength the pancreas burns 2 rows of glucose every interval — that's tier-5 depth.", expression: 'neutral', position: 'inventory' },
+    pancreasEffectivenessOverride: 5,
+    showBurnsLayer: true,
+    highlightBurns: true,
     noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
+    // Explain what's coming — effectiveness override NOT applied yet (bar still shows 5)
+    id: 'LPF-D1-5',
+    bubble: { type: 'hint', text: "Now let's see what happens when the pancreas is slightly fatigued...", expression: 'thinking', position: 'inventory' },
+    highlight: 'pancreas-btn',
+    highlightType: 'pulse',
+    noBackdrop: true,
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    // Silent step: apply tier-4 override + replay bombs with tier-4 pattern
+    id: 'LPF-D1-5b',
+    pancreasEffectivenessOverride: 4,
+    triggerReburn: true,
+    noBackdrop: true,
+    blockInteraction: true,
+    advanceOn: 'burn-anim-complete',
+  },
+  {
+    // Show tier-4 burned layer and explain the difference
     id: 'LPF-D1-6',
-    bubble: { type: 'dialogue', text: "As you can see, the pancreas handles glucose less effectively. Unfortunately this process is irreversible — so it's vital to manage blood sugar and avoid overeating.", expression: 'concerned' },
+    bubble: { type: 'dialogue', text: "Tier 4: the top row burns every interval, but the second row only every other — less glucose cleared. Notice the bar dropped to 4/5.", expression: 'concerned', position: 'inventory' },
+    pancreasEffectivenessOverride: 4,
+    showBurnsLayer: true,
+    highlightBurns: true,
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'LPF-D1-7',
     bubble: { type: 'dialogue', text: "Finish planning for today — I'll explain how we can support the pancreas.", expression: 'neutral', position: 'inventory' },
+    pancreasEffectivenessOverride: 4,
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
@@ -127,7 +168,7 @@ const L_PF_D1: TutorialStep[] = [
 const L_PF_D2: TutorialStep[] = [
   {
     id: 'LPF-D2-1',
-    bubble: { type: 'dialogue', text: "The muffin is causing a dangerous spike. And today the pancreas is already at 4/5 — it's working harder to compensate.", expression: 'concerned' },
+    bubble: { type: 'dialogue', text: "The burger is causing a dangerous spike. And today the pancreas is already at 4/5 — it's working harder to compensate.", expression: 'concerned' },
     highlight: 'graph',
     highlightType: 'spotlight',
     noBackdrop: true,

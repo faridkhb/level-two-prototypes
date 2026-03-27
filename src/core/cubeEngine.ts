@@ -202,8 +202,23 @@ export function patternDepth(pattern: number[], col: number): number {
   return count;
 }
 
-/** Fixed pancreas burn pattern — always active, 2 solid rows */
+/** Fixed pancreas burn pattern — always active, 2 solid rows (tier 5) */
 export const PANCREAS_PATTERN = [0, 0];
+
+/**
+ * Map pancreasEffectiveness (1-5) to its burn pattern.
+ * Tier 5: 2 solid rows. Tier 4: row1 solid + row2 every other. Etc.
+ */
+export function getEffectivenessPattern(effectiveness: number): number[] {
+  switch (Math.round(effectiveness)) {
+    case 5: return [0, 0];  // 2 solid rows every column
+    case 4: return [0, 1];  // row1 solid, row2 every other
+    case 3: return [0];     // 1 solid row
+    case 2: return [1];     // 1 row every other column
+    case 1: return [2];     // 1 row every 3 columns (2-off 2-on approximation)
+    default: return [0, 0];
+  }
+}
 /** BOOST burn pattern — added on top of pancreas when active */
 export const BOOST_PATTERN = [0, 3];
 
@@ -309,6 +324,7 @@ export function calculatePenaltyFromState(
   decayRate: number = 0.5,
   boostActive: boolean = false,
   baselineRow: number = 0,
+  pancreasEffectiveness?: number,
 ): PenaltyResult {
   // Build food heights per column (starting from baseline BG level)
   const totalHeights = new Array(TOTAL_COLUMNS).fill(baselineRow);
@@ -329,8 +345,9 @@ export function calculatePenaltyFromState(
   const interventionRed = calculateInterventionReduction(placedInterventions, allInterventions);
 
   // Column caps using pattern burns
+  const pancreasPattern = getEffectivenessPattern(pancreasEffectiveness ?? 5);
   const columnCaps = totalHeights.map((h, col) => {
-    const pancreasD = patternDepth(PANCREAS_PATTERN, col);
+    const pancreasD = patternDepth(pancreasPattern, col);
     const boostD = boostActive ? patternDepth(BOOST_PATTERN, col) : 0;
     const metforminD = medicationModifiers.metforminPattern
       ? patternDepth(medicationModifiers.metforminPattern, col) : 0;

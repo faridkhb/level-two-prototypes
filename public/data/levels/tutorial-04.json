@@ -8,7 +8,7 @@
       "day": 1,
       "kcalBudget": 1500,
       "wpBudget": 4,
-      "pancreasEffectiveness": 5,
+      "pancreasEffectiveness": 4,
       "startingBg": 100,
       "availableFoods": [
         { "id": "banana", "count": 1 },
@@ -17,7 +17,7 @@
       "availableInterventions": [],
       "availableMedications": [],
       "preplacedFoods": [
-        { "shipId": "chocolatemuffin", "slotIndex": 1 }
+        { "shipId": "burger", "slotIndex": 1 }
       ],
       "lockedSlots": [0, 1, 5, 6, 7, 8, 9]
     },
@@ -36,7 +36,7 @@
       ],
       "availableMedications": ["metformin"],
       "preplacedFoods": [
-        { "shipId": "chocolatemuffin", "slotIndex": 3 }
+        { "shipId": "burger", "slotIndex": 3 }
       ],
       "lockedSlots": [0, 3, 6, 8, 11]
     }

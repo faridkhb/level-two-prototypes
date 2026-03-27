@@ -9,7 +9,7 @@ import {
   GRAPH_CONFIG,
   COLS_PER_SLOT,
 } from '../../core/types';
-import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, patternDepth, PANCREAS_PATTERN, BOOST_PATTERN } from '../../core/cubeEngine';
+import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, patternDepth, BOOST_PATTERN, getEffectivenessPattern } from '../../core/cubeEngine';
 import './BgGraph.css';
 
 // SVG layout constants
@@ -139,6 +139,9 @@ interface BgGraphProps {
   onBurnAnimComplete?: () => void;       // called when all meteor drops finish
   showHatchingOverride?: boolean;        // force zone hatching visible (results state)
   preplacedFading?: boolean;             // tutorial: fade out pre-placed foods from graph
+  pancreasEffectiveness?: number;        // 1-5 — changes actual burn pattern depth in engine
+  replayBurnsTrigger?: number;           // increment to replay bomb animation for all food columns
+  highlightBurns?: boolean;              // tutorial: pulse-blink pancreas-burned (orange) cubes
 }
 
 // Convert column to SVG x
@@ -178,6 +181,9 @@ export function BgGraph({
   onBurnAnimComplete,
   showHatchingOverride = false,
   preplacedFading = false,
+  pancreasEffectiveness = 5,
+  replayBurnsTrigger = 0,
+  highlightBurns = false,
 }: BgGraphProps) {
   // Phased reveal removed — revealPhase is always undefined (all layers shown immediately)
   const revealPhase = undefined;
@@ -350,7 +356,7 @@ export function BgGraph({
 
     for (let col = 0; col < TOTAL_COLUMNS; col++) {
       const h = pancreasCaps[col];
-      const pancreasD = patternDepth(PANCREAS_PATTERN, col);
+      const pancreasD = patternDepth(getEffectivenessPattern(pancreasEffectiveness), col);
       const boostD = boostActive ? patternDepth(BOOST_PATTERN, col) : 0;
       const metforminD = metforminPattern ? patternDepth(metforminPattern, col) : 0;
       const glp1D = glp1Pattern ? patternDepth(glp1Pattern, col) : 0;
@@ -528,7 +534,7 @@ export function BgGraph({
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
     return { layers, mainSkylinePath, columnCaps, pancreasCaps, effectiveRows, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, glp1Depths, plateauExtraRows };
-  }, [placedFoods, allShips, medicationModifiers, decayRate, boostActive, interventionReduction, interventionReductions, baselineRow, graphH]);
+  }, [placedFoods, allShips, medicationModifiers, decayRate, boostActive, interventionReduction, interventionReductions, baselineRow, graphH, pancreasEffectiveness]);
 
   // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
   const { effectiveRows } = graphRenderData;
@@ -802,6 +808,102 @@ export function BgGraph({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphRenderData.layers, placedInterventions, allInterventions]);
 
+  // Replay burn animation for all food columns (triggered by replayBurnsTrigger increment)
+  const prevReplayTriggerRef = useRef(0);
+  useLayoutEffect(() => {
+    if (replayBurnsTrigger === 0 || replayBurnsTrigger === prevReplayTriggerRef.current) return;
+    prevReplayTriggerRef.current = replayBurnsTrigger;
+
+    if (!hideBurnedInPlanning) return; // only relevant when burns are hidden
+
+    const localCellH = graphH / graphRenderData.effectiveRows;
+    const allCols = Array.from({ length: TOTAL_COLUMNS }, (_, i) => i);
+    const TAN70 = Math.tan(70 * Math.PI / 180);
+
+    const drops: DropBomb[] = [];
+    const hitDelayMap = new Map<number, number>();
+    const colLastHitTime = new Map<number, number>();
+
+    for (const col of allCols) {
+      const pancreasR = graphRenderData.pancreasDepths[col];
+      const boostR = graphRenderData.boostDepths[col];
+      const totalDrops = pancreasR + boostR;
+      if (totalDrops <= 0) continue;
+      if (graphRenderData.pancreasCaps[col] <= baselineRow) continue;
+
+      const cap = graphRenderData.columnCaps[col];
+      const burnColor = boostR > 0 ? '#f59e0b' : '#f97316';
+      const SLOW_MO = slowMotionBurns ? 3.0 : 1.0;
+      const fallDuration = (boostR > 0 ? 900 : 1000) * SLOW_MO;
+      const hitPercent = 0.73;
+      const waveDelay = 400 + col * 12;
+      const targetXCenter = PAD_LEFT + col * CELL_SIZE + CELL_SIZE / 2;
+
+      for (let i = 0; i < totalDrops; i++) {
+        const targetRow = cap + i;
+        const targetYCenter = PAD_TOP + graphH - (targetRow + 0.5) * localCellH;
+        const dy = Math.max(2, targetYCenter - PAD_TOP);
+        const dx = dy / TAN70;
+        const cx = targetXCenter - dx;
+        const cy = PAD_TOP;
+        const delay = waveDelay + i * 60;
+
+        drops.push({ id: `replay-drop-${col}-${i}`, col, dropIndex: i, cx, cy, dx, dy, burnColor, delay });
+        colLastHitTime.set(col, Math.round(delay + fallDuration * hitPercent));
+        if (i === 0) hitDelayMap.set(col, Math.round(delay + fallDuration * hitPercent));
+      }
+    }
+
+    if (drops.length > 0) {
+      const plateauTop = graphRenderData.pancreasCaps.map(
+        (cap, c) => cap + graphRenderData.plateauExtraRows[c]
+      );
+      setCascadeLevels(plateauTop);
+      setPlateauPhase(true);
+
+      if (animateBurnTimerRef.current) clearTimeout(animateBurnTimerRef.current);
+      animateBurnTimerRef.current = setTimeout(() => {
+        animateBurnTimerRef.current = null;
+        setPlateauPhase(false);
+        setBombHitDelays(hitDelayMap);
+        setBombDrops(drops);
+        onPancreasBurnStart?.();
+
+        for (const t of cascadeTimersRef.current) clearTimeout(t);
+        cascadeTimersRef.current = [];
+        const cascadeCols = [...colLastHitTime.keys()].sort((a, b) => a - b);
+        for (const col of cascadeCols) {
+          const lastHitMs = colLastHitTime.get(col)!;
+          const ct = setTimeout(() => {
+            setCascadeLevels(prev => {
+              if (!prev) return prev;
+              const next = [...prev];
+              const newLevel = graphRenderData.columnCaps[col];
+              for (let c = col + 1; c < TOTAL_COLUMNS; c++) {
+                if (next[c] > newLevel) next[c] = newLevel;
+              }
+              return next;
+            });
+          }, lastHitMs + 40);
+          cascadeTimersRef.current.push(ct);
+        }
+
+        for (const t of burnedColTimersRef.current) clearTimeout(t);
+        burnedColTimersRef.current = [];
+
+        const maxEnd = Math.max(...drops.map(d => d.delay + (slowMotionBurns ? 3000 : 1000)));
+        animateBurnTimerRef.current = setTimeout(() => {
+          setBombDrops([]);
+          setBombHitDelays(null);
+          setCascadeLevels(null);
+          for (const t of cascadeTimersRef.current) clearTimeout(t);
+          cascadeTimersRef.current = [];
+          onBurnAnimComplete?.();
+        }, maxEnd + 300);
+      }, 500);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replayBurnsTrigger]);
 
   // Detect added interventions → fall animation
   useLayoutEffect(() => {
@@ -1220,6 +1322,7 @@ export function BgGraph({
               const effectiveAnimDelay = isPreBurnCube ? (bombHitDelays!.get(cube.col) ?? 0) + burnK * 60
                 : isDangerRevealCube ? cube.col * 50  // absolute column sweep
                 : waveDelay;
+              const isPancreasBurnedCube = cube.status === 'burned' && cube.burnColor === '#f97316';
               const cubeClass = isPlateauBurnCube
                 ? 'bg-graph__cube'
                 : isPreBurnCube
@@ -1231,7 +1334,7 @@ export function BgGraph({
                     : isAnimatingBurn
                       ? 'bg-graph__cube--digest-appear-burn'
                       : cube.status === 'burned'
-                        ? 'bg-graph__cube--burned'
+                        ? (highlightBurns && isPancreasBurnedCube ? 'bg-graph__cube--burned bg-graph__cube--pancreas-blink' : 'bg-graph__cube--burned')
                         : 'bg-graph__cube';
               let cubeFill: string;
               if (isPlateauBurnCube || isPreBurnCube || isRevealPreBurn) {

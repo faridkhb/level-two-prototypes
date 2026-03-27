@@ -119,6 +119,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [burnAnimMode, _setBurnAnimMode] = useState<BurnAnimMode>('incremental');
   const [isPJBlinking, setIsPJBlinking] = useState(false);
   const [showBurns, setShowBurns] = useState(false);
+  const [reburnTrigger, setReburnTrigger] = useState(0);
+  const prevEffectivenessRef = useRef<number>(5);
+  const prevTriggerStepRef = useRef<string | undefined>(undefined);
 
   // Kcal visibility: hidden in T1 and T2 until revealKcal tutorial step fires
   const [kcalRevealed, setKcalRevealed] = useState(false);
@@ -281,6 +284,30 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const isPancreasBlinkingFromStep = stepEffectivenessOverride !== undefined
     && configEffectiveness !== undefined
     && stepEffectivenessOverride < configEffectiveness;
+  // Auto-blink PancreasButton when effectiveness drops (tier transition)
+  useEffect(() => {
+    const prev = prevEffectivenessRef.current;
+    const curr = pancreasEffectiveness ?? 5;
+    if (curr < prev) {
+      setIsPJBlinking(true);
+      const t = setTimeout(() => setIsPJBlinking(false), 2000);
+      prevEffectivenessRef.current = curr;
+      return () => clearTimeout(t);
+    }
+    prevEffectivenessRef.current = curr;
+  }, [pancreasEffectiveness]);
+
+  // Increment reburnTrigger when tutorial step has triggerReburn (only once per step)
+  useEffect(() => {
+    if (tutorialStep?.triggerReburn && tutorialStep.id !== prevTriggerStepRef.current) {
+      prevTriggerStepRef.current = tutorialStep.id;
+      setReburnTrigger(v => v + 1);
+    }
+  }, [tutorialStep]);
+
+  // Force show burned layer (tutorial showBurnsLayer step) — overrides hideBurnedInPlanning
+  const forcedShowBurns = gamePhase === 'planning' && (tutorialStep?.showBurnsLayer ?? false);
+
   // T1–T5: show PancreasButton but hide BOOST charges; T4 (Pancreas Fatigue) shows indicator prominently
   const showPancreasButton = true;
   const showBoostCharges = !['tutorial-01', 'tutorial-02', 'tutorial-03', 'tutorial-04', 'tutorial-05'].includes(currentLevel?.id ?? '');
@@ -502,6 +529,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       0.5,
       isBoostActive,
       baselineRow,
+      configEffectiveness,
     );
 
     // Last day: add WP penalty for unspent WP
@@ -811,12 +839,15 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               preplacedFading={clearingAnimation}
               isMobile={isMobile}
               baselineRow={baselineRow}
-              hideBurnedInPlanning={gamePhase !== 'replaying' ? !showBurns : false}
+              hideBurnedInPlanning={forcedShowBurns ? false : (gamePhase !== 'replaying' ? !showBurns : false)}
               burnAnimMode={burnAnimMode}
               onPancreasBurnStart={handlePancreasBurnStart}
               slowMotionBurns={tutorialStep?.advanceOn === 'burn-anim-complete'}
               onBurnAnimComplete={handleBurnAnimComplete}
               showHatchingOverride={isResultsRevealing || showResults}
+              pancreasEffectiveness={pancreasEffectiveness ?? 5}
+              replayBurnsTrigger={reburnTrigger}
+              highlightBurns={tutorialStep?.highlightBurns ?? false}
             />
             {isPlanning && showPancreasButton && (
               <div className="planning-phase__pancreas-overlay">
