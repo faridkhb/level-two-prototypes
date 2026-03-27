@@ -1,5 +1,51 @@
 # Changelog
 
+## 27–28 марта (v0.56.0 → v0.59.6) — T4 Tutorial + Level Select v2 + Fixes `alpha-15-stable`
+
+### v0.59.6 — Hide days count on level tiles
+- `.tutorial-select__card-days { display: none }` — подпись с кол-вом дней скрыта на всех тайлах
+
+### v0.59.5 — High-contrast food cube palette
+- Палитра кубиков заменена на экстремальное чередование светлый/тёмный: `#bae6fd` (sky-200) / `#0c4a6e` (sky-900) / `#7dd3fc` / `#1e3a8a` (navy) / `#38bdf8` / `#1e40af` (cobalt) / `#0ea5e9`
+
+### v0.59.4 — Fix intervention tail cap + T4D3 kcal + level tile cleanup
+- **Критический баг**: 4 вызова `calculateInterventionCurve` в BgGraph.tsx не передавали `maxDuration` → хвост шёл до конца графика. Исправлено во всех 4 местах (render loop, drag preview, marker positioning, bomb animation)
+- T4 D3: `kcalBudget` 1700 → 1800
+- Level select: убран WIP-затемнение с 5-го тайла (Under Stress)
+
+### v0.59.3 — Remove last T2 dialog
+- Удалён шаг LK-D2-7 ("Well done! Staying in the optimal zone...") из T2 D2
+
+### v0.59.2 — WP counter в скрытом KcalBar
+- KcalBar `hidden=true` теперь рендерит `wp-counter` div рядом с Submit — виден в T1 (туториал подсветки WP L1D2-1 работает)
+- Причина: PlanningPhase использует только KcalBar, не PlanningHeader; когда `hidden=true` WP не отображался вовсе
+
+### v0.59.1 — Darken Outdated/WIP level tiles
+- WIP: `grayscale(55%) brightness(0.60)`; Outdated: `grayscale(70%) brightness(0.50)`
+
+### v0.59.0 — Батч изменений: PANCREAS label, level reorder, T1/T2/T5/T7 rebalance
+- **PancreasButton**: добавлена подпись `PANCREAS` рядом с эмодзи
+- **T1 D3**: пицца перенесена slot 10 → 7 (3PM); диалог обновлён
+- **T2**: D1 kcalBudget 1700→1600; D2 kcalBudget 1200→1600, wpBudget 10→12, caesarsalad→chocolatemuffin@slot9, berriesmixed добавлен
+- **T5**: D2 удалён; D3 стал D2; `days: 3→2`; `TUTORIAL_STEPS: {1:L3D1, 2:L3D3}`
+- **T7 D1**: pre-placed chocolatemuffin → pizza; диалог LS-D1-4 обновлён
+- **TutorialLevelSelect**: T08 → "SGLT2"; T06 → "External Insulin"
+- **Reorder** позиций 5–10: T07 Under Stress, T08 SGLT2, T05 Willpower Mgmt, T09 GLP-1, T06 External Insulin, T10 Final Exam
+- **Outdated badges** (CSS filter) на тайлах 6–10
+
+### v0.58.0 – v0.58.7 — T4 Pancreas Fatigue Tutorial complete ⭐
+- **getEffectivenessPattern(e)**: maps tier 1–5 → burn pattern (tier5=[0,0], tier4=[0,1], tier3=[0], tier2=[1], tier1=[2])
+- **New BgGraph props**: `pancreasEffectiveness`, `replayBurnsTrigger`, `highlightBurns`
+- **replayBurnsTrigger**: второй `useLayoutEffect` в BgGraph переиграет бомбы для всех колонок
+- **New TutorialStep fields**: `showBurnsLayer`, `highlightBurns`, `triggerReburn`, `pancreasEffectivenessOverride`, `pendingUntilResults`
+- **T4 D1** (11 шагов): tier-5 demo → bomb replay → tier drops to 4 (`triggerReburn` + `pancreasEffectivenessOverride`) → показ изменённых слоёв с blink; финальный диалог `pendingUntilResults` после полного reveal
+- **T4 D2**: pre-placed chocolatemuffin; Metformin шаг: `showBurnsLayer + highlightMedEffect` — моргают фиолетовые кубики; последний диалог удалён
+- **T4 D3**: добавлен free-play puzzle (pizza@slot3 + burger@slot5, 1800 kcal, 15 WP, metformin+walk+run); `days: 2→3`
+- **highlightMedEffect** bug fix: параметр `_highlightMedEffect` переименован в `highlightMedEffect` (был неактивен)
+- **forcedShowBurns**: `tutorialStep.showBurnsLayer` перекрывает `hideBurnedInPlanning` в PlanningPhase
+
+---
+
 ## 26 марта (v0.52.1 → v0.54.0) — PancreasButton Redesign + Variant B Reveal + 👁️ Toggle
 
 ### v0.54.0 — Variant B Reveal: реальные бомбы + результаты с burns ⭐

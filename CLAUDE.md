@@ -20,7 +20,7 @@ This repository contains **independent projects** on separate branches:
 
 | Branch | Project | Version | Description |
 |--------|---------|---------|-------------|
-| `main` | BG Planner | v0.55.19 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, GLP-1 peak reduction, burns visibility toggle (👁️), PancreasButton L-shape redesign, Variant B phased reveal (per-food bomb animations, burn layers persist), animated results reveal (danger sweep, Excess Glucose counter, star-by-star, label bounce-in, tap-to-skip), starts on level select screen, Test Level tile (free play), 9 tutorial levels, intervention tail duration cap (maxDuration), T2 redesigned (Exercises), dynamic Y-axis, overeating penalties, pre-placed foods, locked slots, level balancing, startingBg, vertical layout redesign, zone hatching, food speed labels, stress slot pulse animation, T6 Metformin tutorial redesign, drag rejection animation |
+| `main` | BG Planner | v0.59.6 | Graph-based food planning with cubes, interventions, medications, row-pattern burn system (ПЖ/BOOST/Metformin/SGLT2/GLP-1), BOOST, meteor drop burn animations, plateau preview, GLP-1 peak reduction, burns visibility toggle (👁️), PancreasButton L-shape redesign + PANCREAS label, Variant B phased reveal (per-food bomb animations, burn layers persist), animated results reveal (danger sweep, Excess Glucose counter, star-by-star, label bounce-in, tap-to-skip), T4 Pancreas Fatigue tutorial (tier animation, replayBurnsTrigger, triggerReburn, pancreasEffectivenessOverride), level select reordered (T07→T05→SGLT2→GLP-1→T06→Final Exam), Outdated badges, intervention tail cap fixed (maxDuration in BgGraph), high-contrast food cube palette |
 
 Archived branches (port-planner, match3, tower-defense, Dariy) → see `docs/ARCHIVED_BRANCHES.md`
 
@@ -152,18 +152,32 @@ Level Select (root screen) — 9 tutorial levels + Test Level tile
 #### Shared UI
 - `src/components/ui/Tooltip.tsx` — universal tooltip component
 
-### Current State (v0.55.19) — Level Select Root Screen, Test Level, T2 Redesign, Intervention Tail Cap
+### Current State (v0.59.6) — T4 Pancreas Fatigue Tutorial, Level Select v2, Fixes
 
-- **Level Select Screen** ✅ (v0.55.19, root screen — no main menu)
-  - 10-tile grid: 9 tutorial levels + Test Level (🎮, "Free play")
-  - Tutorials open in guided mode; Test Level opens free-play PlanningPhase
-  - Back button in PlanningPhase returns to Level Select
+- **Level Select Screen v2** ✅ (v0.59.x, root screen)
+  - 11 tiles: T01–T10 + Test Level (🎮 "Free play")
+  - Reordered positions 5–10: Under Stress → SGLT2 → Willpower Mgmt → GLP-1 → External Insulin → Final Exam
+  - T08 renamed "SGLT2", T06 renamed "External Insulin"
+  - **Outdated badges** (v0.59.1): dim filter on tiles 6–10 (`grayscale(70%) brightness(0.50)`)
+  - Days count hidden from tiles
   - No main menu, no config screen
 
-- **Tutorial 2 — Exercises** ✅ (v0.55.17–18)
-  - Renamed from "Keep Moving" to "Exercises" (both level name and select tile)
-  - D1 reworked: danger-zone coloring on pizza dialog (cubes above 200 turn orange/red), merged drag step
-  - D2 redesigned: burger@3PM, heavy run in inventory, wpBudget=14, kcalBudget=1800, lockedSlots=[1,6,10]
+- **Tutorial 4 — Pancreas Fatigue** ✅ (v0.58.0–v0.58.7, 3 days)
+  - **D1**: `pancreasEffectiveness: 4` (tier 4 visual bar), animated tier drop tutorial
+    - Steps show tier-5 pattern, then `triggerReburn` fires bomb animation, effectiveness drops to 4
+    - `showBurnsLayer + highlightBurns`: blinks orange pancreas-burned cubes
+    - `pendingUntilResults: true` on final step — dialog after full reveal animation
+  - **D2**: chocolatemuffin pre-placed; Metformin step uses `showBurnsLayer + highlightMedEffect` (blink fuchsia cubes); last dialog removed
+  - **D3**: free-play puzzle — pizza@slot3 + burger@slot5, kcalBudget=1800, wpBudget=15, metformin+walk+run available
+  - **New TutorialStep fields**: `showBurnsLayer`, `highlightBurns`, `triggerReburn`, `pancreasEffectivenessOverride`
+  - **New cubeEngine export**: `getEffectivenessPattern(e)` maps tier 1–5 → burn pattern
+  - **New BgGraph props**: `pancreasEffectiveness`, `replayBurnsTrigger`, `highlightBurns`
+  - **New PlanningPhase state**: `reburnTrigger`, auto-blink `isPJBlinking` when effectiveness drops
+
+- **Tutorial 2 — Exercises** ✅ (v0.55.17–18, v0.59.x)
+  - Renamed from "Keep Moving" to "Exercises"
+  - D1: kcalBudget=1600, danger-zone coloring on pizza dialog, merged drag step
+  - D2: kcalBudget=1600, wpBudget=12, chocolatemuffin@slot9, banana+apple+berriesmixed in inventory; last dialog removed
   - D2/D3: no tutorial dialogs (free-play puzzles)
 
 - **Danger Zone Tutorial Highlight** ✅ (v0.55.17)
@@ -171,11 +185,12 @@ Level Select (root screen) — 9 tutorial levels + Test Level tile
   - New `showPenaltyOverlay` prop on BgGraph separates pulsing penalty rects from zone coloring
   - Penalty overlays only appear during actual results reveal, not during tutorial dialogs
 
-- **Intervention Tail Duration Cap** ✅ (v0.55.17)
+- **Intervention Tail Duration Cap** ✅ (v0.55.17, fix v0.59.4)
   - `maxDuration?: number` field on Intervention type and JSON
   - `calculateInterventionCurve` caps total cols to `round(maxDuration / cellWidthMin)`
   - Light Walk: `maxDuration: 120` → total 4 cols (2 main + 2 tail)
   - Heavy Run: `maxDuration: 360` → total 12 cols (6 main + 6 tail)
+  - **Bug fix (v0.59.4)**: BgGraph had 4 call sites that omitted `maxDuration` arg — tail ran to graph edge. All 4 now pass `intervention.maxDuration`.
 
 - **Combined Actions Panel** ✅
   - Medications and interventions merged into single "Actions" section
@@ -717,6 +732,10 @@ Progressive blue palette by placement order: 7-color Tailwind sky shades from `#
 - *(v0.55.17)* — T2 renamed "Exercises"; L2D1 dialogs reworked (danger-zone coloring, merged drag step, fixed pizza peak 250 mg/dL); `showPenaltyOverlay` prop decouples penalty rects from zone coloring; intervention `maxDuration` field caps tail phase (walk 2h, run 6h)
 - *(v0.55.18)* — T2D2 puzzle redesign: burger@3PM, heavyrun in inventory, wpBudget=14, kcalBudget=1800, lockedSlots=[1,6,10]; T2D2/D3 dialogs removed; L2D3-2 "New: Heavy Run!" removed
 - *(v0.55.19)* — Remove main menu and config screen; app starts on Level Select; Test Level tile added as 10th tile (🎮 Free play); `TutorialLevelSelect` is now the root screen
+- *(v0.58.0)* — T4 Pancreas Fatigue tutorial: `getEffectivenessPattern()` in cubeEngine; `replayBurnsTrigger` / `highlightBurns` / `pancreasEffectiveness` props on BgGraph; `showBurnsLayer` / `triggerReburn` / `pancreasEffectivenessOverride` / `pendingUntilResults` in TutorialStep; T4D1 tier-drop animation sequence (5→4 with bomb replay); T4D2 Metformin blink (`highlightMedEffect` active); T4D3 free-play puzzle added (days 2→3)
+- *(v0.59.0)* — Batch: PANCREAS label on PancreasButton; `wp-counter` class in KcalBar hidden branch (T1D2 fix); T1D3 pizza slot 10→7; T2D1 kcal→1600; T2D2 rebalance (kcal→1600/wp→12/chocolatemuffin/berriesmixed); T5 D2 deleted (days→2); T7D1 chocolatemuffin→pizza; TutorialLevelSelect reordered + T08→SGLT2 + T06→External Insulin + Outdated badges
+- *(v0.59.4)* — Fix: `maxDuration` missing from 4 BgGraph call sites (tail was infinite); T4D3 kcalBudget→1800; remove WIP dimming from level 5 tile
+- `alpha-15-stable` (v0.59.6) — T4 tutorial complete (tier animation, triggerReburn, pendingUntilResults), level select reordered + badges, all intervention tails capped, high-contrast food cube palette, days count hidden, T2/T5/T7 level rebalance
 
 ### Known Issues
 - Intervention click on burned cubes always removes the first intervention (not necessarily the one that burned that specific cube)
