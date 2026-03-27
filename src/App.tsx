@@ -1,14 +1,12 @@
 import { useState, useCallback } from 'react';
 import { PlanningPhase } from './components/planning';
-import { MainMenu } from './components/menu';
-import { ConfigScreen } from './components/config';
 import { TutorialLevelSelect } from './components/tutorial/TutorialLevelSelect';
 import { VERSION } from './version';
 import { useGameStore } from './store/gameStore';
 import { loadLevel } from './config/loader';
 import './App.css';
 
-type Screen = 'menu' | 'testMode' | 'config' | 'tutorialSelect' | 'tutorialPlay';
+type Screen = 'testMode' | 'tutorialSelect' | 'tutorialPlay';
 
 /** Show phone frame on desktop unless ?embed is in the URL */
 const isEmbed = new URLSearchParams(window.location.search).has('embed');
@@ -30,10 +28,14 @@ function PhoneFrame() {
 }
 
 function App() {
-  const [screen, setScreen] = useState<Screen>('menu');
+  const [screen, setScreen] = useState<Screen>('tutorialSelect');
   const { setLevel, setTutorialMode } = useGameStore();
 
   const handleTutorialLevelSelect = useCallback(async (levelId: string) => {
+    if (levelId === 'test-level') {
+      setScreen('testMode');
+      return;
+    }
     const level = await loadLevel(levelId);
     setLevel(level);
     setTutorialMode(true, levelId);
@@ -60,20 +62,13 @@ function App() {
   return (
     <div className="app">
       <main className="app-main">
-        {screen === 'menu' && (
-          <MainMenu
-            onTestMode={() => setScreen('testMode')}
-            onTutorial={() => setScreen('tutorialSelect')}
-            onConfig={() => setScreen('config')}
-          />
-        )}
-        {screen === 'testMode' && <PlanningPhase />}
-        {screen === 'config' && <ConfigScreen onBack={() => setScreen('menu')} />}
         {screen === 'tutorialSelect' && (
           <TutorialLevelSelect
             onSelectLevel={handleTutorialLevelSelect}
-            onBack={() => setScreen('menu')}
           />
+        )}
+        {screen === 'testMode' && (
+          <PlanningPhase onBackToTutorials={handleBackToTutorials} />
         )}
         {screen === 'tutorialPlay' && (
           <PlanningPhase
