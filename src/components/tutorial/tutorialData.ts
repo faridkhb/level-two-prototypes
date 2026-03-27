@@ -248,44 +248,9 @@ const L2D1: TutorialStep[] = [
   },
 ];
 
-const L2D2: TutorialStep[] = [
-  {
-    id: 'L2D2-1',
-    bubble: { type: 'dialogue', text: 'See the \ud83d\udd12 locked slots? You can only place items in unlocked slots. Plan your placements carefully!', expression: 'neutral', position: 'top' },
-    highlight: 'locked-slots',
-    highlightType: 'pulse',
-    noBackdrop: true,
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L2D2-2',
-    bubble: { type: 'dialogue', text: 'The \ud83c\udf55 Pizza is pre-placed at the 10 AM slot. Use the walk to cover its peak!', expression: 'thinking' },
-    highlight: 'slot:4',
-    highlightType: 'spotlight',
-    noBackdrop: true,
-    advanceOn: 'tap',
-  },
-  {
-    id: 'L2D2-3',
-    bubble: { type: 'dialogue', text: 'Place everything and submit!', expression: 'happy', position: 'inventory' },
-    highlight: 'ship-inventory',
-    highlightType: 'glow',
-    advanceOn: 'action',
-    expectedAction: { type: 'click-submit' },
-  },
-];
+const L2D2: TutorialStep[] = [];
 
 const L2D3: TutorialStep[] = [
-  {
-    id: 'L2D3-2',
-    bubble: { type: 'dialogue', text: 'New: \ud83c\udfc3 Heavy Run! It reduces glucose much more than a walk \u2014 deeper and over a longer period (3 hours). But it costs 4 WP and takes 2 slots!', expression: 'neutral' },
-    highlight: 'intervention:heavyrun',
-    highlightType: 'spotlight',
-    noBackdrop: true,
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
   {
     id: 'L2D3-3',
     bubble: { type: 'dialogue', text: '\ud83e\uddc1 The Muffin is at the 8:30 AM slot. Drag the Heavy Run right after it to crush the peak!', expression: 'thinking', position: 'inventory' },
