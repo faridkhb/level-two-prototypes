@@ -9,9 +9,8 @@ import type {
   Ship,
   Intervention,
   GameSettings,
-  SatietyPenalty,
 } from '../core/types';
-import { DEFAULT_SETTINGS, DEFAULT_SATIETY_PENALTY, slotToColumn, TOTAL_SLOTS } from '../core/types';
+import { DEFAULT_SETTINGS, slotToColumn, TOTAL_SLOTS } from '../core/types';
 
 // Build pre-placed items from day config
 function getPreplacedItems(dayConfig: DayConfig | null): { foods: PlacedFood[]; interventions: PlacedIntervention[] } {
@@ -67,9 +66,6 @@ interface GameState {
   // WP carry-over tracking
   submittedWpPerDay: Record<number, { wpUsed: number; effectiveWpBudget: number }>;
 
-  // Satiety penalty per submitted day
-  satietyPenaltyPerDay: Record<number, SatietyPenalty>;
-
   // Settings
   settings: GameSettings;
 
@@ -90,7 +86,7 @@ interface GameState {
   lockBoostBars: () => void;
   unlockBoostBars: (day: number) => void;
   submitDayWp: (day: number, wpUsed: number, effectiveWpBudget: number) => void;
-  setSatietyPenalty: (day: number, penalty: SatietyPenalty) => void;
+  removePreplacedFoods: () => void;
 }
 
 export const useGameStore = create<GameState>()(
@@ -107,7 +103,6 @@ export const useGameStore = create<GameState>()(
       boostActivePerDay: {},
       lockedBarsPerDay: {},
       submittedWpPerDay: {},
-      satietyPenaltyPerDay: {},
       settings: DEFAULT_SETTINGS,
 
       // Actions
@@ -126,8 +121,7 @@ export const useGameStore = create<GameState>()(
           boostActivePerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
-          satietyPenaltyPerDay: {},
-        });
+            });
       },
 
       placeFoodInSlot: (shipId, slotIndex) =>
@@ -189,6 +183,11 @@ export const useGameStore = create<GameState>()(
               : state.placedInterventions,
           };
         }),
+
+      removePreplacedFoods: () =>
+        set((state) => ({
+          placedFoods: state.placedFoods.filter(f => !f.id.startsWith('preplaced-')),
+        })),
 
       moveSlotToSlot: (fromSlot, toSlot) =>
         set((state) => {
@@ -323,8 +322,7 @@ export const useGameStore = create<GameState>()(
           boostActivePerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
-          satietyPenaltyPerDay: {},
-        }),
+            }),
 
       updateSettings: (newSettings) =>
         set((state) => ({
@@ -365,13 +363,6 @@ export const useGameStore = create<GameState>()(
           },
         })),
 
-      setSatietyPenalty: (day, penalty) =>
-        set((state) => ({
-          satietyPenaltyPerDay: {
-            ...state.satietyPenaltyPerDay,
-            [day]: penalty,
-          },
-        })),
     }),
     {
       name: 'bg-graph-save',
@@ -386,7 +377,6 @@ export const useGameStore = create<GameState>()(
         boostActivePerDay: state.boostActivePerDay,
         lockedBarsPerDay: state.lockedBarsPerDay,
         submittedWpPerDay: state.submittedWpPerDay,
-        satietyPenaltyPerDay: state.satietyPenaltyPerDay,
       }),
     }
   )
@@ -422,15 +412,6 @@ export function selectWpUsed(
     if (intervention) total += intervention.wpCost;
   }
   return total;
-}
-
-// Selector: satiety penalty from previous day
-export function selectSatietyPenalty(
-  currentDay: number,
-  satietyPenaltyPerDay: Record<number, SatietyPenalty>,
-): SatietyPenalty {
-  if (currentDay <= 1) return DEFAULT_SATIETY_PENALTY;
-  return satietyPenaltyPerDay[currentDay - 1] ?? DEFAULT_SATIETY_PENALTY;
 }
 
 // Selector: compute WP penalty from previous day's unspent WP

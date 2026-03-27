@@ -10,12 +10,12 @@ import {
   useSensors,
   closestCenter,
 } from '@dnd-kit/core';
-import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, SatietyPenalty, BurnAnimMode } from '../../core/types';
+import type { Ship, Intervention, Medication, GamePhase, PenaltyResult, BurnAnimMode } from '../../core/types';
 import { TOTAL_SLOTS, slotToColumn, getBaselineRow, getKcalAssessment } from '../../core/types';
-import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty, selectSatietyPenalty } from '../../store/gameStore';
+import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
-import { DEFAULT_MEDICATION_MODIFIERS, DEFAULT_SATIETY_PENALTY, SATIETY_PENALTY_FOOD_ID, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
+import { DEFAULT_MEDICATION_MODIFIERS, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
 import { BgGraph } from '../graph';
 import { KcalBar } from './PlanningHeader';
 import { TabbedInventory } from './TabbedInventory';
@@ -80,8 +80,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     unlockBoostBars,
     submittedWpPerDay,
     submitDayWp,
-    satietyPenaltyPerDay,
-    setSatietyPenalty,
     tutorialLevelId,
     removePreplacedFoods,
   } = useGameStore();
@@ -104,7 +102,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   // Submit / reveal state
   const [gamePhase, setGamePhase] = useState<GamePhase>('planning');
   const [penaltyResult, setPenaltyResult] = useState<PenaltyResult | null>(null);
-  const [satietyResult, setSatietyResult] = useState<SatietyPenalty>(DEFAULT_SATIETY_PENALTY);
   const [_revealPhase, setRevealPhase] = useState<number | undefined>(undefined);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -257,7 +254,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const kcalBudget = dayConfig?.kcalBudget ?? 2000;
   const wpBudget = dayConfig?.wpBudget ?? 16;
   const wpPenalty = selectWpPenalty(currentDay, submittedWpPerDay);
-  const satietyPenalty = selectSatietyPenalty(currentDay, satietyPenaltyPerDay);
   const rawWpBudget = wpBudget + medicationModifiers.wpBonus;
   const wpFloor = Math.ceil(wpBudget * 0.5);
   const effectiveWpBudget = Math.max(rawWpBudget - wpPenalty, wpFloor);
@@ -294,33 +290,12 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     && placedFoods.length > 0
     && (!requiresOptimal || kcalZone === 'optimal');
 
-  // Effective available foods: base + satiety penalty foods + cleared pre-placed foods
+  // Effective available foods: base + cleared pre-placed foods
   const effectiveAvailableFoods = useMemo(() => {
     const base = dayConfig?.availableFoods || [];
-    const freeCount = satietyPenalty.freeFood;
-    // Build base + penalty foods
-    let result: typeof base;
-    if (freeCount <= 0) {
-      result = base;
-    } else {
-      const existing = base.find(f => f.id === SATIETY_PENALTY_FOOD_ID);
-      if (existing) {
-        result = base.map(f =>
-          f.id === SATIETY_PENALTY_FOOD_ID
-            ? { ...f, count: f.count + freeCount }
-            : f
-        );
-      } else {
-        result = [...base, { id: SATIETY_PENALTY_FOOD_ID, count: freeCount }];
-      }
-    }
-    // Add cleared pre-placed foods (each as count:1 entry)
-    if (clearedShipIds.length > 0) {
-      const cleared = clearedShipIds.map(id => ({ id, count: 1 }));
-      result = [...result, ...cleared];
-    }
-    return result;
-  }, [dayConfig, satietyPenalty.freeFood, clearedShipIds]);
+    if (clearedShipIds.length === 0) return base;
+    return [...base, ...clearedShipIds.map(id => ({ id, count: 1 }))];
+  }, [dayConfig, clearedShipIds]);
 
   // Tutorial-aware medication toggle wrapper
   const handleMedicationToggle = useCallback((medId: string) => {
@@ -500,16 +475,13 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     // Save WP state for carry-over penalty
     submitDayWp(currentDay, wpUsed, effectiveWpBudget);
 
-    setSatietyPenalty(currentDay, DEFAULT_SATIETY_PENALTY);
-    setSatietyResult(DEFAULT_SATIETY_PENALTY);
-
     // Notify tutorial system before phase change
     notifyTutorialAction({ type: 'click-submit' });
 
     // Jump straight to results (no phased reveal animation)
     setGamePhase('replaying');
     setPenaltyResult(null);
-  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, setSatietyPenalty, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
+  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
 
   // === Submit: instantly show all burn layers, then start results reveal sub-sequence ===
   useEffect(() => {
@@ -911,7 +883,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               currentDay={currentDay}
               totalDays={currentLevel.days}
               unspentWp={effectiveWpBudget - wpUsed}
-              satietyResult={satietyResult}
               onRetry={handleRetry}
               onNextDay={handleNextDay}
               isTutorial={isTutorial}

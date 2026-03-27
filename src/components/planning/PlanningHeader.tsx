@@ -1,5 +1,5 @@
 import type { MedicationModifiers } from '../../core/types';
-import { getKcalAssessment, getSatietyPenalty, DEFAULT_MEDICATION_MODIFIERS } from '../../core/types';
+import { getKcalAssessment, getSatietyZone, DEFAULT_MEDICATION_MODIFIERS } from '../../core/types';
 import './PlanningHeader.css';
 
 const KCAL_TICKS = [
@@ -95,10 +95,9 @@ export function KcalBar({
   const barMaxPct = 150;
   const fillPct = Math.min(pct / barMaxPct * 100, 100);
 
-  const livePenalty = getSatietyPenalty(kcalUsed, effectiveKcalBudget);
+  const satietyZone = getSatietyZone(kcalUsed, effectiveKcalBudget);
   const satietyLabel = kcalUsed > 0 ? assessment.label : '';
-  const pancreasFatigue = livePenalty.zone === 'overeating';
-  const satietyText = satietyLabel + (pancreasFatigue ? ' +Pancreas Fatigue' : '');
+  const satietyText = satietyLabel + (satietyZone === 'overeating' ? ' +Pancreas Fatigue' : '');
 
   return (
     <div className="planning-header__kcal-bar-wrap">

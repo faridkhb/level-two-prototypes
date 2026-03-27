@@ -1,5 +1,4 @@
-import type { PenaltyResult, SatietyPenalty } from '../../core/types';
-import { DEFAULT_SATIETY_PENALTY } from '../../core/types';
+import type { PenaltyResult } from '../../core/types';
 import './ResultPanel.css';
 
 interface ResultPanelProps {
@@ -7,7 +6,6 @@ interface ResultPanelProps {
   currentDay: number;
   totalDays: number;
   unspentWp?: number;
-  satietyResult?: SatietyPenalty;
   onRetry: () => void;
   onNextDay: () => void;
   isTutorial?: boolean;
@@ -39,7 +37,7 @@ function StarDisplay({ earned, visible }: { earned: number; visible: number }) {
 
 export function ResultPanel({
   result, currentDay, totalDays, unspentWp: _unspentWp = 0,
-  satietyResult = DEFAULT_SATIETY_PENALTY, onRetry, onNextDay,
+  onRetry, onNextDay,
   isTutorial, onNextLevel, onBackToTutorials,
   visibleStars, showLabel, displayedPenalty,
 }: ResultPanelProps) {
@@ -54,19 +52,6 @@ export function ResultPanel({
   const penaltyValue = displayedPenalty ?? result.totalPenalty;
   const isAnimating = visibleStars !== undefined || showLabel === false;
 
-  // Satiety zone result message
-  const satietyMessage = (() => {
-    if (isLastDay) return null;
-    switch (satietyResult.zone) {
-      case 'optimal':
-        return { text: `Optimal! Day ${currentDay + 1}: +1 \u2600\uFE0F`, color: '#48bb78', icon: '\u2728' };
-      case 'malnourished':
-        return { text: `Malnourished! Day ${currentDay + 1}: \u22121 \u2600\uFE0F, +1 \ud83c\udf66`, color: '#e53e3e', icon: '\u26a0\ufe0f' };
-      case 'overeating':
-        return { text: `Overeating! Day ${currentDay + 1}: \u22121 \u2600\uFE0F, +1 \ud83c\udf66, +100 kcal`, color: '#ed8936', icon: '\u26a0\ufe0f' };
-    }
-  })();
-
   return (
     <div className={`result-panel result-panel--${result.label.toLowerCase()}`}>
       <div className="result-panel__penalty">
@@ -75,12 +60,6 @@ export function ResultPanel({
         </span>
         <span className="result-panel__penalty-text"> Excess Glucose</span>
       </div>
-
-      {satietyMessage && labelVisible && (
-        <div className="result-panel__satiety" style={{ color: satietyMessage.color }}>
-          {satietyMessage.icon} {satietyMessage.text}
-        </div>
-      )}
 
       <StarDisplay earned={result.stars} visible={starsToShow} />
 

@@ -209,35 +209,10 @@ export function getKcalAssessment(kcalUsed: number, kcalBudget: number): KcalAss
   return { label: 'Overeating', color: '#ed8936', zone: 'overeating' };
 }
 
-// === Satiety Penalty ===
-
-export interface SatietyPenalty {
-  zone: SatietyZone;
-  wpDelta: number;    // +1 for optimal, -1 for malnourished/overeating
-  kcalDelta: number;  // +100 for overeating, 0 otherwise
-  freeFood: number;   // 1 for malnourished/overeating, 0 for optimal
+// Returns satiety zone for display purposes (Pancreas Fatigue indicator in KcalBar)
+export function getSatietyZone(kcalUsed: number, kcalBudget: number): SatietyZone {
+  return getKcalAssessment(kcalUsed, kcalBudget).zone;
 }
-
-export const DEFAULT_SATIETY_PENALTY: SatietyPenalty = {
-  zone: 'optimal',
-  wpDelta: 0,
-  kcalDelta: 0,
-  freeFood: 0,
-};
-
-export function getSatietyPenalty(kcalUsed: number, kcalBudget: number): SatietyPenalty {
-  const assessment = getKcalAssessment(kcalUsed, kcalBudget);
-  switch (assessment.zone) {
-    case 'malnourished':
-      return { zone: 'malnourished', wpDelta: -1, kcalDelta: 0, freeFood: 1 };
-    case 'optimal':
-      return { zone: 'optimal', wpDelta: 1, kcalDelta: 0, freeFood: 0 };
-    case 'overeating':
-      return { zone: 'overeating', wpDelta: -1, kcalDelta: 100, freeFood: 1 };
-  }
-}
-
-export const SATIETY_PENALTY_FOOD_ID = 'icecream';
 
 export interface LevelConfig {
   id: string;
