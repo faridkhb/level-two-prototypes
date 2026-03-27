@@ -69,11 +69,17 @@ export function KcalBar({
   tutorialActive,
 }: KcalBarProps) {
   const wpOver = wpRemaining < 0;
-  // When hidden, show only the Submit button (no kcal info)
+  // When hidden, show WP counter + Submit button (no kcal info)
   if (hidden) {
     return (
       <div className="planning-header__kcal-bar-wrap">
-        <div className="planning-header__kcal-bar-footer" style={{ justifyContent: 'center' }}>
+        <div className="planning-header__kcal-bar-footer" style={{ justifyContent: 'center', gap: '12px' }}>
+          <div className="planning-header__wp wp-counter">
+            <span className="planning-header__wp-icon">{'\u2600\uFE0F'}</span>
+            <span className={`planning-header__wp-value ${wpOver ? 'planning-header__wp-value--over' : ''}`}>
+              {wpRemaining}
+            </span>
+          </div>
           <button
             className={`planning-header__submit ${submitEnabled ? '' : 'planning-header__submit--disabled'} ${tutorialActive && submitEnabled ? 'planning-header__submit--tutorial-pulse' : ''}`}
             onClick={onSubmit}
