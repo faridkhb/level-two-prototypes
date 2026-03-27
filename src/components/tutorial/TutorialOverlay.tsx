@@ -13,6 +13,7 @@ const HIGHLIGHT_SELECTORS: Record<string, string> = {
   'day-label': '.planning-header__day',
   'wp-counter': '.planning-header__wp',
   'kcal-bar': '.planning-header__kcal-bar-wrap',
+  'kcal-green-zone': '.planning-header__kcal-zone--green',
   'submit-btn': '.planning-header__submit',
   'forecast-badge': '.planning-header__assessment-badge',
   'graph': '.bg-graph__svg',
