@@ -239,7 +239,7 @@ const L_PF_D2: TutorialStep[] = [
 const L1D1: TutorialStep[] = [
   {
     id: 'L1D1-1',
-    bubble: { type: 'dialogue', text: "Welcome to Level Two! I'm Alice, and I'll guide you through our Type 2 Diabetes game.", expression: 'happy', position: 'center' },
+    bubble: { type: 'dialogue', text: "Welcome to Level Two — a Type 2 Diabetes management game. My name is Alice, and I'll be your guide!", expression: 'happy', position: 'center' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
@@ -253,7 +253,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-2b',
-    bubble: { type: 'warning', text: 'When planning our day, try to keep blood glucose below 200\u00a0mg/dL. Crossing that red line means we\u2019re in the danger zone!', expression: 'concerned', position: 'center' },
+    bubble: { type: 'warning', text: 'Blood glucose above 200\u00a0mg/dL puts real strain on the body. Our goal is to stay below that red line — every single day.', expression: 'concerned', position: 'center' },
     highlight: 'danger-line',
     noBackdrop: true,
     advanceOn: 'tap',
@@ -261,7 +261,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-3',
-    bubble: { type: 'dialogue', text: 'When we eat, carbs raise our blood glucose. More carbs = higher peak. Each food card shows its absorption speed \u2014 Fast foods spike quickly, Slow foods rise gradually.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'When we eat, carbs raise our blood glucose \u2014 the more carbs, the higher the spike. Each food card shows its absorption speed: Fast foods peak quickly, Slow foods rise gradually.', expression: 'neutral' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'tap',
@@ -269,7 +269,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-4',
-    bubble: { type: 'dialogue', text: "Let's plan our first meal! Drag the \ud83c\udf4c Banana to the 10:00\u00a0AM slot.", expression: 'happy' },
+    bubble: { type: 'dialogue', text: "Time to plan our first meal! Drag the \ud83c\udf4c Banana to the 9:00\u00a0AM slot \u2014 let\u2019s see how it affects our blood glucose.", expression: 'happy' },
     highlight: ['food:banana', 'slot:2'],
     highlightType: 'glow',
     cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:2' },
@@ -286,7 +286,7 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-5',
-    bubble: { type: 'dialogue', text: 'Wow! Did you see those meteors? Our pancreas detected the glucose rise and released insulin \u2014 working with our body to bring the level back down!', expression: 'happy', position: 'center' },
+    bubble: { type: 'dialogue', text: 'What a show! The pancreas detected the glucose spike and fired insulin \u2014 pulling our blood sugar right back down. That\u2019s your body at work!', expression: 'happy', position: 'center' },
     blockInteraction: true,
     advanceOn: 'tap',
   },
