@@ -51,6 +51,8 @@ export interface TutorialStep {
   highlightBurns?: boolean;    // tutorial: pulse-blink pancreas-burned (orange) cubes
   triggerReburn?: boolean;     // tutorial: trigger bomb animation replay for all food columns
   slowBurnAnim?: boolean;      // tutorial: force slow-motion burn animation (3x) while this step is active
+  pauseOnDrop?: boolean;       // tutorial: intercept food drop — show hover preview without committing placement; advances tutorial on drop
+  releasePendingDrop?: boolean; // tutorial: when step activates, commit the pending drop from pauseOnDrop step
 }
 
 // ======= PANCREAS FATIGUE (T4) =======
@@ -268,13 +270,15 @@ const L1D1: TutorialStep[] = [
     cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:2' },
     advanceOn: 'action',
     expectedAction: { type: 'place-food', foodId: 'banana', slotIndex: 2 },
-    slowBurnAnim: true,
+    pauseOnDrop: true,
   },
   {
     id: 'L1D1-4b',
     noBackdrop: true,
     blockInteraction: true,
     advanceOn: 'burn-anim-complete',
+    releasePendingDrop: true,
+    slowBurnAnim: true,
   },
   {
     id: 'L1D1-4',
@@ -319,22 +323,28 @@ const L1D1: TutorialStep[] = [
 const L1D2: TutorialStep[] = [
   {
     id: 'L1D2-1',
-    bubble: { type: 'dialogue', text: 'This ☀️ is Willpower — spend it to schedule food and actions. Fast food costs less, healthy options cost more.', expression: 'neutral', position: 'center' },
+    bubble: { type: 'dialogue', text: 'That ☀️ icon is your Willpower (WP) — the mental energy it takes to make a healthy choice. In real life, it\'s what pushes you to do the right thing even when you don\'t feel like it.', expression: 'neutral', position: 'center' },
     highlight: 'wp-counter',
     highlightType: 'glow',
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
+    id: 'L1D2-2',
+    bubble: { type: 'dialogue', text: 'In the game, WP is spent on food and exercise. Healthier options often cost more — let\'s take a closer look at what\'s on the menu today.', expression: 'neutral', position: 'center' },
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
     id: 'L1D2-3',
-    bubble: { type: 'dialogue', text: 'Pick your foods wisely! \ud83c\udf6a Cookie has 14g carbs but costs 2 WP. \ud83c\udf4c Banana has 23g carbs but only 1 WP. More carbs = higher glucose spike!', expression: 'thinking' },
+    bubble: { type: 'dialogue', text: '🍌 Banana has 23g carbs and costs just 1 WP. 🍪 Cookie has 14g carbs but costs 2 WP — sometimes the sweeter option demands more willpower.', expression: 'thinking' },
     highlight: 'ship-inventory',
     highlightType: 'spotlight',
     advanceOn: 'tap',
   },
   {
     id: 'L1D2-4',
-    bubble: { type: 'dialogue', text: 'Place your foods and submit when ready!', expression: 'happy', position: 'inventory' },
+    bubble: { type: 'dialogue', text: 'You have enough WP to place everything today — but just two items are enough to get through. Try different combinations and see how your glucose curve shifts.', expression: 'happy', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
     advanceOn: 'action',
