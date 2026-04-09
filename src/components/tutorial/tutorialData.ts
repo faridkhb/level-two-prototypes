@@ -239,7 +239,7 @@ const L_PF_D2: TutorialStep[] = [
 const L1D1: TutorialStep[] = [
   {
     id: 'L1D1-1',
-    bubble: { type: 'dialogue', text: "Welcome to Level Two — a Type 2 Diabetes management game. My name is Alice, and I'll be your guide!", expression: 'happy', position: 'center' },
+    bubble: { type: 'dialogue', text: "Welcome to Level Two — a Type 2 Diabetes management game. Let me be your guide!", expression: 'happy', position: 'center' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
