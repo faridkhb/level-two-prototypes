@@ -50,6 +50,7 @@ export interface TutorialStep {
   showBurnsLayer?: boolean;    // tutorial: force show burned layer (hideBurnedInPlanning=false)
   highlightBurns?: boolean;    // tutorial: pulse-blink pancreas-burned (orange) cubes
   triggerReburn?: boolean;     // tutorial: trigger bomb animation replay for all food columns
+  slowBurnAnim?: boolean;      // tutorial: force slow-motion burn animation (3x) while this step is active
 }
 
 // ======= PANCREAS FATIGUE (T4) =======
@@ -267,19 +268,18 @@ const L1D1: TutorialStep[] = [
     cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:2' },
     advanceOn: 'action',
     expectedAction: { type: 'place-food', foodId: 'banana', slotIndex: 2 },
+    slowBurnAnim: true,
+  },
+  {
+    id: 'L1D1-4b',
+    noBackdrop: true,
+    blockInteraction: true,
+    advanceOn: 'burn-anim-complete',
   },
   {
     id: 'L1D1-4',
     bubble: { type: 'dialogue', text: 'When we eat, carbs raise our blood glucose \u2014 the more carbs, the higher the spike. Each food card shows its absorption speed: Fast foods peak quickly, Slow foods rise gradually.', expression: 'neutral' },
     advanceOn: 'tap',
-  },
-  {
-    id: 'L1D1-4b',
-    highlight: 'graph',
-    highlightType: 'spotlight',
-    noBackdrop: false,
-    blockInteraction: true,
-    advanceOn: 'burn-anim-complete',
   },
   {
     id: 'L1D1-5',

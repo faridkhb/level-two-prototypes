@@ -842,7 +842,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               hideBurnedInPlanning={forcedShowBurns ? false : (gamePhase !== 'replaying' ? !showBurns : false)}
               burnAnimMode={burnAnimMode}
               onPancreasBurnStart={handlePancreasBurnStart}
-              slowMotionBurns={tutorialStep?.advanceOn === 'burn-anim-complete'}
+              slowMotionBurns={tutorialStep?.advanceOn === 'burn-anim-complete' || !!tutorialStep?.slowBurnAnim}
               onBurnAnimComplete={handleBurnAnimComplete}
               showHatchingOverride={isResultsRevealing || showResults}
               pancreasEffectiveness={pancreasEffectiveness ?? 5}
