@@ -261,20 +261,17 @@ const L1D1: TutorialStep[] = [
   },
   {
     id: 'L1D1-3',
-    bubble: { type: 'dialogue', text: 'When we eat, carbs raise our blood glucose \u2014 the more carbs, the higher the spike. Each food card shows its absorption speed: Fast foods peak quickly, Slow foods rise gradually.', expression: 'neutral' },
-    highlight: 'ship-inventory',
-    highlightType: 'glow',
-    advanceOn: 'tap',
-    blockInteraction: true,
-  },
-  {
-    id: 'L1D1-4',
     bubble: { type: 'dialogue', text: "Time to plan our first meal! Drag the \ud83c\udf4c Banana to the 9:00\u00a0AM slot \u2014 let\u2019s see how it affects our blood glucose.", expression: 'happy' },
     highlight: ['food:banana', 'slot:2'],
     highlightType: 'glow',
     cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:2' },
     advanceOn: 'action',
     expectedAction: { type: 'place-food', foodId: 'banana', slotIndex: 2 },
+  },
+  {
+    id: 'L1D1-4',
+    bubble: { type: 'dialogue', text: 'When we eat, carbs raise our blood glucose \u2014 the more carbs, the higher the spike. Each food card shows its absorption speed: Fast foods peak quickly, Slow foods rise gradually.', expression: 'neutral' },
+    advanceOn: 'tap',
   },
   {
     id: 'L1D1-4b',
