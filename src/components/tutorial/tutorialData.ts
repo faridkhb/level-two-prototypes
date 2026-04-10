@@ -355,7 +355,7 @@ const L1D2: TutorialStep[] = [
 const L1D3: TutorialStep[] = [
   {
     id: 'L1D3-1',
-    bubble: { type: 'dialogue', text: 'Day 3! A friend shared a slice of \ud83c\udf55 pizza during your lunch break \u2014 you ate it without thinking twice.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'A friend shared a slice of \ud83c\udf55 pizza at lunch \u2014 you ate it without thinking twice.', expression: 'neutral' },
     highlight: 'slot:7',
     highlightType: 'spotlight',
     noBackdrop: true,
@@ -364,20 +364,29 @@ const L1D3: TutorialStep[] = [
   },
   {
     id: 'L1D3-2',
-    bubble: { type: 'warning', text: 'That pizza pushed our glucose above 200\u00a0mg/dL \u2014 the danger zone. It happens. Some days aren\u2019t perfect.', expression: 'concerned', position: 'bottom' },
-    highlight: 'danger-zone',
+    bubble: { type: 'dialogue', text: 'Pizza has a moderately high Glycemic Index (GI) \u2014 a measure of how quickly food raises blood glucose. High-GI foods cause a faster, sharper spike.', expression: 'neutral' },
+    highlight: 'slot:7',
+    highlightType: 'spotlight',
     noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L1D3-3',
-    bubble: { type: 'dialogue', text: 'The good news: you can still plan the rest of your day wisely. Try to keep everything else below 200 and limit the damage!', expression: 'happy', position: 'center' },
+    bubble: { type: 'warning', text: 'That pizza pushed your glucose above 200\u00a0mg/dL \u2014 into the danger zone. It happens. Not every day goes to plan.', expression: 'concerned', position: 'bottom' },
+    highlight: 'danger-zone',
+    noBackdrop: true,
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L1D3-4',
+    bubble: { type: 'dialogue', text: 'The good news: you still control the rest of the day. Try to keep everything else below 200 and limit the damage.', expression: 'happy', position: 'center' },
+    advanceOn: 'tap',
+    blockInteraction: true,
+  },
+  {
+    id: 'L1D3-5',
     bubble: { type: 'dialogue', text: 'Place your meals and submit when ready!', expression: 'neutral', position: 'inventory' },
     highlight: 'ship-inventory',
     highlightType: 'glow',
