@@ -6,7 +6,7 @@
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 1600,
+      "kcalBudget": 2000,
       "wpBudget": 10,
       "availableFoods": [
         { "id": "chickpeas", "count": 1 },
@@ -105,7 +105,7 @@
     },
     {
       "day": 3,
-      "kcalBudget": 1600,
+      "kcalBudget": 2000,
       "wpBudget": 14,
       "availableFoods": [
         {

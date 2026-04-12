@@ -6,7 +6,7 @@
   "dayConfigs": [
     {
       "day": 1,
-      "kcalBudget": 1750,
+      "kcalBudget": 1900,
       "wpBudget": 7,
       "availableFoods": [
         { "id": "burger",   "count": 1 },
