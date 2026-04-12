@@ -400,13 +400,13 @@ const L1D3: TutorialStep[] = [
 const L2D1: TutorialStep[] = [
   {
     id: 'L2D1-1',
-    bubble: { type: 'dialogue', text: 'Today something important happened to your blood glucose. Tap to see.', expression: 'neutral' },
+    bubble: { type: 'dialogue', text: 'Physical activity is a great tool to burn excess calories!', expression: 'happy' },
     advanceOn: 'tap',
     blockInteraction: true,
   },
   {
     id: 'L2D1-2',
-    bubble: { type: 'warning', text: '\u26a0\ufe0f The \ud83c\udf55 Pizza is already on the graph. Even with your pancreas working, the glucose peak reached 250\u00a0mg/dL \u2014 above the 200 danger level!', expression: 'concerned', position: 'inventory' },
+    bubble: { type: 'warning', text: 'The \ud83c\udf55 Pizza is already on the graph, reaching 250\u00a0mg/dL \u2014 above the 200 danger level!', expression: 'concerned', position: 'inventory' },
     highlight: 'danger-zone',
     noBackdrop: true,
     advanceOn: 'tap',
@@ -423,26 +423,15 @@ const L2D1: TutorialStep[] = [
   },
   {
     id: 'L2D1-5',
-    bubble: { type: 'success', text: '\u2728 It worked! The walk brought the peak below 200. Now finish planning the day.', expression: 'happy', position: 'inventory' },
+    bubble: { type: 'success', text: '\u2728 Nicely done! The walk burned off the excess calories and brought blood glucose down to safe levels!', expression: 'happy', position: 'inventory' },
     noBackdrop: true,
     advanceOn: 'tap',
   },
   {
     id: 'L2D1-6',
-    bubble: { type: 'dialogue', text: 'Place the \ud83c\udf4c Banana at 11:00\u00a0AM.', expression: 'happy', position: 'inventory' },
-    highlight: ['food:banana', 'slot:3'],
-    highlightType: 'pulse',
-    cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:3' },
-    advanceOn: 'action',
-    expectedAction: { type: 'place-food', foodId: 'banana', slotIndex: 3 },
-  },
-  {
-    id: 'L2D1-8',
-    highlight: 'submit-btn',
-    highlightType: 'pulse',
-    cta: { type: 'tap-pulse', target: 'submit-btn' },
-    advanceOn: 'action',
-    expectedAction: { type: 'click-submit' },
+    bubble: { type: 'dialogue', text: 'Now finish planning the day.', expression: 'neutral' },
+    advanceOn: 'tap',
+    blockInteraction: true,
   },
 ];
 
