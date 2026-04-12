@@ -428,6 +428,15 @@ const L2D1: TutorialStep[] = [
     advanceOn: 'tap',
   },
   {
+    id: 'L2D1-6',
+    bubble: { type: 'dialogue', text: 'Place the \ud83c\udf4c Banana at 11:00\u00a0AM.', expression: 'happy', position: 'inventory' },
+    highlight: ['food:banana', 'slot:3'],
+    highlightType: 'pulse',
+    cta: { type: 'drag-arrow', source: 'food:banana', dest: 'slot:3' },
+    advanceOn: 'action',
+    expectedAction: { type: 'place-food', foodId: 'banana', slotIndex: 3 },
+  },
+  {
     id: 'L2D1-8',
     highlight: 'submit-btn',
     highlightType: 'pulse',
