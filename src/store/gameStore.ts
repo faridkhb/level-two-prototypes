@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type {
   PlacedFood,
   PlacedIntervention,
+  PlacedMedication,
   LevelConfig,
   DayConfig,
   Ship,
@@ -57,7 +58,7 @@ interface GameState {
   // Planning (graph-based)
   placedFoods: PlacedFood[];
   placedInterventions: PlacedIntervention[];
-  activeMedications: string[];
+  placedMedications: PlacedMedication[];
 
   // BOOST system (adaptive insulin above threshold)
   boostActivePerDay: Record<number, boolean>;
@@ -76,7 +77,8 @@ interface GameState {
   placeInterventionInSlot: (interventionId: string, slotIndex: number, slotSize?: number) => void;
   removeFromSlot: (slotIndex: number) => void;
   moveSlotToSlot: (fromSlot: number, toSlot: number) => void;
-  toggleMedication: (medicationId: string) => void;
+  placeMedicationInSlot: (medicationId: string, slotIndex: number) => void;
+  removeMedicationFromSlot: (slotIndex: number) => void;
   clearFoods: () => void;
   goToDay: (day: number) => void;
   startNextDay: () => void;
@@ -99,7 +101,7 @@ export const useGameStore = create<GameState>()(
       tutorialLevelId: null,
       placedFoods: [],
       placedInterventions: [],
-      activeMedications: [],
+      placedMedications: [],
       boostActivePerDay: {},
       lockedBarsPerDay: {},
       submittedWpPerDay: {},
@@ -117,7 +119,7 @@ export const useGameStore = create<GameState>()(
           currentDay: 1,
           placedFoods: pre.foods,
           placedInterventions: pre.interventions,
-          activeMedications: [],
+          placedMedications: [],
           boostActivePerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},
@@ -256,18 +258,28 @@ export const useGameStore = create<GameState>()(
           return { placedFoods: newFoods, placedInterventions: newInts };
         }),
 
-      toggleMedication: (medicationId) =>
+      placeMedicationInSlot: (medicationId, slotIndex) =>
+        set((state) => {
+          // Remove any existing medication at this slot
+          const filtered = state.placedMedications.filter(m => m.slotIndex !== slotIndex);
+          return {
+            placedMedications: [
+              ...filtered,
+              { id: uuidv4(), medicationId, dropColumn: slotToColumn(slotIndex), slotIndex },
+            ],
+          };
+        }),
+
+      removeMedicationFromSlot: (slotIndex) =>
         set((state) => ({
-          activeMedications: state.activeMedications.includes(medicationId)
-            ? state.activeMedications.filter(id => id !== medicationId)
-            : [...state.activeMedications, medicationId],
+          placedMedications: state.placedMedications.filter(m => m.slotIndex !== slotIndex),
         })),
 
       clearFoods: () =>
         set((state) => {
           const dc = state.currentLevel ? getDayConfig(state.currentLevel, state.currentDay) : null;
           const pre = getPreplacedItems(dc);
-          return { placedFoods: pre.foods, placedInterventions: pre.interventions, activeMedications: [] };
+          return { placedFoods: pre.foods, placedInterventions: pre.interventions, placedMedications: [] };
         }),
 
       goToDay: (day) =>
@@ -285,7 +297,7 @@ export const useGameStore = create<GameState>()(
             currentDay: day,
             placedFoods: pre.foods,
             placedInterventions: pre.interventions,
-            activeMedications: [],
+            placedMedications: [],
             lockedBarsPerDay: cleanedLockedBars,
             boostActivePerDay: cleanedBoostActive,
           };
@@ -307,7 +319,7 @@ export const useGameStore = create<GameState>()(
             currentDay: nextDay,
             placedFoods: pre.foods,
             placedInterventions: pre.interventions,
-            activeMedications: [],
+            placedMedications: [],
             lockedBarsPerDay: cleanedLockedBars,
             boostActivePerDay: cleanedBoostActive,
           };
@@ -318,7 +330,7 @@ export const useGameStore = create<GameState>()(
           currentDay: 1,
           placedFoods: [],
           placedInterventions: [],
-          activeMedications: [],
+          placedMedications: [],
           boostActivePerDay: {},
           lockedBarsPerDay: {},
           submittedWpPerDay: {},

@@ -1,4 +1,4 @@
-import type { PlacedFood, Ship, PlacedIntervention, Intervention, Medication, MedicationModifiers, PenaltyResult } from './types';
+import type { PlacedFood, Ship, PlacedIntervention, Intervention, Medication, MedicationModifiers, MedicationReductions, PlacedMedication, PenaltyResult } from './types';
 import { GRAPH_CONFIG, TOTAL_COLUMNS, DEFAULT_MEDICATION_MODIFIERS, PENALTY_ORANGE_ROW, PENALTY_RED_ROW, PENALTY_ORANGE_WEIGHT, PENALTY_RED_WEIGHT, calculateStars } from './types';
 
 export interface CubeColumn {
@@ -227,41 +227,96 @@ export const BOOST_PATTERN = [0, 3];
 // ============================================
 
 /**
- * Aggregate modifiers from all active medications.
+ * Calculate per-column burn depth curve for a single placed medication.
+ * - Metformin (curveStart/curvePeak): ramp up to peak, then slow decay.
+ * - SGLT2 / GLP-1 (burnPattern): pattern anchored to dropColumn.
+ */
+export function calculateMedicationCurve(med: Medication, dropColumn: number): number[] {
+  const depths = new Array(TOTAL_COLUMNS).fill(0);
+
+  if (med.curveStart !== undefined && med.curvePeak !== undefined) {
+    // Curve-based (Metformin): ramp from curveStart → curvePeak, then slow decay
+    const rampCols = med.curveRampCols ?? 4;
+    const decayRate = med.curveDecayRate ?? 0.5;
+
+    for (let i = 0; i < TOTAL_COLUMNS - dropColumn; i++) {
+      const col = dropColumn + i;
+      let depth: number;
+      if (rampCols <= 1) {
+        depth = i === 0 ? med.curveStart : med.curvePeak - decayRate * (i - 1);
+      } else if (i < rampCols) {
+        depth = med.curveStart + (med.curvePeak - med.curveStart) * (i / (rampCols - 1));
+      } else {
+        depth = med.curvePeak - decayRate * (i - rampCols + 1);
+      }
+      depths[col] = Math.max(0, Math.round(depth));
+    }
+  } else if (med.burnPattern) {
+    // Pattern-based (SGLT2, GLP-1): anchored to dropColumn
+    for (let i = 0; i < TOTAL_COLUMNS - dropColumn; i++) {
+      const col = dropColumn + i;
+      depths[col] = patternDepth(med.burnPattern, i);
+    }
+  }
+
+  return depths;
+}
+
+/**
+ * Calculate per-column burn depth totals for all placed medications.
+ * Returns separate arrays for metformin, sglt2, glp1, plus sglt2 floor row.
+ */
+export function calculateMedicationReductions(
+  placedMedications: PlacedMedication[],
+  allMedications: Medication[],
+): MedicationReductions {
+  const metformin = new Array(TOTAL_COLUMNS).fill(0);
+  const sglt2 = new Array(TOTAL_COLUMNS).fill(0);
+  const glp1 = new Array(TOTAL_COLUMNS).fill(0);
+  let sglt2FloorRow = 0;
+
+  for (const placed of placedMedications) {
+    const med = allMedications.find(m => m.id === placed.medicationId);
+    if (!med) continue;
+    const curve = calculateMedicationCurve(med, placed.dropColumn);
+    if (med.id === 'metformin') {
+      for (let c = 0; c < TOTAL_COLUMNS; c++) metformin[c] += curve[c];
+    } else if (med.id === 'sglt2') {
+      for (let c = 0; c < TOTAL_COLUMNS; c++) sglt2[c] += curve[c];
+      if (med.floorMgDl) {
+        sglt2FloorRow = Math.round((med.floorMgDl - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl);
+      }
+    } else if (med.id === 'glp1') {
+      for (let c = 0; c < TOTAL_COLUMNS; c++) glp1[c] += curve[c];
+    }
+  }
+
+  return { metformin, sglt2, sglt2FloorRow, glp1 };
+}
+
+/**
+ * Aggregate global food modifiers from placed medications (GLP-1 effects only).
  */
 export function computeMedicationModifiers(
-  activeMedicationIds: string[],
+  placedMedications: PlacedMedication[],
   allMedications: Medication[],
 ): MedicationModifiers {
   const modifiers: MedicationModifiers = { ...DEFAULT_MEDICATION_MODIFIERS };
 
-  for (const medId of activeMedicationIds) {
-    const med = allMedications.find(m => m.id === medId);
+  for (const placed of placedMedications) {
+    const med = allMedications.find(m => m.id === placed.medicationId);
     if (!med) continue;
 
-    switch (med.type) {
-      case 'peakReduction':
-        if (med.burnPattern) modifiers.metforminPattern = med.burnPattern;
-        break;
-      case 'thresholdDrain': {
-        if (med.burnPattern) {
-          const floorRow = ((med.floorMgDl ?? 200) - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl;
-          modifiers.sglt2 = { pattern: med.burnPattern, floorRow };
-        }
-        break;
-      }
-      case 'slowAbsorption': {
-        modifiers.durationMultiplier *= (med.durationMultiplier ?? 1);
-        modifiers.kcalMultiplier *= (med.kcalMultiplier ?? 1);
-        modifiers.wpBonus += (med.wpBonus ?? 0);
-        if (med.burnPattern) modifiers.glp1Pattern = med.burnPattern;
-        break;
-      }
+    if (med.type === 'slowAbsorption') {
+      modifiers.durationMultiplier *= (med.durationMultiplier ?? 1);
+      modifiers.kcalMultiplier *= (med.kcalMultiplier ?? 1);
+      modifiers.wpBonus += (med.wpBonus ?? 0);
     }
   }
 
   return modifiers;
 }
+
 
 /**
  * Apply medication effects to food before curve calculation.
@@ -320,12 +375,16 @@ export function calculatePenaltyFromState(
   allShips: Ship[],
   placedInterventions: PlacedIntervention[],
   allInterventions: Intervention[],
-  medicationModifiers: MedicationModifiers,
+  placedMedications: PlacedMedication[],
+  allMedications: Medication[],
   decayRate: number = 0.5,
   boostActive: boolean = false,
   baselineRow: number = 0,
   pancreasEffectiveness?: number,
 ): PenaltyResult {
+  const medicationModifiers = computeMedicationModifiers(placedMedications, allMedications);
+  const medReductions = calculateMedicationReductions(placedMedications, allMedications);
+
   // Build food heights per column (starting from baseline BG level)
   const totalHeights = new Array(TOTAL_COLUMNS).fill(baselineRow);
   for (const placed of placedFoods) {
@@ -344,22 +403,21 @@ export function calculatePenaltyFromState(
   // Intervention reduction
   const interventionRed = calculateInterventionReduction(placedInterventions, allInterventions);
 
-  // Column caps using pattern burns
+  // Column caps using positional medication reductions
   const pancreasPattern = getEffectivenessPattern(pancreasEffectiveness ?? 5);
   const columnCaps = totalHeights.map((h, col) => {
     const pancreasD = patternDepth(pancreasPattern, col);
     const boostD = boostActive ? patternDepth(BOOST_PATTERN, col) : 0;
-    const metforminD = medicationModifiers.metforminPattern
-      ? patternDepth(medicationModifiers.metforminPattern, col) : 0;
-    const glp1D = medicationModifiers.glp1Pattern
-      ? patternDepth(medicationModifiers.glp1Pattern, col) : 0;
+    const metforminD = medReductions.metformin[col];
+    const glp1D = medReductions.glp1[col];
 
+    const rawSglt2D = medReductions.sglt2[col];
     let sglt2D = 0;
-    const sglt2 = medicationModifiers.sglt2;
-    if (sglt2) {
-      const rawSglt2D = patternDepth(sglt2.pattern, col);
+    if (rawSglt2D > 0 && medReductions.sglt2FloorRow > 0) {
       const heightBeforeSglt2 = h - interventionRed[col] - pancreasD - boostD - metforminD - glp1D;
-      sglt2D = Math.min(rawSglt2D, Math.max(0, heightBeforeSglt2 - sglt2.floorRow));
+      sglt2D = Math.min(rawSglt2D, Math.max(0, heightBeforeSglt2 - medReductions.sglt2FloorRow));
+    } else {
+      sglt2D = rawSglt2D;
     }
 
     return Math.max(baselineRow,

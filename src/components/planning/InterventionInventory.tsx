@@ -1,30 +1,9 @@
 import { useMemo } from 'react';
-import type { Intervention, Medication, PlacedIntervention, AvailableFood } from '../../core/types';
+import type { Intervention, Medication, PlacedIntervention, PlacedMedication, AvailableFood } from '../../core/types';
 import { InterventionCard } from './InterventionCard';
+import { MedicationCard } from './MedicationCard';
 import './ShipInventory.css';
 import './MedicationPanel.css';
-
-function getMedicationTooltip(med: Medication): string {
-  switch (med.type) {
-    case 'peakReduction':
-      return `Burns glucose in row pattern [${(med.burnPattern ?? []).join(',')}]`;
-    case 'thresholdDrain':
-      return `Burns glucose in row pattern [${(med.burnPattern ?? []).join(',')}], floor ${med.floorMgDl ?? 200} mg/dL`;
-    case 'slowAbsorption': {
-      const parts: string[] = [];
-      if (med.durationMultiplier) parts.push(`Duration ×${med.durationMultiplier}`);
-      if (med.kcalMultiplier) {
-        const pct = Math.round((1 - med.kcalMultiplier) * 100);
-        parts.push(`Kcal -${pct}%`);
-      }
-      if (med.wpBonus) parts.push(`+${med.wpBonus} ☀️`);
-      if (med.burnPattern) parts.push(`Pattern [${med.burnPattern.join(',')}]`);
-      return parts.join(', ');
-    }
-    default:
-      return med.description;
-  }
-}
 
 interface InterventionInventoryProps {
   allInterventions: Intervention[];
@@ -33,8 +12,7 @@ interface InterventionInventoryProps {
   wpRemaining: number;
   allMedications?: Medication[];
   availableMedicationIds?: string[];
-  activeMedications?: string[];
-  onMedicationToggle?: (medicationId: string) => void;
+  placedMedications?: PlacedMedication[];
 }
 
 interface InventoryItem {
@@ -50,8 +28,7 @@ export function InterventionInventory({
   wpRemaining,
   allMedications = [],
   availableMedicationIds = [],
-  activeMedications = [],
-  onMedicationToggle,
+  placedMedications = [],
 }: InterventionInventoryProps) {
   const placedCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -79,36 +56,30 @@ export function InterventionInventory({
     return items;
   }, [allInterventions, availableInterventions, placedCounts]);
 
-  const hasMedications = availableMedicationIds.length > 0;
+  // Available medications: count how many of each are still in inventory (not yet placed)
+  const availableMedItems = useMemo(() => {
+    return availableMedicationIds.map(medId => {
+      const med = allMedications.find(m => m.id === medId);
+      const placedCount = placedMedications.filter(p => p.medicationId === medId).length;
+      // Each medication type appears once in inventory; if already placed, still show (re-draggable)
+      return { med, placedCount };
+    }).filter(({ med }) => !!med) as Array<{ med: Medication; placedCount: number }>;
+  }, [availableMedicationIds, allMedications, placedMedications]);
+
+  const hasMedications = availableMedItems.length > 0;
   if (availableInterventions.length === 0 && !hasMedications) return null;
 
   return (
     <div className="ship-inventory__grid ship-inventory__grid--actions">
       {hasMedications && (
         <div className="medication-section">
-          {availableMedicationIds.map(medId => {
-            const med = allMedications.find(m => m.id === medId);
-            if (!med) return null;
-            const isActive = activeMedications.includes(medId);
-            const tooltip = getMedicationTooltip(med);
-            return (
-              <button
-                key={medId}
-                data-medication={medId}
-                className={`medication-toggle ${isActive ? 'medication-toggle--active' : ''}`}
-                onClick={() => onMedicationToggle?.(medId)}
-                data-tooltip={tooltip}
-              >
-                <span className="medication-toggle__emoji">{med.emoji}</span>
-                <div className="medication-toggle__details">
-                  <span className="medication-toggle__name">{med.name}</span>
-                </div>
-                <span className="medication-toggle__status">
-                  {isActive ? 'ON' : 'OFF'}
-                </span>
-              </button>
-            );
-          })}
+          {availableMedItems.map(({ med }) => (
+            <MedicationCard
+              key={med.id}
+              medication={med}
+              instanceId={`medication-${med.id}`}
+            />
+          ))}
         </div>
       )}
       {inventoryItems.length === 0 && !hasMedications ? (

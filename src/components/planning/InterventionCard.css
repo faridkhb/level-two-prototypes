@@ -151,6 +151,11 @@
   opacity: 1;
 }
 
+/* Medication card — purple theme */
+.intervention-card--medication {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+}
+
 /* Mobile portrait — fixed size, matches medication cards */
 @media (max-width: 480px) {
   .intervention-card {

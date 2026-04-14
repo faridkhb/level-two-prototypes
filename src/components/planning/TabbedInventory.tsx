@@ -6,33 +6,13 @@ import type {
   Intervention,
   PlacedIntervention,
   Medication,
+  PlacedMedication,
 } from '../../core/types';
 import { ShipCard } from './ShipCard';
 import { InterventionCard } from './InterventionCard';
+import { MedicationCard } from './MedicationCard';
 import './TabbedInventory.css';
 import './MedicationPanel.css';
-
-function getMedicationTooltip(med: Medication): string {
-  switch (med.type) {
-    case 'peakReduction':
-      return `Burns glucose in row pattern [${(med.burnPattern ?? []).join(',')}]`;
-    case 'thresholdDrain':
-      return `Burns glucose in row pattern [${(med.burnPattern ?? []).join(',')}], floor ${med.floorMgDl ?? 200} mg/dL`;
-    case 'slowAbsorption': {
-      const parts: string[] = [];
-      if (med.durationMultiplier) parts.push(`Duration ×${med.durationMultiplier}`);
-      if (med.kcalMultiplier) {
-        const pct = Math.round((1 - med.kcalMultiplier) * 100);
-        parts.push(`Kcal -${pct}%`);
-      }
-      if (med.wpBonus) parts.push(`+${med.wpBonus} ☀️`);
-      if (med.burnPattern) parts.push(`Pattern [${med.burnPattern.join(',')}]`);
-      return parts.join(', ');
-    }
-    default:
-      return med.description;
-  }
-}
 
 function InventoryRow({
   children,
@@ -100,8 +80,7 @@ interface TabbedInventoryProps {
   wpRemaining: number;
   allMedications?: Medication[];
   availableMedicationIds?: string[];
-  activeMedications?: string[];
-  onMedicationToggle?: (medicationId: string) => void;
+  placedMedications?: PlacedMedication[];
   hideKcal?: boolean;
   kcalJustRevealed?: boolean;
   clearedFoodsHighlight?: boolean;
@@ -118,8 +97,7 @@ export function TabbedInventory({
   wpRemaining,
   allMedications = [],
   availableMedicationIds = [],
-  activeMedications = [],
-  onMedicationToggle,
+  placedMedications: _placedMedications = [],
   hideKcal = false,
   kcalJustRevealed = false,
   clearedFoodsHighlight = false,
@@ -152,7 +130,13 @@ export function TabbedInventory({
     return items;
   }, [allInterventions, availableInterventions, placedInterventions]);
 
-  const hasMedications = availableMedicationIds.length > 0;
+  const medicationItems = useMemo(() => {
+    return availableMedicationIds
+      .map(medId => allMedications.find(m => m.id === medId))
+      .filter(Boolean) as Medication[];
+  }, [availableMedicationIds, allMedications]);
+
+  const hasMedications = medicationItems.length > 0;
   const hasInterventions = interventionItems.length > 0;
 
   return (
@@ -190,32 +174,16 @@ export function TabbedInventory({
         </InventoryRow>
       )}
 
-      {/* Row 3: Medications */}
+      {/* Row 3: Medications — draggable cards */}
       {hasMedications && (
         <InventoryRow trackClassName="medication-section">
-          {availableMedicationIds.map((medId) => {
-            const med = allMedications.find((m) => m.id === medId);
-            if (!med) return null;
-            const isActive = activeMedications.includes(medId);
-            const tooltip = getMedicationTooltip(med);
-            return (
-              <button
-                key={medId}
-                data-medication={medId}
-                className={`medication-toggle ${isActive ? 'medication-toggle--active' : ''}`}
-                onClick={() => onMedicationToggle?.(medId)}
-                data-tooltip={tooltip}
-              >
-                <span className="medication-toggle__emoji">{med.emoji}</span>
-                <div className="medication-toggle__details">
-                  <span className="medication-toggle__name">{med.name}</span>
-                </div>
-                <span className="medication-toggle__status">
-                  {isActive ? 'ON' : 'OFF'}
-                </span>
-              </button>
-            );
-          })}
+          {medicationItems.map((med) => (
+            <MedicationCard
+              key={med.id}
+              medication={med}
+              instanceId={`medication-inventory-${med.id}`}
+            />
+          ))}
         </InventoryRow>
       )}
     </div>

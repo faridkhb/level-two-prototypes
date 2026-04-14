@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useLayoutEffect, useEffect } from 'react';
-import type { Ship, PlacedFood, PlacedIntervention, Intervention, GameSettings, MedicationModifiers, BurnAnimMode } from '../../core/types';
+import type { Ship, PlacedFood, PlacedIntervention, PlacedMedication, Intervention, Medication, GameSettings, MedicationModifiers, BurnAnimMode } from '../../core/types';
 import {
   TOTAL_COLUMNS,
   TOTAL_ROWS,
@@ -9,7 +9,7 @@ import {
   GRAPH_CONFIG,
   COLS_PER_SLOT,
 } from '../../core/types';
-import { calculateCurve, calculateInterventionCurve, applyMedicationToFood, patternDepth, BOOST_PATTERN, getEffectivenessPattern } from '../../core/cubeEngine';
+import { calculateCurve, calculateInterventionCurve, calculateMedicationReductions, applyMedicationToFood, patternDepth, BOOST_PATTERN, getEffectivenessPattern } from '../../core/cubeEngine';
 import './BgGraph.css';
 
 // SVG layout constants
@@ -83,6 +83,7 @@ interface GraphRenderData {
   boostDepths: number[];
   metforminDepths: number[];
   sglt2Depths: number[];
+  sglt2FloorRow: number;
   glp1Depths: number[];
   // Total plateau-extra rows per column (post-peak decay visualized via bombs)
   plateauExtraRows: number[];
@@ -117,6 +118,8 @@ interface BgGraphProps {
   decayRate: number;
   boostActive?: boolean;
   medicationModifiers?: MedicationModifiers;
+  placedMedications?: PlacedMedication[];
+  allMedications?: Medication[];
   showDangerZone?: boolean;          // show danger-zone cube colors (orange/red above 200)
   showPenaltyOverlay?: boolean;      // show pulsing penalty overlays (defaults to showDangerZone if omitted)
   showHatchFlash?: boolean;          // one-shot flash animation on 200 line + hatching bands
@@ -159,6 +162,8 @@ export function BgGraph({
   decayRate = 0.5,
   boostActive = false,
   medicationModifiers = DEFAULT_MEDICATION_MODIFIERS,
+  placedMedications = [],
+  allMedications = [],
   showDangerZone = false,
   showPenaltyOverlay,
   showHatchFlash = false,
@@ -226,7 +231,6 @@ export function BgGraph({
   // Staircase cascade: per-column visible height ceiling during bomb animation (null = inactive)
   const [cascadeLevels, setCascadeLevels] = useState<number[] | null>(null);
   const cascadeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const prevMedModifiersRef = useRef(DEFAULT_MEDICATION_MODIFIERS);
 
   // Calculate intervention reduction per column, split by type (walk/run)
   const interventionReductions = useMemo(() => {
@@ -344,8 +348,8 @@ export function BgGraph({
     // pancreasCaps = sum of alive heights (stacked food decay)
     const pancreasCaps = aliveStacks;
 
-    // Phase 2: ColumnCaps using pattern burns for all mechanisms
-    const { metforminPattern, sglt2, glp1Pattern } = medicationModifiers;
+    // Phase 2: ColumnCaps using positional medication reductions + pancreas/boost patterns
+    const medReductions = calculateMedicationReductions(placedMedications, allMedications);
 
     const pancreasDepths = new Array(TOTAL_COLUMNS).fill(0);
     const boostDepths = new Array(TOTAL_COLUMNS).fill(0);
@@ -358,14 +362,16 @@ export function BgGraph({
       const h = pancreasCaps[col];
       const pancreasD = patternDepth(getEffectivenessPattern(pancreasEffectiveness), col);
       const boostD = boostActive ? patternDepth(BOOST_PATTERN, col) : 0;
-      const metforminD = metforminPattern ? patternDepth(metforminPattern, col) : 0;
-      const glp1D = glp1Pattern ? patternDepth(glp1Pattern, col) : 0;
+      const metforminD = medReductions.metformin[col];
+      const glp1D = medReductions.glp1[col];
 
+      const rawSglt2D = medReductions.sglt2[col];
       let sglt2D = 0;
-      if (sglt2) {
-        const rawSglt2D = patternDepth(sglt2.pattern, col);
+      if (rawSglt2D > 0 && medReductions.sglt2FloorRow > 0) {
         const heightBeforeSglt2 = h - interventionReduction[col] - pancreasD - boostD - metforminD - glp1D;
-        sglt2D = Math.min(rawSglt2D, Math.max(0, heightBeforeSglt2 - sglt2.floorRow));
+        sglt2D = Math.min(rawSglt2D, Math.max(0, heightBeforeSglt2 - medReductions.sglt2FloorRow));
+      } else {
+        sglt2D = rawSglt2D;
       }
 
       pancreasDepths[col] = pancreasD;
@@ -533,8 +539,8 @@ export function BgGraph({
     if (inSegment && lastSegCol < TOTAL_COLUMNS - 1) mainParts.push(`V ${bottomY}`);
     const mainSkylinePath = mainParts.length > 0 ? mainParts.join(' ') : '';
 
-    return { layers, mainSkylinePath, columnCaps, pancreasCaps, effectiveRows, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, glp1Depths, plateauExtraRows };
-  }, [placedFoods, allShips, medicationModifiers, decayRate, boostActive, interventionReduction, interventionReductions, baselineRow, graphH, pancreasEffectiveness]);
+    return { layers, mainSkylinePath, columnCaps, pancreasCaps, effectiveRows, pancreasDepths, boostDepths, metforminDepths, sglt2Depths, sglt2FloorRow: medReductions.sglt2FloorRow, glp1Depths, plateauExtraRows };
+  }, [placedFoods, allShips, medicationModifiers, placedMedications, allMedications, decayRate, boostActive, interventionReduction, interventionReductions, baselineRow, graphH, pancreasEffectiveness]);
 
   // Dynamic Y-axis: cellHeight adapts when cubes exceed default 400 mg/dL
   const { effectiveRows } = graphRenderData;
@@ -954,17 +960,15 @@ export function BgGraph({
     prevInterventionIdsRef.current = currIds;
   }, [placedInterventions, allInterventions]);
 
-  // Medication toggle bomb: when meds change while food is on graph, animate newly burned med cells
+  // Medication placement bomb: when placedMedications changes and food is on graph, animate newly burned med cells
+  const prevPlacedMedCountRef = useRef(0);
   useLayoutEffect(() => {
-    const prev = prevMedModifiersRef.current;
-    const curr = medicationModifiers;
-    const metChanged = !!prev.metforminPattern !== !!curr.metforminPattern;
-    const sglt2Changed = !!prev.sglt2 !== !!curr.sglt2;
-    const glp1Changed = !!prev.glp1Pattern !== !!curr.glp1Pattern;
-    prevMedModifiersRef.current = curr;
+    const prevCount = prevPlacedMedCountRef.current;
+    const currCount = placedMedications.length;
+    prevPlacedMedCountRef.current = currCount;
 
     if (!hideBurnedInPlanning) return;
-    if (!metChanged && !sglt2Changed && !glp1Changed) return;
+    if (currCount <= prevCount) return; // only animate when a med is added (not removed)
     if (graphRenderData.layers.length === 0) return;
 
     // Find newly burned med cubes
@@ -992,7 +996,7 @@ export function BgGraph({
       }, 2200);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [medicationModifiers]);
+  }, [placedMedications]);
 
   // Cleanup timers on unmount
   useEffect(() => () => {
@@ -1223,18 +1227,22 @@ export function BgGraph({
         {/* Insulin profile bars — disabled for now */}
 
         {/* SGLT2 drain threshold line */}
-        {medicationModifiers.sglt2 && (revealPhase === undefined || revealPhase >= 4) && (
-          <line
-            x1={PAD_LEFT}
-            y1={rowToY(medicationModifiers.sglt2.floorRow - 1)}
-            x2={PAD_LEFT + GRAPH_W}
-            y2={rowToY(medicationModifiers.sglt2.floorRow - 1)}
-            stroke="#b794f4"
-            strokeWidth={1.5}
-            strokeDasharray="6 3"
-            opacity={0.7}
-          />
-        )}
+        {graphRenderData.sglt2Depths.some(d => d > 0) && (revealPhase === undefined || revealPhase >= 4) && (() => {
+          const floorRow = graphRenderData.sglt2FloorRow;
+          if (!floorRow) return null;
+          return (
+            <line
+              x1={PAD_LEFT}
+              y1={rowToY(floorRow - 1)}
+              x2={PAD_LEFT + GRAPH_W}
+              y2={rowToY(floorRow - 1)}
+              stroke="#b794f4"
+              strokeWidth={1.5}
+              strokeDasharray="6 3"
+              opacity={0.7}
+            />
+          );
+        })()}
 
         {/* Drag preview: food cubes stacked above existing food */}
         {previewData && (

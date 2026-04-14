@@ -5,8 +5,11 @@
       "name": "Metformin",
       "emoji": "💊",
       "type": "peakReduction",
-      "burnPattern": [0, 3, 1],
-      "description": "Burns glucose in a 3-row skip pattern"
+      "curveStart": 1,
+      "curvePeak": 3,
+      "curveRampCols": 4,
+      "curveDecayRate": 0.25,
+      "description": "Gradually reduces glucose absorption. Effect builds over 2 hours."
     },
     {
       "id": "sglt2",

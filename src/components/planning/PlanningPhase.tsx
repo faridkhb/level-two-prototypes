@@ -15,7 +15,7 @@ import { TOTAL_SLOTS, slotToColumn, getBaselineRow, getKcalAssessment } from '..
 import { useGameStore, getDayConfig, selectKcalUsed, selectWpUsed, selectWpPenalty } from '../../store/gameStore';
 import { loadFoods, loadLevel, loadInterventions, loadMedications } from '../../config/loader';
 import { computeMedicationModifiers, calculatePenaltyFromState } from '../../core/cubeEngine';
-import { DEFAULT_MEDICATION_MODIFIERS, PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
+import { PANCREAS_TOTAL_BARS, WP_PENALTY_WEIGHT, calculateStars } from '../../core/types';
 import { BgGraph } from '../graph';
 import { KcalBar } from './PlanningHeader';
 import { TabbedInventory } from './TabbedInventory';
@@ -24,6 +24,7 @@ import { ResultPanel } from './ResultPanel';
 import { SlotGrid } from './SlotGrid';
 import { ShipCardOverlay } from './ShipCard';
 import { InterventionCardOverlay } from './InterventionCard';
+import { MedicationCardOverlay } from './MedicationCard';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { useTutorial } from '../tutorial/useTutorial';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -64,8 +65,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     placeInterventionInSlot,
     removeFromSlot,
     moveSlotToSlot,
-    activeMedications,
-    toggleMedication,
+    placedMedications,
+    placeMedicationInSlot,
+    removeMedicationFromSlot: _removeMedicationFromSlot,
     clearFoods,
     currentLevel,
     currentDay,
@@ -95,7 +97,9 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
   const [allMedications, setAllMedications] = useState<Medication[]>([]);
   const [activeShip, setActiveShip] = useState<Ship | null>(null);
   const [activeIntervention, setActiveIntervention] = useState<Intervention | null>(null);
+  const [activeMedication, setActiveMedication] = useState<Medication | null>(null);
   const [previewSlot, setPreviewSlot] = useState<number | null>(null);
+  const [pendingTutorialDrop, setPendingTutorialDrop] = useState<{ ship: Ship; slotIndex: number } | null>(null);
   const [rejectedSlot, setRejectedSlot] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -236,12 +240,10 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     return slots;
   }, [dayConfig, preplacedCleared]);
 
-  // Compute medication modifiers from active medications
+  // Compute medication modifiers (GLP-1 global food effects) from placed medications
   const medicationModifiers = useMemo(
-    () => activeMedications.length > 0
-      ? computeMedicationModifiers(activeMedications, allMedications)
-      : DEFAULT_MEDICATION_MODIFIERS,
-    [activeMedications, allMedications]
+    () => computeMedicationModifiers(placedMedications, allMedications),
+    [placedMedications, allMedications]
   );
 
   const kcalUsed = useMemo(
@@ -305,6 +307,15 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     }
   }, [tutorialStep]);
 
+  // releasePendingDrop: commit intercepted food placement when next tutorial step activates
+  useEffect(() => {
+    if (tutorialStep?.releasePendingDrop && pendingTutorialDrop) {
+      placeFoodInSlot(pendingTutorialDrop.ship.id, pendingTutorialDrop.slotIndex);
+      setPendingTutorialDrop(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep?.id]);
+
   // Force show burned layer (tutorial showBurnsLayer step) — overrides hideBurnedInPlanning
   const forcedShowBurns = gamePhase === 'planning' && (tutorialStep?.showBurnsLayer ?? false);
 
@@ -329,11 +340,6 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     return [...base, ...clearedShipIds.map(id => ({ id, count: 1 }))];
   }, [dayConfig, clearedShipIds]);
 
-  // Tutorial-aware medication toggle wrapper
-  const handleMedicationToggle = useCallback((medId: string) => {
-    toggleMedication(medId);
-    notifyTutorialAction({ type: 'toggle-medication', medicationId: medId });
-  }, [toggleMedication, notifyTutorialAction]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -354,12 +360,19 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     if (gamePhase !== 'planning') return;
     const ship = event.active.data.current?.ship as Ship | undefined;
     const intervention = event.active.data.current?.intervention as Intervention | undefined;
+    const medication = event.active.data.current?.medication as Medication | undefined;
     if (ship) {
       setActiveShip(ship);
       setActiveIntervention(null);
+      setActiveMedication(null);
     } else if (intervention) {
       setActiveIntervention(intervention);
       setActiveShip(null);
+      setActiveMedication(null);
+    } else if (medication) {
+      setActiveMedication(medication);
+      setActiveShip(null);
+      setActiveIntervention(null);
     }
   }, [gamePhase]);
 
@@ -381,6 +394,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
 
       setActiveShip(null);
       setActiveIntervention(null);
+      setActiveMedication(null);
       setPreviewSlot(null);
 
       if (!over || gamePhase !== 'planning') return;
@@ -414,6 +428,17 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       } else {
         // Inventory → Slot: place (or replace if occupied)
         const isIntervention = activeData?.isIntervention === true;
+        const isMedication = activeData?.isMedication === true;
+
+        // Medication placement: can coexist with food/interventions in same slot
+        if (isMedication) {
+          const medication = activeData?.medication as Medication | undefined;
+          if (!medication) return;
+          // Remove from locked check: medications bypass slot locking
+          placeMedicationInSlot(medication.id, targetSlot);
+          notifyTutorialAction({ type: 'toggle-medication', medicationId: medication.id });
+          return;
+        }
 
         // Helper: check if a slot is covered (including multi-slot interventions)
         const isSlotCovered = (slot: number): boolean => {
@@ -482,13 +507,19 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
           const ship = activeData?.ship as Ship | undefined;
           if (!ship) return;
           if ((ship.wpCost ?? 0) > effectiveWp) { rejectDrop(targetSlot); return; }
+          if (tutorialStep?.pauseOnDrop) {
+            // Intercept drop: freeze in hover/preview state, advance tutorial without placing
+            setPendingTutorialDrop({ ship, slotIndex: targetSlot });
+            notifyTutorialAction({ type: 'place-food', foodId: ship.id, slotIndex: targetSlot });
+            return;
+          }
           if (targetOccupied) removeFromSlot(targetSlot);
           placeFoodInSlot(ship.id, targetSlot);
           notifyTutorialAction({ type: 'place-food', foodId: ship.id, slotIndex: targetSlot });
         }
       }
     },
-    [placeFoodInSlot, placeInterventionInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions, effectiveLockedSlots, notifyTutorialAction, rejectDrop]
+    [placeFoodInSlot, placeInterventionInSlot, placeMedicationInSlot, removeFromSlot, moveSlotToSlot, wpRemaining, gamePhase, placedFoods, placedInterventions, allShips, allInterventions, effectiveLockedSlots, notifyTutorialAction, rejectDrop]
   );
 
   const handleToggleBoost = useCallback(() => {
@@ -513,7 +544,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     // Jump straight to results (no phased reveal animation)
     setGamePhase('replaying');
     setPenaltyResult(null);
-  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, placedInterventions.length, activeMedications.length, notifyTutorialAction]);
+  }, [submitEnabled, lockBoostBars, submitDayWp, currentDay, wpUsed, effectiveWpBudget, notifyTutorialAction]);
 
   // === Submit: instantly show all burn layers, then start results reveal sub-sequence ===
   useEffect(() => {
@@ -525,7 +556,8 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       allShips,
       placedInterventions,
       allInterventions,
-      medicationModifiers,
+      placedMedications,
+      allMedications,
       0.5,
       isBoostActive,
       baselineRow,
@@ -823,11 +855,13 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
               decayRate={0.5}
               boostActive={isBoostActive}
               medicationModifiers={medicationModifiers}
+              placedMedications={placedMedications}
+              allMedications={allMedications}
               showDangerZone={showDangerZone}
               showPenaltyOverlay={showPenaltyOverlay}
               showHatchFlash={showHatchFlash}
-              previewShip={activeShip && previewSlot !== null ? activeShip : undefined}
-              previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : undefined}
+              previewShip={activeShip && previewSlot !== null ? activeShip : pendingTutorialDrop?.ship}
+              previewColumn={previewSlot !== null ? slotToColumn(previewSlot) : pendingTutorialDrop ? slotToColumn(pendingTutorialDrop.slotIndex) : undefined}
               previewIntervention={activeIntervention && previewSlot !== null ? activeIntervention : undefined}
               previewInterventionColumn={activeIntervention && previewSlot !== null ? slotToColumn(previewSlot) : undefined}
               stressSlots={stressSlotSet}
@@ -903,8 +937,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
                 wpRemaining={wpRemaining}
                 allMedications={allMedications}
                 availableMedicationIds={dayConfig?.availableMedications ?? []}
-                activeMedications={activeMedications}
-                onMedicationToggle={handleMedicationToggle}
+                placedMedications={placedMedications}
                 hideKcal={!kcalCardsVisible}
                 kcalJustRevealed={kcalJustRevealed || (tutorialStep?.kcalBlink ?? false)}
                 clearedFoodsHighlight={clearedHighlight}
@@ -959,6 +992,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
       <DragOverlay dropAnimation={null}>
         {activeShip && <ShipCardOverlay ship={activeShip} />}
         {activeIntervention && <InterventionCardOverlay intervention={activeIntervention} />}
+        {activeMedication && <MedicationCardOverlay medication={activeMedication} />}
       </DragOverlay>
 
       {/* Tutorial overlay — hidden for pendingUntilResults steps until gamePhase='results' */}

@@ -124,32 +124,47 @@ export interface Medication {
   emoji: string;
   type: MedicationType;
   description: string;
-  burnPattern?: number[];      // row-based burn pattern [skip0, skip1, ...]
+  burnPattern?: number[];      // row-based burn pattern [skip0, skip1, ...] — for SGLT2 / GLP-1 (anchored to dropColumn)
+  // peakReduction (Metformin) — curve-based burn
+  curveStart?: number;         // burn depth at placement col (e.g. 1)
+  curvePeak?: number;          // max burn depth (e.g. 3)
+  curveRampCols?: number;      // cols to reach peak (4 = 2 hours at 30 min/col)
+  curveDecayRate?: number;     // cubes lost per col after peak (e.g. 0.25 = slow fade)
   // thresholdDrain (SGLT2)
-  floorMgDl?: number;          // don't burn below this level
+  floorMgDl?: number;          // don't burn below this BG level
   // slowAbsorption (GLP-1)
   durationMultiplier?: number; // 1.5 = 50% longer duration
   kcalMultiplier?: number;     // 0.7 = -30% kcal budget
   wpBonus?: number;            // +4 WP
 }
 
+export interface PlacedMedication {
+  id: string;              // unique placement UUID
+  medicationId: string;    // ref to Medication.id
+  dropColumn: number;      // slotToColumn(slotIndex)
+  slotIndex: number;
+}
+
+/** Global food-affecting modifiers — only GLP-1 produces these */
 export interface MedicationModifiers {
   durationMultiplier: number;    // GLP-1: 1.5
   kcalMultiplier: number;        // GLP-1: 0.7
   wpBonus: number;               // GLP-1: +4
-  metforminPattern: number[] | null;
-  sglt2: { pattern: number[]; floorRow: number } | null;
-  glp1Pattern: number[] | null;
 }
 
 export const DEFAULT_MEDICATION_MODIFIERS: MedicationModifiers = {
   durationMultiplier: 1,
   kcalMultiplier: 1,
   wpBonus: 0,
-  metforminPattern: null,
-  sglt2: null,
-  glp1Pattern: null,
 };
+
+/** Per-column burn depths from placed medications (computed by calculateMedicationReductions) */
+export interface MedicationReductions {
+  metformin: number[];   // burn depth per column
+  sglt2: number[];       // raw burn depth per column (floor applied during columnCaps)
+  glp1: number[];        // burn depth per column
+  sglt2FloorRow: number; // floor row for SGLT2 (0 if SGLT2 not placed)
+}
 
 // === Level Config ===
 
