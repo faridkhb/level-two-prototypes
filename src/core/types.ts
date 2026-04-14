@@ -129,7 +129,8 @@ export interface Medication {
   curveStart?: number;         // burn depth at placement col (e.g. 1)
   curvePeak?: number;          // max burn depth (e.g. 3)
   curveRampCols?: number;      // cols to reach peak (4 = 2 hours at 30 min/col)
-  curveDecayRate?: number;     // cubes lost per col after peak (e.g. 0.25 = slow fade)
+  curveDecayRate?: number;     // cubes lost per col after peak (e.g. 0.5 = 1 cube per 2h)
+  curveMinDepth?: number;      // floor: burn depth never drops below this value
   // thresholdDrain (SGLT2)
   floorMgDl?: number;          // don't burn below this BG level
   // slowAbsorption (GLP-1)

@@ -8,7 +8,8 @@
       "curveStart": 1,
       "curvePeak": 3,
       "curveRampCols": 4,
-      "curveDecayRate": 0.25,
+      "curveDecayRate": 0.5,
+      "curveMinDepth": 1,
       "description": "Gradually reduces glucose absorption. Effect builds over 2 hours."
     },
     {

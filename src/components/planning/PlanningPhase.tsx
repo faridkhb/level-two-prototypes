@@ -269,6 +269,14 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
     return new Set<number>(dayConfig?.stressSlots ?? []);
   }, [dayConfig]);
 
+  // Drag hint: optimal Metformin slot = slot before earliest placed food
+  const suggestedMedSlot = useMemo(() => {
+    if (activeMedication?.id !== 'metformin') return null;
+    if (placedFoods.length === 0) return null;
+    const minSlot = Math.min(...placedFoods.map(f => f.slotIndex ?? Infinity));
+    return minSlot > 0 ? minSlot - 1 : null;
+  }, [activeMedication, placedFoods]);
+
   // BOOST system
   const isBoostActive = boostActivePerDay[currentDay] ?? false;
   const totalLockedBars = Object.values(lockedBarsPerDay).reduce((a, b) => a + b, 0);
@@ -923,6 +931,7 @@ export function PlanningPhase({ isTutorial, onBackToTutorials, onNextLevel }: Pl
             lockedSlots={effectiveLockedSlots}
             stressSlots={stressSlotSet}
             rejectedSlot={rejectedSlot}
+            suggestedMedSlot={suggestedMedSlot}
           />
 
           {isPlanning && (

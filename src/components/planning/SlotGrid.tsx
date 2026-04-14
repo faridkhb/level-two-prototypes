@@ -15,6 +15,7 @@ interface SlotGridProps {
   lockedSlots?: Set<number>;
   stressSlots?: Set<number>;
   rejectedSlot?: number | null;
+  suggestedMedSlot?: number | null;
 }
 
 type SlotContent =
@@ -31,6 +32,7 @@ function SlotContainer({
   disabled,
   isLocked,
   isStressed,
+  isMedSuggested,
   isParentDragging,
   isGroupHovered,
   isDropTarget,
@@ -46,6 +48,7 @@ function SlotContainer({
   disabled?: boolean;
   isLocked?: boolean;
   isStressed?: boolean;
+  isMedSuggested?: boolean;
   isParentDragging?: boolean;
   isGroupHovered?: boolean;
   isDropTarget?: boolean;
@@ -116,6 +119,7 @@ function SlotContainer({
           (disabled ? ' slot-container--disabled' : '') +
           (isLocked ? ' slot-container--locked' : '') +
           (isStressed ? ' slot-container--stressed' : '') +
+          (isMedSuggested ? ' slot-container--med-suggest' : '') +
           ((isDragging || isParentDragging) ? ' slot-container--dragging' : '')
         }
         data-tooltip={tooltip}
@@ -134,7 +138,7 @@ function SlotContainer({
           </div>
         ) : (
           <div className="slot-container__empty">
-            {isLocked ? '🔒' : isStressed ? '😰' : '+'}
+            {isLocked ? '🔒' : isStressed ? '😰' : isMedSuggested ? '💊' : '+'}
           </div>
         )}
         <div className="slot-container__time">{timeLabel}</div>
@@ -154,6 +158,7 @@ export function SlotGrid({
   lockedSlots,
   stressSlots,
   rejectedSlot,
+  suggestedMedSlot,
 }: SlotGridProps) {
   // Track which slots are being dragged and drop targets (for multi-slot visual)
   const { active, over } = useDndContext();
@@ -261,6 +266,7 @@ export function SlotGrid({
           disabled={disabled}
           isLocked={lockedSlots?.has(slotIndex)}
           isStressed={stressSlots?.has(slotIndex)}
+          isMedSuggested={suggestedMedSlot === slotIndex && !lockedSlots?.has(slotIndex)}
           isParentDragging={draggingSlots.has(slotIndex)}
           isGroupHovered={!lockedSlots?.has(slotIndex) && hoveredGroup.has(slotIndex)}
           isDropTarget={dropTargetSlots.has(slotIndex) && !isDropTargetBlocked}

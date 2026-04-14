@@ -186,6 +186,17 @@
   100% { transform: translateX(0); }
 }
 
+/* Metformin drag hint: optimal placement slot */
+.slot-container--med-suggest {
+  background: rgba(134, 239, 172, 0.18);
+  box-shadow: inset 0 0 0 1.5px rgba(74, 222, 128, 0.6);
+}
+
+.slot-container--med-suggest .slot-container__empty {
+  color: #4ade80;
+  font-size: 16px;
+}
+
 /* Tooltip -- CSS-based via data-tooltip attribute */
 .slot-container[data-tooltip]::after {
   content: attr(data-tooltip);

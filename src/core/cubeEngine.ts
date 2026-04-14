@@ -249,7 +249,7 @@ export function calculateMedicationCurve(med: Medication, dropColumn: number): n
       } else {
         depth = med.curvePeak - decayRate * (i - rampCols + 1);
       }
-      depths[col] = Math.max(0, Math.round(depth));
+      depths[col] = Math.max(med.curveMinDepth ?? 0, Math.round(depth));
     }
   } else if (med.burnPattern) {
     // Pattern-based (SGLT2, GLP-1): anchored to dropColumn
