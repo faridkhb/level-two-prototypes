@@ -10,7 +10,7 @@ export type LoadType = 'Glucose' | 'Treatment';
 
 export const GRAPH_CONFIG = {
   startHour: 8,       // 8 AM
-  endHour: 20,        // 8 PM
+  endHour: 22,        // 10 PM
   cellWidthMin: 30,   // minutes per column
   cellHeightMgDl: 25, // mg/dL per row
   bgMin: 50,          // Y axis minimum
@@ -18,12 +18,12 @@ export const GRAPH_CONFIG = {
 } as const;
 
 // Derived constants
-export const TOTAL_MINUTES = (GRAPH_CONFIG.endHour - GRAPH_CONFIG.startHour) * 60; // 720
-export const TOTAL_COLUMNS = TOTAL_MINUTES / GRAPH_CONFIG.cellWidthMin; // 24
+export const TOTAL_MINUTES = (GRAPH_CONFIG.endHour - GRAPH_CONFIG.startHour) * 60; // 840
+export const TOTAL_COLUMNS = TOTAL_MINUTES / GRAPH_CONFIG.cellWidthMin; // 28
 export const TOTAL_ROWS = (GRAPH_CONFIG.bgMax - GRAPH_CONFIG.bgMin) / GRAPH_CONFIG.cellHeightMgDl; // 8
 
 // X axis tick marks (configurable)
-export const DEFAULT_X_TICKS = [8, 11, 14, 17, 20]; // hours
+export const DEFAULT_X_TICKS = [8, 11, 14, 17, 20, 22]; // hours
 
 // Y axis tick marks (configurable)
 export const DEFAULT_Y_TICKS = [100, 200, 300]; // mg/dL
